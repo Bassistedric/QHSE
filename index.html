@@ -65,7 +65,23 @@ const parseRoute = () => {
 };
 
 
-    function Section({ title, children }){ return <section className="bg-white rounded-2xl shadow p-4 mb-4"><h2 className="text-lg font-semibold">{title}</h2>{children}</section>; }
+    // Section avec variantes de couleur (cadre + fond + titre)
+function Section({ title, children, variant }) {
+  const styles = {
+    red:    { box: 'border-2 border-red-500 bg-red-50',    title: 'text-red-700' },
+    orange: { box: 'border-2 border-orange-500 bg-orange-50', title: 'text-orange-700' },
+    green:  { box: 'border-2 border-green-600 bg-green-50',  title: 'text-green-700' },
+    none:   { box: 'border', title: '' },
+  };
+  const s = styles[variant] || styles.none;
+  return (
+    <section className={`bg-white rounded-2xl shadow p-4 mb-4 ${s.box}`}>
+      <h2 className={`text-lg font-semibold ${s.title}`}>{title}</h2>
+      {children}
+    </section>
+  );
+}
+
     function Row({ children }){ return <div className="flex flex-col gap-3">{children}</div>; }
     function Toggle({ checked, onChange, label }){ return <label className="flex items-center justify-between gap-3 py-2"><span className="text-sm">{label}</span><input type="checkbox" className="w-5 h-5 accent-black" checked={checked} onChange={(e)=>onChange(e.target.checked)} /></label>; }
     function Divider(){ return <hr className="my-3 border-gray-200" />; }
@@ -746,13 +762,13 @@ Ensuite, l’app peut fonctionner hors-ligne.`,
             </Row>
           </Section>
 
-          <Section title={t('stop_box')}>
+          <Section title={t('stop_box')} variant="red">
             <Row>
               <textarea value={data.situation} onChange={(e)=>setField("situation", e.target.value)} rows={3} placeholder={t('stop_desc')} className="w-full px-3 py-2 rounded-xl border" />
             </Row>
           </Section>
 
-          <Section title={t('call_box')}>
+          <Section title={t('call_box')} variant="orange">
             <Row>
               <label className="text-sm">{t('call_name')}
                 <input value={data.callNom} onChange={(e)=>setField("callNom", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
@@ -772,7 +788,7 @@ Ensuite, l’app peut fonctionner hors-ligne.`,
             </Row>
           </Section>
 
-          <Section title={t('act_box')}>
+          <Section title={t('act_box')} variant="green">
             <Row>
               <label className="text-sm">{t('solution')}
                 <textarea value={data.solution} onChange={(e)=>setField("solution", e.target.value)} rows={2} className="mt-1 w-full px-3 py-2 rounded-xl border" />
