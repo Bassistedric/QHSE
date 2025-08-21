@@ -56,7 +56,14 @@
     const OUTBOX_KEY           = "qhse_outbox_v1";
     const LMRA_PREF_KEY        = "lmra_prefs_v1"; // conserve responsable + équipe
 
-    const parseRoute = () => (location.hash.replace(/^#\\/?/, '') || 'home');
+    // Route parser sans regex (évite les soucis de / dans <script>)
+    const parseRoute = () => {
+      const h = location.hash || '';
+      if (h.startsWith('#/')) return h.slice(2) || 'home';
+      if (h.startsWith('#'))  return h.slice(1) || 'home';
+      return 'home';
+    };
+
 
     function Section({ title, children }){ return <section className="bg-white rounded-2xl shadow p-4 mb-4"><h2 className="text-lg font-semibold">{title}</h2>{children}</section>; }
     function Row({ children }){ return <div className="flex flex-col gap-3">{children}</div>; }
