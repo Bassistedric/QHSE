@@ -261,7 +261,92 @@ Then, the app can work offline.`,
     solution: "Solution implemented",
     nogo_wait: "NO-GO — Situation pending a solution",
   },
+
+  nl: {
+    home_title: "QHSE – Werf-apps",
+    home_apps: "Werfapplicaties",
+    home_install: "Installeren op mobiel",
+    home_scan: "Scan met de camera om de app te openen.",
+    tile_lmra_title: "LMRA",
+    tile_lmra_sub: "Risicoanalyse",
+    tile_fa_title: "Eerste hulp",
+    tile_fa_sub: "Gebruik EHBO-koffer",
+    tile_stop_title: "STOP",
+    tile_stop_sub: "Onvoorziene stop",
+    install_howto_title: "Op de telefoon installeren",
+    install_howto_body:
+`Open de URL op de telefoon (online, eerste keer) →
+ iPhone (Safari): Delen → Zet op beginscherm.
+ Android (Chrome): ⋮ → Toevoegen aan startscherm.
+Daarna kan de app offline werken.`,
+
+    print: "Afdrukken",
+    reset_all: "Formulier resetten (alles wissen)",
+    reset_hint_team: "Gebruik dit als het team wijzigt (Verantwoordelijke & Team worden leeggemaakt).",
+    send: "Verzenden", sending: "Verzenden…",
+
+    // LMRA
+    lmra_title: "LMRA – Mobiel (v3.2)",
+    general_info: "Algemene info",
+    datetime: "Datum & tijd",
+    site: "Werf / Zone",
+    task: "Taak",
+    manager: "Verantwoordelijke (Voor- & achternaam)",
+    team: "Team",
+    cond_title: "Dagcondities",
+    cond_task_clear: "Taak & stappen zijn duidelijk",
+    cond_coactivity: "Co-activiteit / interfaces beheerd",
+    cond_zone: "Zone afgebakend / toegang beheerst",
+    cond_epi: "Juiste PBM gedragen",
+    permits_title: "Vereiste vergunningen",
+    permit_fire: "Hete werken", permit_elec: "Elektrisch", permit_confined: "Besloten ruimte",
+    permit_lift: "Hijswerk", permit_other: "Andere", permit_na: "N.v.t.",
+    risks_title: "Aanwezige risico’s",
+    energies_title: "Energieën",
+    env_title: "Omgeving",
+    ops_title: "Handelingen",
+    measures_title: "Beheersmaatregelen",
+    top3_title: "Top 3 risico’s & acties",
+    decision_title: "Beslissing",
+    go: "GO", no_go: "NO-GO",
+    nogo_name: "Te verwittigen naam", nogo_tel: "Telefoon",
+    notes: "Opmerkingen",
+
+    // First aid
+    fa_title: "Eerste hulp",
+    fa_info: "Informatie",
+    person: "Betrokken persoon",
+    action_title: "Handeling (op het moment)",
+    a_cut: "Bij snijden", a_grind: "Bij slijpen", a_weld: "Bij lassen",
+    a_drill: "Bij boren", a_pushpull: "Bij trekken/duwen", a_lift: "Bij heffen/neerzetten",
+    other: "Andere", other_specify: "Specifieer…",
+    injury_title: "Letsel",
+    i_cut: "Snijwonde", i_scratch: "Schaafwonde", i_bruise: "Kneuzing (blauw/buil)",
+    i_proj: "Projectie (stof/materiaal)", i_burn: "Brandwonde",
+    location_title: "Plaats van het letsel",
+    loc_hand: "Hand", loc_arm: "Arm", loc_torso: "Romp", loc_leg: "Been",
+    loc_foot: "Voet", loc_head: "Hoofd", loc_eye: "Oog",
+    kit_title: "EHBO-koffer",
+    kit_need: "Moet de koffer aangevuld worden?",
+    no: "Nee", yes: "Ja", kit_number: "Koffernummer",
+    remarks: "Opmerkingen",
+
+    // STOP
+    stop_title: "STOP – Onvoorzien",
+    coords: "Gegevens",
+    stop_box: "STOP",
+    stop_desc: "Leg de situatie uit die tot STOP heeft geleid",
+    call_box: "CALL",
+    call_name: "Gecontacteerde verantwoordelijke – Naam",
+    call_role: "Functie",
+    role_chef: "Ploegbaas", role_site: "Siteverantw.", role_pm: "PM",
+    role_opm: "OPM", role_cp: "CP", role_coord: "Coördinator", role_client: "Klant",
+    act_box: "ACT",
+    solution: "Ingevoerde oplossing",
+    nogo_wait: "NO-GO — Situatie in afwachting van oplossing",
+  },
 };
+
 
 
     const I18nContext = React.createContext({ lang:'fr', t:(k)=>k, setLang:()=>{} });
@@ -275,7 +360,7 @@ Then, the app can work offline.`,
     }
     const useI18n = () => React.useContext(I18nContext);
 
-    function LanguageSelector(){
+   function LanguageSelector(){
   const { lang, setLang } = useI18n();
   const Btn = ({code, title, svg}) => (
     <button onClick={()=>setLang(code)} title={title}
@@ -283,7 +368,9 @@ Then, the app can work offline.`,
       {svg}
     </button>
   );
+  // FR
   const FlagFR = <svg width="28" height="18" viewBox="0 0 3 2"><rect width="1" height="2" x="0" fill="#002395"/><rect width="1" height="2" x="1" fill="#fff"/><rect width="1" height="2" x="2" fill="#ED2939"/></svg>;
+  // UK
   const FlagUK = (
     <svg width="28" height="18" viewBox="0 0 60 30" aria-hidden="true">
       <clipPath id="s"><path d="M0,0 v30 h60 v-30 z"/></clipPath>
@@ -297,13 +384,23 @@ Then, the app can work offline.`,
       </g>
     </svg>
   );
+  // NL (rood-wit-blauw)
+  const FlagNL = (
+    <svg width="28" height="18" viewBox="0 0 3 2" aria-hidden="true">
+      <rect width="3" height="2" fill="#21468B"/>
+      <rect width="3" height="1.333" y="0" fill="#fff"/>
+      <rect width="3" height="0.666" y="0" fill="#AE1C28"/>
+    </svg>
+  );
   return (
     <div className="flex items-center gap-2">
       <Btn code="fr" title="Français" svg={FlagFR} />
       <Btn code="en" title="English" svg={FlagUK} />
+      <Btn code="nl" title="Nederlands" svg={FlagNL} />
     </div>
   );
 }
+
 
     // ===================== APP SHELL / ROUTER =====================
     function QHSELogo({size=28}) {
