@@ -42,7 +42,7 @@
     // ========================= CONFIG & HELPERS =========================
     const { useState, useEffect, useMemo } = React;
 
-    // Apps Script (tu peux changer l’URL ici si besoin)
+    // URL Apps Script (modifiable ici si besoin)
     const COLLECT_URL = "https://script.google.com/macros/s/AKfycbzdyXL0JuBmuu-0v6qVW9ow5vZf3UwuoAR5tqn2rYLXpDTJCStGbLcccP4R5wEb0EQ7lA/exec";
 
     const nowLocalDateTime = () => {
@@ -56,14 +56,13 @@
     const OUTBOX_KEY           = "qhse_outbox_v1";
     const LMRA_PREF_KEY        = "lmra_prefs_v1"; // conserve responsable + équipe
 
-    // Route parser sans regex (évite les soucis de / dans <script>)
+    // Route parser SANS REGEX (évite les soucis “Unterminated regular expression”)
     const parseRoute = () => {
       const h = location.hash || '';
       if (h.startsWith('#/')) return h.slice(2) || 'home';
       if (h.startsWith('#'))  return h.slice(1) || 'home';
       return 'home';
     };
-
 
     function Section({ title, children }){ return <section className="bg-white rounded-2xl shadow p-4 mb-4"><h2 className="text-lg font-semibold">{title}</h2>{children}</section>; }
     function Row({ children }){ return <div className="flex flex-col gap-3">{children}</div>; }
@@ -238,6 +237,8 @@ Ensuite, l’app peut fonctionner hors-ligne.`,
         </div>
       );
     }
+
+    // ========================= Partie 2 ==========================
     // ========================= HOME ==========================
     function HomeScreen(){
       const { t } = useI18n();
