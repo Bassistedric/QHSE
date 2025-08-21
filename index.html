@@ -27,7 +27,7 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () =>
-        navigator.serviceWorker.register('./sw.js?v=v1-r2').catch(console.error)
+        navigator.serviceWorker.register('./sw.js?v=v1-r5').catch(console.error)
       );
     }
   </script>
@@ -93,91 +93,176 @@ function Section({ title, children, variant }) {
     }
 
     // =========================== I18N (FR par défaut) ==========================
-    const I18N = {
-      fr: {
-        home_title: "QHSE – Apps chantier",
-        home_apps: "Applications chantier",
-        home_install: "Installer sur mobile",
-        home_scan: "Scannez avec l’appareil photo pour ouvrir l’app.",
-        tile_lmra_title: "LMRA",
-        tile_lmra_sub: "Analyse de risque",
-        tile_fa_title: "Premiers soins",
-        tile_fa_sub: "Utilisation trousse",
-        tile_stop_title: "STOP chantier",
-        tile_stop_sub: "Imprévu / arrêt",
-        install_howto_title: "Installer sur le téléphone",
-        install_howto_body:
+const I18N = {
+  fr: {
+    home_title: "QHSE – Apps chantier",
+    home_apps: "Applications chantier",
+    home_install: "Installer sur mobile",
+    home_scan: "Scannez avec l’appareil photo pour ouvrir l’app.",
+    tile_lmra_title: "LMRA",
+    tile_lmra_sub: "Analyse de risque",
+    tile_fa_title: "Premiers soins",
+    tile_fa_sub: "Utilisation trousse",
+    tile_stop_title: "STOP chantier",
+    tile_stop_sub: "Imprévu / arrêt",
+    install_howto_title: "Installer sur le téléphone",
+    install_howto_body:
 `Ouvre l’URL sur le mobile (en ligne, 1ʳᵉ fois) →
  iPhone (Safari) : Partager → Sur l’écran d’accueil.
  Android (Chrome) : ⋮ → Ajouter à l’écran d’accueil.
 Ensuite, l’app peut fonctionner hors-ligne.`,
 
-        print: "Imprimer",
-        reset_all: "Réinitialiser le formulaire (tout remettre à zéro)",
-        reset_hint_team: "À utiliser si l’équipe change (Responsable & Équipe seront vidés).",
-        send: "Envoyer", sending: "Envoi en cours…",
+    print: "Imprimer",
+    reset_all: "Réinitialiser le formulaire (tout remettre à zéro)",
+    reset_hint_team: "À utiliser si l’équipe change (Responsable & Équipe seront vidés).",
+    send: "Envoyer", sending: "Envoi en cours…",
 
-        // LMRA
-        lmra_title: "LMRA – Mobile (v3.2)",
-        general_info: "Infos générales",
-        datetime: "Date & heure",
-        site: "Site / Zone",
-        task: "Tâche",
-        manager: "Responsable (Nom & Prénom)",
-        team: "Équipe",
-        cond_title: "Conditions du jour",
-        cond_task_clear: "Tâche & étapes claires",
-        cond_coactivity: "Co-activité / interfaces gérées",
-        cond_zone: "Zone balisée / accès maîtrisé",
-        cond_epi: "EPI adaptés portés",
-        permits_title: "Permis requis",
-        permit_fire: "Feu", permit_elec: "Électrique", permit_confined: "Espace confiné",
-        permit_lift: "Levage", permit_other: "Autre", permit_na: "N/A",
-        risks_title: "Risques présents",
-        energies_title: "Énergies",
-        env_title: "Environnement",
-        ops_title: "Opérations",
-        measures_title: "Mesures de maîtrise",
-        top3_title: "Top 3 risques & actions",
-        decision_title: "Décision",
-        go: "GO", no_go: "NO-GO",
-        nogo_name: "Nom à prévenir", nogo_tel: "Téléphone",
-        notes: "Notes",
+    // LMRA
+    lmra_title: "LMRA – Mobile (v3.2)",
+    general_info: "Infos générales",
+    datetime: "Date & heure",
+    site: "Site / Zone",
+    task: "Tâche",
+    manager: "Responsable (Nom & Prénom)",
+    team: "Équipe",
+    cond_title: "Conditions du jour",
+    cond_task_clear: "Tâche & étapes claires",
+    cond_coactivity: "Co-activité / interfaces gérées",
+    cond_zone: "Zone balisée / accès maîtrisé",
+    cond_epi: "EPI adaptés portés",
+    permits_title: "Permis requis",
+    permit_fire: "Feu", permit_elec: "Électrique", permit_confined: "Espace confiné",
+    permit_lift: "Levage", permit_other: "Autre", permit_na: "N/A",
+    risks_title: "Risques présents",
+    energies_title: "Énergies",
+    env_title: "Environnement",
+    ops_title: "Opérations",
+    measures_title: "Mesures de maîtrise",
+    top3_title: "Top 3 risques & actions",
+    decision_title: "Décision",
+    go: "GO", no_go: "NO-GO",
+    nogo_name: "Nom à prévenir", nogo_tel: "Téléphone",
+    notes: "Notes",
 
-        // First aid
-        fa_title: "Premiers soins",
-        fa_info: "Informations",
-        person: "Personne concernée",
-        action_title: "Action (au moment du fait)",
-        a_cut: "En coupant", a_grind: "En disquant", a_weld: "En soudant",
-        a_drill: "En perçant", a_pushpull: "En tirant/poussant", a_lift: "En soulevant/déposant",
-        other: "Autre", other_specify: "Préciser…",
-        injury_title: "Blessure",
-        i_cut: "Coupure", i_scratch: "Égratignure", i_bruise: "Contusion (bleu/bosse)",
-        i_proj: "Projection (poussière/matière)", i_burn: "Brûlure",
-        location_title: "Localisation de la lésion",
-        loc_hand: "Main", loc_arm: "Bras", loc_torso: "Torse", loc_leg: "Jambe",
-        loc_foot: "Pied", loc_head: "Tête", loc_eye: "Œil",
-        kit_title: "Trousse de secours",
-        kit_need: "Faut-il recharger la trousse ?",
-        no: "Non", yes: "Oui", kit_number: "Numéro de la trousse",
-        remarks: "Remarques",
+    // First aid
+    fa_title: "Premiers soins",
+    fa_info: "Informations",
+    person: "Personne concernée",
+    action_title: "Action (au moment du fait)",
+    a_cut: "En coupant", a_grind: "En disquant", a_weld: "En soudant",
+    a_drill: "En perçant", a_pushpull: "En tirant/poussant", a_lift: "En soulevant/déposant",
+    other: "Autre", other_specify: "Préciser…",
+    injury_title: "Blessure",
+    i_cut: "Coupure", i_scratch: "Égratignure", i_bruise: "Contusion (bleu/bosse)",
+    i_proj: "Projection (poussière/matière)", i_burn: "Brûlure",
+    location_title: "Localisation de la lésion",
+    loc_hand: "Main", loc_arm: "Bras", loc_torso: "Torse", loc_leg: "Jambe",
+    loc_foot: "Pied", loc_head: "Tête", loc_eye: "Œil",
+    kit_title: "Trousse de secours",
+    kit_need: "Faut-il recharger la trousse ?",
+    no: "Non", yes: "Oui", kit_number: "Numéro de la trousse",
+    remarks: "Remarques",
 
-        // STOP
-        stop_title: "STOP – Imprévu",
-        coords: "Coordonnées",
-        stop_box: "STOP",
-        stop_desc: "Expliquer la situation qui a amené au STOP",
-        call_box: "CALL",
-        call_name: "Responsable contacté – Nom",
-        call_role: "Fonction",
-        role_chef: "Chef d'équipe", role_site: "Site sup.", role_pm: "PM",
-        role_opm: "OPM", role_cp: "CP", role_coord: "Coordinateur", role_client: "Client",
-        act_box: "ACT",
-        solution: "Solution mise en place",
-        nogo_wait: "NO-GO — Situation en attente de solution",
-      },
-    };
+    // STOP
+    stop_title: "STOP – Imprévu",
+    coords: "Coordonnées",
+    stop_box: "STOP",
+    stop_desc: "Expliquer la situation qui a amené au STOP",
+    call_box: "CALL",
+    call_name: "Responsable contacté – Nom",
+    call_role: "Fonction",
+    role_chef: "Chef d'équipe", role_site: "Site sup.", role_pm: "PM",
+    role_opm: "OPM", role_cp: "CP", role_coord: "Coordinateur", role_client: "Client",
+    act_box: "ACT",
+    solution: "Solution mise en place",
+    nogo_wait: "NO-GO — Situation en attente de solution",
+  },
+
+  en: {
+    home_title: "QHSE – Site apps",
+    home_apps: "Site applications",
+    home_install: "Install on mobile",
+    home_scan: "Scan with the camera to open the app.",
+    tile_lmra_title: "LMRA",
+    tile_lmra_sub: "Risk assessment",
+    tile_fa_title: "First aid",
+    tile_fa_sub: "First-aid kit use",
+    tile_stop_title: "STOP",
+    tile_stop_sub: "Unplanned / stop",
+    install_howto_title: "Install on the phone",
+    install_howto_body:
+`Open the URL on the phone (online, first time) →
+ iPhone (Safari): Share → Add to Home Screen.
+ Android (Chrome): ⋮ → Add to Home screen.
+Then, the app can work offline.`,
+
+    print: "Print",
+    reset_all: "Reset form (clear everything)",
+    reset_hint_team: "Use this if the team changes (Manager & Team will be cleared).",
+    send: "Send", sending: "Sending…",
+
+    // LMRA
+    lmra_title: "LMRA – Mobile (v3.2)",
+    general_info: "General info",
+    datetime: "Date & time",
+    site: "Site / Area",
+    task: "Task",
+    manager: "Manager (First & Last name)",
+    team: "Team",
+    cond_title: "Day conditions",
+    cond_task_clear: "Task & steps are clear",
+    cond_coactivity: "Co-activity / interfaces managed",
+    cond_zone: "Area cordoned / access controlled",
+    cond_epi: "PPE adapted and worn",
+    permits_title: "Required permits",
+    permit_fire: "Hot work", permit_elec: "Electrical", permit_confined: "Confined space",
+    permit_lift: "Lifting", permit_other: "Other", permit_na: "N/A",
+    risks_title: "Present risks",
+    energies_title: "Energies",
+    env_title: "Environment",
+    ops_title: "Operations",
+    measures_title: "Control measures",
+    top3_title: "Top 3 risks & actions",
+    decision_title: "Decision",
+    go: "GO", no_go: "NO-GO",
+    nogo_name: "Person to notify", nogo_tel: "Phone",
+    notes: "Notes",
+
+    // First aid
+    fa_title: "First aid",
+    fa_info: "Information",
+    person: "Person concerned",
+    action_title: "Action (at the time)",
+    a_cut: "Cutting", a_grind: "Grinding", a_weld: "Welding",
+    a_drill: "Drilling", a_pushpull: "Pulling/Pushing", a_lift: "Lifting/Setting down",
+    other: "Other", other_specify: "Specify…",
+    injury_title: "Injury",
+    i_cut: "Cut", i_scratch: "Scratch", i_bruise: "Bruise (blue/bump)",
+    i_proj: "Projection (dust/material)", i_burn: "Burn",
+    location_title: "Injury location",
+    loc_hand: "Hand", loc_arm: "Arm", loc_torso: "Torso", loc_leg: "Leg",
+    loc_foot: "Foot", loc_head: "Head", loc_eye: "Eye",
+    kit_title: "First-aid kit",
+    kit_need: "Do we need to restock the kit?",
+    no: "No", yes: "Yes", kit_number: "Kit number",
+    remarks: "Remarks",
+
+    // STOP
+    stop_title: "STOP – Unexpected",
+    coords: "Details",
+    stop_box: "STOP",
+    stop_desc: "Explain the situation that led to STOP",
+    call_box: "CALL",
+    call_name: "Responsible contacted – Name",
+    call_role: "Role",
+    role_chef: "Team leader", role_site: "Site supervisor", role_pm: "PM",
+    role_opm: "OPM", role_cp: "CP", role_coord: "Coordinator", role_client: "Client",
+    act_box: "ACT",
+    solution: "Solution implemented",
+    nogo_wait: "NO-GO — Situation pending a solution",
+  },
+};
+
 
     const I18nContext = React.createContext({ lang:'fr', t:(k)=>k, setLang:()=>{} });
     function I18nProvider({children}) {
@@ -191,20 +276,34 @@ Ensuite, l’app peut fonctionner hors-ligne.`,
     const useI18n = () => React.useContext(I18nContext);
 
     function LanguageSelector(){
-      const { lang, setLang } = useI18n();
-      const Btn = ({code, title, svg}) => (
-        <button onClick={()=>setLang(code)} title={title}
-          className={"p-1 rounded-lg border "+(lang===code?"border-black":"border-gray-300")+" bg-white"}>
-          {svg}
-        </button>
-      );
-      const FlagFR = <svg width="28" height="18" viewBox="0 0 3 2"><rect width="1" height="2" x="0" fill="#002395"/><rect width="1" height="2" x="1" fill="#fff"/><rect width="1" height="2" x="2" fill="#ED2939"/></svg>;
-      return (
-        <div className="flex items-center gap-2">
-          <Btn code="fr" title="Français" svg={FlagFR} />
-        </div>
-      );
-    }
+  const { lang, setLang } = useI18n();
+  const Btn = ({code, title, svg}) => (
+    <button onClick={()=>setLang(code)} title={title}
+      className={"p-1 rounded-lg border "+(lang===code?"border-black":"border-gray-300")+" bg-white"}>
+      {svg}
+    </button>
+  );
+  const FlagFR = <svg width="28" height="18" viewBox="0 0 3 2"><rect width="1" height="2" x="0" fill="#002395"/><rect width="1" height="2" x="1" fill="#fff"/><rect width="1" height="2" x="2" fill="#ED2939"/></svg>;
+  const FlagUK = (
+    <svg width="28" height="18" viewBox="0 0 60 30" aria-hidden="true">
+      <clipPath id="s"><path d="M0,0 v30 h60 v-30 z"/></clipPath>
+      <clipPath id="t"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath>
+      <g clipPath="url(#s)">
+        <path d="M0,0 v30 h60 v-30 z" fill="#012169"/>
+        <path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" strokeWidth="6"/>
+        <path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" strokeWidth="4" clipPath="url(#t)"/>
+        <path d="M30,0 v30 M0,15 h60" stroke="#fff" strokeWidth="10"/>
+        <path d="M30,0 v30 M0,15 h60" stroke="#C8102E" strokeWidth="6"/>
+      </g>
+    </svg>
+  );
+  return (
+    <div className="flex items-center gap-2">
+      <Btn code="fr" title="Français" svg={FlagFR} />
+      <Btn code="en" title="English" svg={FlagUK} />
+    </div>
+  );
+}
 
     // ===================== APP SHELL / ROUTER =====================
     function QHSELogo({size=28}) {
