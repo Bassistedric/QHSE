@@ -1,8 +1,7 @@
 // sw.js — QHSE PWA (cache statique + dynamique) — v4-logos-THICK2
-const CACHE_STATIC  = 'qhse-static-v4-lang-emoji-2';
-const CACHE_DYNAMIC = 'qhse-dyn-v4-lang-emoji-2';
+const CACHE_STATIC  = 'qhse-static-v4-flags-1';
+const CACHE_DYNAMIC = 'qhse-dyn-v4-flags-1';
 
-// Ressources à mettre en cache lors de l'installation
 const ASSETS = [
   './',
   './index.html',
@@ -11,8 +10,12 @@ const ASSETS = [
   './icon-192.png',
   './icon-512.png',
   './qhse-logo.svg',
-  './firstaid-icon.svg'
+  './firstaid-icon.svg',
+  './flag-fr.svg',
+  './flag-gb.svg',
+  './flag-nl.svg'
 ];
+
 
 // Installation : pré-cache des assets
 self.addEventListener('install', (event) => {
