@@ -1261,23 +1261,20 @@ const MAP_KEYS = {
 
 <!-- ===== DEBUT PARTIE 5/5 : APP SHELL + HEADER + RENDER (UX alignée) ===== -->
 <script type="text/babel" data-presets="env,react">
-  // Petit composant logo (image + fallback texte)
+  // Logo seul (pas de texte redondant)
   function Brand(){
     return (
-      <a href="#home" className="flex items-center gap-2">
-        <img src="qhse-logo.svg" alt="QHSE" className="w-8 h-8 rounded-lg border"
+      <a href="#home" className="flex items-center gap-2" aria-label="QHSE">
+        <img src="qhse-logo.svg" alt="" className="w-8 h-8 rounded-lg border"
              onError={(e)=>{ e.currentTarget.replaceWith(Object.assign(document.createElement('span'),{className:'inline-flex items-center justify-center w-8 h-8 rounded-lg border font-bold', innerText:'QHSE'})); }} />
-
-        <span className="text-base font-semibold">QHSE</span>
       </a>
     );
   }
 
-  // Sélecteur de langue compact (à droite du logo)
-  // === LangPicker (emoji only) ===
+  // === LangPicker (drapeaux emoji uniquement) ===
   function LangPicker(){
     const { lang, setLang } = useI18n();
-  
+
     const FlagBtn = ({ code, flag }) => (
       <button
         onClick={()=>setLang(code)}
@@ -1292,7 +1289,7 @@ const MAP_KEYS = {
         <span style={{fontSize:"18px"}}>{flag}</span>
       </button>
     );
-  
+
     return (
       <div className="flex items-center gap-1.5">
         <FlagBtn code="fr" flag="🇫🇷" />
@@ -1301,7 +1298,6 @@ const MAP_KEYS = {
       </div>
     );
   }
-
 
   function App(){
     const { t } = useI18n();
