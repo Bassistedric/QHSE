@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- Safety green background with rounded corners -->
+  <rect x="8" y="8" width="240" height="240" rx="28" fill="#1f9d55"/>
+  <!-- Thicker white cross (48px thickness) centered -->
+  <!-- Vertical bar -->
+  <rect x="104" y="52" width="48" height="152" fill="#ffffff"/>
+  <!-- Horizontal bar -->
+  <rect x="52" y="104" width="152" height="48" fill="#ffffff"/>
+</svg>
