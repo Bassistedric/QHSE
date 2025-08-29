@@ -641,29 +641,33 @@ const MAP_KEYS = {
     const defaultPrefs = { responsable:"", team:[] };
   </script>
 <!-- ===== FIN PARTIE 1/5 ===== -->
+<!-- ===== HOTFIX: composant Tile global (à mettre AVANT la PARTIE 2/5) ===== -->
+<script type="text/babel">
+  if (!window.QHSE_Tile) {
+    window.QHSE_Tile = function Tile({href, icon, img, title, sub, muted}) {
+      const base = "rounded-2xl p-4 text-center transition border";
+      const active = "hover:bg-gray-50";
+      const off = "border-dashed text-gray-300 pointer-events-none select-none";
+      return (
+        <a href={href||"#"} className={[base, muted?off:active].join(" ")}>
+          {img ? (
+            <img src={img} alt="" className={"w-10 h-10 mx-auto rounded " + (muted?"opacity-40":"")} />
+          ) : (
+            <div className={"text-3xl font-bold " + (muted?"opacity-40":"")}>{icon || "＋"}</div>
+          )}
+          {title && <div className="font-semibold mt-2">{title}</div>}
+          {sub && <div className="text-xs text-gray-500 mt-0.5">{sub}</div>}
+        </a>
+      );
+    };
+  }
+</script>
 
 <!-- ===== DEBUT PARTIE 2/5 : HOME (grille 2×2 cadrée, QR, how-to) ===== -->
 <script type="text/babel" data-presets="env,react">
-  // Carte cliquable (accepte un emoji via `icon` ou une image via `img`)
-  function Tile({href, icon, img, title, sub, muted}) {
-    const base = "rounded-2xl p-4 text-center transition border";
-    const active = "hover:bg-gray-50";
-    const off = "border-dashed text-gray-300 pointer-events-none select-none";
-    return (
-      <a href={href||"#"} className={[base, muted?off:active].join(" ")}>
-        {img ? (
-          <img src={img} alt="" className={"w-10 h-10 mx-auto rounded " + (muted?"opacity-40":"")} />
-        ) : (
-          <div className={"text-3xl font-bold " + (muted?"opacity-40":"")}>{icon || "＋"}</div>
-        )}
-        {title && <div className="font-semibold mt-2">{title}</div>}
-        {sub && <div className="text-xs text-gray-500 mt-0.5">{sub}</div>}
-      </a>
-    );
-  }
-
   function HomeScreen(){
     const { t } = useI18n();
+    const Tile = window.QHSE_Tile; // ← utilise le composant global
     const installUrl = (location.origin + location.pathname).replace(/#.*$/,'');
 
     return (
