@@ -48,7 +48,9 @@
 
     // ========================= I18N (FR/EN/NL) =========================
     // >>> ensemble des libellés ici, FR par défaut.
-    const I18N = {
+     if (!window.QHSE_I18N) {
+    window.QHSE_I18N = {
+      fr: {
 
     // Accueil / global
     home_title: "QHSE – Apps chantier",
@@ -543,9 +545,10 @@ Daarna kan de app offline werken.`,
     act_box: "ACT",
     solution: "Ingevoerde oplossing",
     nogo_wait: "NO-GO — Situatie in afwachting van oplossing",
-  },
-};
-    
+    },
+  };
+}
+const I18N = window.QHSE_I18N; // alias unique    
    // Clés i18n pour les listes
 const MAP_KEYS = {
   energies: {
