@@ -748,228 +748,77 @@ const MAP_KEYS = {
 
 
 <!-- ===== DEBUT PARTIE 3/5 : LMRA (Team/Permits/Energies/Env/Ops/Measures + Screen) ===== -->
+<!-- ===== DEBUT PARTIE 3/5 : LMRA ===== -->
 <script type="text/babel" data-presets="env,react">
-  // Hooks locaux
-  function useLocalStorage(key, initial){
-    const [val,setVal] = React.useState(()=>loadLS(key, initial));
-    React.useEffect(()=>{ saveLS(key,val); },[key,val]);
-    return [val,setVal];
-  }
-
-  function Team({data,setData}){
-    const { t } = useI18n();
-    const add = ()=>{
-      const name = data.teamInput.trim(); if(!name) return;
-      if(data.team.includes(name)) return setData({...data, teamInput:""});
-      setData({...data, team:[...data.team, name], teamInput:""});
-    };
-    return (
-      <div>
-        <div className="flex gap-2 mb-2">
-          <input value={data.teamInput} onChange={(e)=>setData({...data, teamInput:e.target.value})}
-                 placeholder={t('team_member_ph')} className="flex-1 px-3 py-2 rounded-xl border" />
-          <button onClick={add} className="px-3 py-2 rounded-xl border">{t('team_add')}</button>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {data.team.map((n)=>(
-            <span key={n} className="inline-flex items-center gap-2 text-sm px-3 py-1 rounded-full bg-gray-100">
-              {n}
-              <button onClick={()=>setData({...data, team: data.team.filter(x=>x!==n)})}
-                      className="w-5 h-5 inline-flex items-center justify-center rounded-full border">×</button>
-            </span>
-          ))}
-          {!data.team.length && <span className="text-sm text-gray-400">{t('team_empty')}</span>}
-        </div>
-      </div>
-    );
-  }
-
-  function Permits({data,setData}){
-    const { t } = useI18n();
-    return (
-      <div>
-        <div className="text-sm font-medium mb-2">{t('permits_title')}</div>
-        <div className="grid grid-cols-2 gap-2">
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.permits.feu} onChange={(e)=>setData({...data, permits:{...data.permits, feu:e.target.checked}})} />{t('permit_fire')}</label>
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.permits.electrique} onChange={(e)=>setData({...data, permits:{...data.permits, electrique:e.target.checked}})} />{t('permit_elec')}</label>
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.permits.confine} onChange={(e)=>setData({...data, permits:{...data.permits, confine:e.target.checked}})} />{t('permit_confined')}</label>
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.permits.levage} onChange={(e)=>setData({...data, permits:{...data.permits, levage:e.target.checked}})} />{t('permit_lift')}</label>
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.permits.autre} onChange={(e)=>setData({...data, permits:{...data.permits, autre:e.target.checked}})} />{t('permit_other')}</label>
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.permits.na} onChange={(e)=>setData({...data, permits:{...data.permits, na:e.target.checked}})} />{t('permit_na')}</label>
-        </div>
-        {data.permits.autre && (
-          <input value={data.permits.autreText} onChange={(e)=>setData({...data, permits:{...data.permits, autreText:e.target.value}})}
-                 placeholder={t('permit_other_ph')} className="mt-2 w-full px-3 py-2 rounded-xl border" />
-        )}
-      </div>
-    );
-  }
-
-  function Energies({data,setData}){
-    const { t } = useI18n();
-    return (
-      <div>
-        <div className="text-sm font-medium mb-2">{t('energies_title')}</div>
-        <div className="grid grid-cols-2 gap-2">
-          {["electrique","mecanique","fluide","gravite"].map(k=>(
-            <label key={k} className="flex items-center gap-2 text-sm">
-              <input type="checkbox" className="w-4 h-4 accent-black"
-                     checked={data.risks.energies[k]}
-                     onChange={(e)=>setData({...data, risks:{...data.risks, energies:{...data.risks.energies, [k]:e.target.checked}}})}/>
-              {useI18n().t(MAP_KEYS.energies[k])}
-            </label>
-          ))}
-          <label className="flex items-center gap-2 text-sm col-span-2">
-            <input type="checkbox" className="w-4 h-4 accent-black"
-                   checked={data.risks.energies.autre}
-                   onChange={(e)=>setData({...data, risks:{...data.risks, energies:{...data.risks.energies, autre:e.target.checked}}})}/>
-            {t('other')}
-          </label>
-        </div>
-        {data.risks.energies.autre && (
-          <input value={data.risks.energies.autreText}
-                 onChange={(e)=>setData({...data, risks:{...data.risks, energies:{...data.risks.energies, autreText:e.target.value}}})}
-                 placeholder={t('other_specify')} className="mt-2 w-full px-3 py-2 rounded-xl border" />
-        )}
-      </div>
-    );
-  }
-
-  function Environnement({data,setData}){
-    const { t } = useI18n();
-    return (
-      <div>
-        <div className="text-sm font-medium mb-2">{t('env_title')}</div>
-        <div className="grid grid-cols-2 gap-2">
-          {["hauteur","meteo","bruit","poussiere","thermique","chimique"].map(k=>(
-            <label key={k} className="flex items-center gap-2 text-sm">
-              <input type="checkbox" className="w-4 h-4 accent-black"
-                     checked={data.risks.environnement[k]}
-                     onChange={(e)=>setData({...data, risks:{...data.risks, environnement:{...data.risks.environnement, [k]:e.target.checked}}})}/>
-              {useI18n().t(MAP_KEYS.env[k])}
-            </label>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  function Operations({data,setData}){
-    const { t } = useI18n();
-    return (
-      <div>
-        <div className="text-sm font-medium mb-2">{t('ops_title')}</div>
-        <div className="grid grid-cols-2 gap-2">
-          {["trafic","levage","outillage","atex","confine"].map(k=>(
-            <label key={k} className="flex items-center gap-2 text-sm">
-              <input type="checkbox" className="w-4 h-4 accent-black"
-                     checked={data.risks.operations[k]}
-                     onChange={(e)=>setData({...data, risks:{...data.risks, operations:{...data.risks.operations, [k]:e.target.checked}}})}/>
-              {useI18n().t(MAP_KEYS.ops[k])}
-            </label>
-          ))}
-          <label className="flex items-center gap-2 text-sm col-span-2">
-            <input type="checkbox" className="w-4 h-4 accent-black"
-                   checked={data.risks.operations.autres}
-                   onChange={(e)=>setData({...data, risks:{...data.risks, operations:{...data.risks.operations, autres:e.target.checked}}})}/>
-            {t('ops_others')}
-          </label>
-        </div>
-        {data.risks.operations.autres && (
-          <input value={data.risks.operations.autresText}
-                 onChange={(e)=>setData({...data, risks:{...data.risks, operations:{...data.risks.operations, autresText:e.target.value}}})}
-                 placeholder={t('ops_others_ph')} className="mt-2 w-full px-3 py-2 rounded-xl border" />
-        )}
-      </div>
-    );
-  }
-
-  function Measures({data,setData}){
-    const { t } = useI18n(), K=MAP_KEYS.measures;
-    return (
-      <div className="grid grid-cols-2 gap-2">
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.measures.septRegles} onChange={(e)=>setData({...data, measures:{...data.measures, septRegles:e.target.checked}})} />{t(K.septRegles)}</label>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.measures.ventilation} onChange={(e)=>setData({...data, measures:{...data.measures, ventilation:e.target.checked}})} />{t(K.ventilation)}</label>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.measures.terre} onChange={(e)=>setData({...data, measures:{...data.measures, terre:e.target.checked}})} />{t(K.terre)}</label>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.measures.balisage} onChange={(e)=>setData({...data, measures:{...data.measures, balisage:e.target.checked}})} />{t(K.balisage)}</label>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.measures.surveillant} onChange={(e)=>setData({...data, measures:{...data.measures, surveillant:e.target.checked}})} />{t(K.surveillant)}</label>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.measures.planLevage} onChange={(e)=>setData({...data, measures:{...data.measures, planLevage:e.target.checked}})} />{t(K.planLevage)}</label>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.measures.ancrage} onChange={(e)=>setData({...data, measures:{...data.measures, ancrage:e.target.checked}})} />{t(K.ancrage)}</label>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.measures.outilsOk} onChange={(e)=>setData({...data, measures:{...data.measures, outilsOk:e.target.checked}})} />{t(K.outilsOk)}</label>
-        <label className="flex items-center gap-2 text-sm col-span-2"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.measures.autre} onChange={(e)=>setData({...data, measures:{...data.measures, autre:e.target.checked}})} />{t(K.autre)}</label>
-        {data.measures.autre && <input value={data.measures.autreText} onChange={(e)=>setData({...data, measures:{...data.measures, autreText:e.target.value}})} placeholder={useI18n().t('measures_other_ph')} className="mt-2 w-full px-3 py-2 rounded-xl border col-span-2" />}
-      </div>
-    );
-  }
-
   function LmraScreen(){
     const { t } = useI18n();
-    const [prefs,setPrefs] = useLocalStorage(PREFS_KEY, defaultPrefs);
-    const initial = ()=>({
-      version:"v3.2",
+
+    // --- Storage keys dédiés LMRA
+    const STATE_KEY = "qhse_lmra_state_v1";
+
+    // --- Préférences globales (définies en PARTIE 1/5)
+    const prefs = loadLS(PREFS_KEY, { responsable:"", team:[] });
+
+    const nowLocalDateTime = () => {
+      const d=new Date(), pad=n=>String(n).padStart(2,"0");
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+
+    const initialState = () => ({
+      version: "v3.2",
       datetime: nowLocalDateTime(),
-      site:"", task:"", responsable: prefs.responsable || "", team: prefs.team || [], teamInput:"",
-      conditions:{ tacheClaires:false, coactivite:false, zonage:false, epi:false },
-      permits:{ feu:false, electrique:false, confine:false, levage:false, autre:false, autreText:"", na:false },
-      risks:{
-        energies:{ electrique:false, mecanique:false, fluide:false, gravite:false, autre:false, autreText:"" },
-        environnement:{ hauteur:false, meteo:false, bruit:false, poussiere:false, thermique:false, chimique:false },
-        operations:{ trafic:false, levage:false, outillage:false, atex:false, confine:false, autres:false, autresText:"" },
+      site: "", task: "",
+      responsable: prefs.responsable || "",
+      team: Array.isArray(prefs.team) ? [...prefs.team] : [],
+      teamInput: "",
+      conditions: { tacheClaires:false, coactivite:false, zonage:false, epi:false },
+      permits: { feu:false, electrique:false, confine:false, levage:false, autre:false, autreText:"", na:false },
+      risks: {
+        energies: { electrique:false, mecanique:false, fluide:false, gravite:false, autre:false, autreText:"" },
+        environnement: { hauteur:false, meteo:false, bruit:false, poussiere:false, thermique:false, chimique:false },
+        operations: { trafic:false, levage:false, outillage:false, atex:false, confine:false, autres:false, autresText:"" },
       },
-      measures:{ septRegles:false, ventilation:false, terre:false, balisage:false, surveillant:false, planLevage:false, ancrage:false, outilsOk:false, autre:false, autreText:"" },
-      top3:[{risk:"",action:"",resp:""},{risk:"",action:"",resp:""},{risk:"",action:"",resp:""}],
-      decision:"GO",
-      noGo:{ name:"", tel:"" },
-      notes:""
+      measures: { septRegles:false, ventilation:false, terre:false, balisage:false, surveillant:false, planLevage:false, ancrage:false, outilsOk:false, autre:false, autreText:"" },
+      top3: [ { risk:"", action:"", resp:"" }, { risk:"", action:"", resp:"" }, { risk:"", action:"", resp:"" } ],
+      decision: "GO",
+      noGo: { name:"", tel:"" },
+      notes: "",
     });
 
-    const [data,setData] = React.useState(()=>loadLS(STORAGE_KEY, initial()));
-    const [busy,setBusy] = React.useState(false);
-    const [outboxLen,setOutboxLen] = React.useState(loadLS(OUTBOX_KEY, []).length);
-    React.useEffect(()=>saveLS(STORAGE_KEY,data),[data]);
+    const [data, setData] = React.useState(loadLS(STATE_KEY, initialState()));
+    React.useEffect(()=>{ saveLS(STATE_KEY, data); }, [data]);
 
-    const setField=(k,v)=>setData({...data,[k]:v});
+    const setField = (k,v)=>setData({...data,[k]:v});
+    const resetAll = () => setData(initialState());
 
-    function currentPayload(){ return { meta:{ sentAt:new Date().toISOString(), page:location.href, userAgent:navigator.userAgent, formType:'lmra' }, data }; }
-
-    async function envoyer(){
-      const payload = currentPayload();
-      setBusy(true);
+    const envoyer = async () => {
+      const payload = {
+        meta: { sentAt:new Date().toISOString(), page:location.href, userAgent:navigator.userAgent, formType:"lmra" },
+        data
+      };
       const ok = await sendNow(payload);
-      setBusy(false);
       if(ok){
         alert(t('alert_sent'));
-        // Conserver Responsable + Équipe
-        const keep = { responsable: data.responsable, team: data.team };
-        setPrefs(keep);
-        setData({ ...initial(), responsable: keep.responsable, team: keep.team });
+        // Conserver Responsable & Équipe (prefs)
+        saveLS(PREFS_KEY, { responsable:data.responsable, team:data.team });
+        // Reset du reste, en ré-injectant prefs
+        setData(initialState());
       }else{
         enqueueOutbox(payload);
-        setOutboxLen(loadLS(OUTBOX_KEY, []).length);
         alert(t('alert_offline_queued'));
       }
-    }
-
-    function resetAll(){
-      setPrefs({ responsable:"", team:[] });
-      setData(initial());
-    }
+    };
 
     return (
       <main className="max-w-md mx-auto p-4">
-        <Section title={t('lmra_title')}>
-          <Row>
-            <div className="flex items-center gap-2">
-              <button onClick={resetAll} className="px-3 py-1.5 rounded-xl border">{t('reset_all')}</button>
-              <span className="text-xs text-gray-500">{t('queue_label')}: {outboxLen}</span>
-              <button onClick={()=>window.print()} className="ml-auto px-3 py-1.5 rounded-xl border">{t('print')}</button>
-            </div>
-            <div className="text-xs text-gray-500">{t('reset_hint_team')}</div>
-          </Row>
-        </Section>
+        {/* Bouton reset tout en haut (UX) */}
+        <div className="mb-3">
+          <button onClick={resetAll} className="px-3 py-2 rounded-xl border">{t('reset_all')}</button>
+          <div className="text-xs text-gray-500 mt-1">{t('reset_hint_team')}</div>
+        </div>
 
         <Section title={t('general_info')}>
-          <Row>
+          <div className="flex flex-col gap-3">
             <label className="text-sm">{t('datetime')}
               <input type="datetime-local" value={data.datetime} onChange={(e)=>setField("datetime", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
             </label>
@@ -982,54 +831,163 @@ const MAP_KEYS = {
             <label className="text-sm">{t('manager')}
               <input value={data.responsable} onChange={(e)=>setField("responsable", e.target.value)} placeholder={t('manager_ph')} className="mt-1 w-full px-3 py-2 rounded-xl border" />
             </label>
+
+            {/* Équipe */}
             <div>
               <label className="text-sm block mb-2">{t('team')}</label>
-              <Team data={data} setData={setData} />
+              <div className="flex gap-2 mb-2">
+                <input value={data.teamInput} onChange={(e)=>setData({...data, teamInput:e.target.value})} placeholder={t('team_member_ph')} className="flex-1 px-3 py-2 rounded-xl border" />
+                <button onClick={()=>{ const name=data.teamInput.trim(); if(!name) return; if(data.team.includes(name)) return setData({...data, teamInput:""}); setData({...data, team:[...data.team, name], teamInput:""}); }} className="px-3 py-2 rounded-xl border">{t('team_add')}</button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {data.team.map((n)=>(
+                  <span key={n} className="inline-flex items-center gap-2 text-sm px-3 py-1 rounded-full bg-gray-100">
+                    {n}
+                    <button onClick={()=>setData({...data, team: data.team.filter(x=>x!==n)})} className="w-5 h-5 inline-flex items-center justify-center rounded-full border border-gray-300">×</button>
+                  </span>
+                ))}
+                {!data.team.length && <span className="text-sm text-gray-400">{t('team_empty')}</span>}
+              </div>
             </div>
-          </Row>
+          </div>
         </Section>
 
         <Section title={t('cond_title')}>
-          <Row>
+          <div className="flex flex-col gap-3">
             <Toggle checked={data.conditions.tacheClaires} onChange={(v)=>setData({...data, conditions:{...data.conditions, tacheClaires:v}})} label={t('cond_task_clear')} />
-            <Toggle checked={data.conditions.coactivite} onChange={(v)=>setData({...data, conditions:{...data.conditions, coactivite:v}})} label={t('cond_coactivity')} />
-            <Toggle checked={data.conditions.zonage} onChange={(v)=>setData({...data, conditions:{...data.conditions, zonage:v}})} label={t('cond_zone')} />
-            <Toggle checked={data.conditions.epi} onChange={(v)=>setData({...data, conditions:{...data.conditions, epi:v}})} label={t('cond_epi')} />
-            <Divider />
-            <Permits data={data} setData={setData} />
-          </Row>
+            <Toggle checked={data.conditions.coactivite}  onChange={(v)=>setData({...data, conditions:{...data.conditions, coactivite:v}})}   label={t('cond_coactivity')} />
+            <Toggle checked={data.conditions.zonage}      onChange={(v)=>setData({...data, conditions:{...data.conditions, zonage:v}})}       label={t('cond_zone')} />
+            <Toggle checked={data.conditions.epi}         onChange={(v)=>setData({...data, conditions:{...data.conditions, epi:v}})}          label={t('cond_epi')} />
+            <hr className="my-3 border-gray-200" />
+            {/* Permis */}
+            <div>
+              <div className="text-sm font-medium mb-2">{t('permits_title')}</div>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.permits.feu} onChange={(e)=>setData({...data, permits:{...data.permits, feu:e.target.checked}})} />{t('permit_fire')}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.permits.electrique} onChange={(e)=>setData({...data, permits:{...data.permits, electrique:e.target.checked}})} />{t('permit_elec')}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.permits.confine} onChange={(e)=>setData({...data, permits:{...data.permits, confine:e.target.checked}})} />{t('permit_confined')}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.permits.levage} onChange={(e)=>setData({...data, permits:{...data.permits, levage:e.target.checked}})} />{t('permit_lift')}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.permits.autre} onChange={(e)=>setData({...data, permits:{...data.permits, autre:e.target.checked}})} />{t('permit_other')}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.permits.na} onChange={(e)=>setData({...data, permits:{...data.permits, na:e.target.checked}})} />{t('permit_na')}</label>
+              </div>
+              {data.permits.autre && (
+                <input value={data.permits.autreText} onChange={(e)=>setData({...data, permits:{...data.permits, autreText:e.target.value}})} placeholder={t('permit_other_ph')} className="mt-2 w-full px-3 py-2 rounded-xl border" />
+              )}
+            </div>
+          </div>
         </Section>
 
         <Section title={t('risks_title')}>
-          <Row>
-            <Energies data={data} setData={setData} />
-            <Divider />
-            <Environnement data={data} setData={setData} />
-            <Divider />
-            <Operations data={data} setData={setData} />
-          </Row>
+          <div className="flex flex-col gap-3">
+            {/* Énergies */}
+            <div>
+              <div className="text-sm font-medium mb-2">{t('energies_title')}</div>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.risks.energies.electrique} onChange={(e)=>setData({...data, risks:{...data.risks, energies:{...data.risks.energies, electrique:e.target.checked}}})} />{t('energy_electric')}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.risks.energies.mecanique} onChange={(e)=>setData({...data, risks:{...data.risks, energies:{...data.risks.energies, mecanique:e.target.checked}}})} />{t('energy_mechanical')}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.risks.energies.fluide} onChange={(e)=>setData({...data, risks:{...data.risks, energies:{...data.risks.energies, fluide:e.target.checked}}})} />{t('energy_fluid')}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.risks.energies.gravite} onChange={(e)=>setData({...data, risks:{...data.risks, energies:{...data.risks.energies, gravite:e.target.checked}}})} />{t('energy_gravity')}</label>
+                <label className="flex items-center gap-2 text-sm col-span-2"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.risks.energies.autre} onChange={(e)=>setData({...data, risks:{...data.risks, energies:{...data.risks.energies, autre:e.target.checked}}})} />{t('other')}</label>
+              </div>
+              {data.risks.energies.autre && (
+                <input value={data.risks.energies.autreText} onChange={(e)=>setData({...data, risks:{...data.risks, energies:{...data.risks.energies, autreText:e.target.value}}})} placeholder={t('other_specify')} className="mt-2 w-full px-3 py-2 rounded-xl border" />
+              )}
+            </div>
+
+            <hr className="my-3 border-gray-200" />
+
+            {/* Environnement */}
+            <div>
+              <div className="text-sm font-medium mb-2">{t('env_title')}</div>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  ['hauteur','env_height'],['meteo','env_weather'],['bruit','env_noise'],
+                  ['poussiere','env_dust'],['thermique','env_thermal'],['chimique','env_chemical']
+                ].map(([k,label])=>(
+                  <label key={k} className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" className="w-4 h-4 accent-black"
+                      checked={data.risks.environnement[k]}
+                      onChange={(e)=>setData({...data, risks:{...data.risks, environnement:{...data.risks.environnement, [k]:e.target.checked}}})} />
+                    {t(label)}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <hr className="my-3 border-gray-200" />
+
+            {/* Opérations */}
+            <div>
+              <div className="text-sm font-medium mb-2">{t('ops_title')}</div>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  ['trafic','ops_traffic'],['levage','ops_lift'],['outillage','ops_tools'],
+                  ['atex','ops_atex'],['confine','ops_confined']
+                ].map(([k,label])=>(
+                  <label key={k} className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" className="w-4 h-4 accent-black"
+                      checked={data.risks.operations[k]}
+                      onChange={(e)=>setData({...data, risks:{...data.risks, operations:{...data.risks.operations, [k]:e.target.checked}}})} />
+                    {t(label)}
+                  </label>
+                ))}
+                <label className="flex items-center gap-2 text-sm col-span-2">
+                  <input type="checkbox" className="w-4 h-4 accent-black"
+                    checked={data.risks.operations.autres}
+                    onChange={(e)=>setData({...data, risks:{...data.risks, operations:{...data.risks.operations, autres:e.target.checked}}})} />
+                  {t('ops_others')}
+                </label>
+              </div>
+              {data.risks.operations.autres && (
+                <input value={data.risks.operations.autresText} onChange={(e)=>setData({...data, risks:{...data.risks, operations:{...data.risks.operations, autresText:e.target.value}}})} placeholder={t('ops_others_ph')} className="mt-2 w-full px-3 py-2 rounded-xl border" />
+              )}
+            </div>
+          </div>
         </Section>
 
         <Section title={t('measures_title')}>
-          <Row><Measures data={data} setData={setData} /></Row>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              ['septRegles','measures_seven'],['ventilation','measures_ventilation'],
+              ['terre','measures_earth'],['balisage','measures_balisage'],
+              ['surveillant','measures_watch'],['planLevage','measures_liftplan'],
+              ['ancrage','measures_anchor'],['outilsOk','measures_toolsok']
+            ].map(([k,label])=>(
+              <label key={k} className="flex items-center gap-2 text-sm">
+                <input type="checkbox" className="w-4 h-4 accent-black"
+                  checked={data.measures[k]}
+                  onChange={(e)=>setData({...data, measures:{...data.measures, [k]:e.target.checked}})} />
+                {t(label)}
+              </label>
+            ))}
+            <label className="flex items-center gap-2 text-sm col-span-2">
+              <input type="checkbox" className="w-4 h-4 accent-black"
+                checked={data.measures.autre}
+                onChange={(e)=>setData({...data, measures:{...data.measures, autre:e.target.checked}})} />
+              {t('other')}
+            </label>
+            {data.measures.autre && (
+              <input value={data.measures.autreText} onChange={(e)=>setData({...data, measures:{...data.measures, autreText:e.target.value}})} placeholder={t('other_specify')} className="mt-2 w-full px-3 py-2 rounded-xl border col-span-2" />
+            )}
+          </div>
         </Section>
 
         <Section title={t('top3_title')}>
-          <Row>
-            {data.top3.map((t3,i)=>(
+          <div className="flex flex-col gap-2">
+            {data.top3.map((it,i)=>(
               <div key={i} className="grid grid-cols-1 gap-2">
                 <div className="text-sm font-medium">#{i+1}</div>
-                <input value={t3.risk} onChange={(e)=>{ const top3=[...data.top3]; top3[i]={...top3[i], risk:e.target.value}; setField("top3", top3); }} placeholder={useI18n().t('risk_ph')} className="px-3 py-2 rounded-xl border" />
-                <input value={t3.action} onChange={(e)=>{ const top3=[...data.top3]; top3[i]={...top3[i], action:e.target.value}; setField("top3", top3); }} placeholder={useI18n().t('action_ph')} className="px-3 py-2 rounded-xl border" />
-                <input value={t3.resp} onChange={(e)=>{ const top3=[...data.top3]; top3[i]={...top3[i], resp:e.target.value}; setField("top3", top3); }} placeholder={useI18n().t('resp_ph')} className="px-3 py-2 rounded-xl border" />
-                <Divider/>
+                <input value={it.risk} onChange={(e)=>{ const top3=[...data.top3]; top3[i]={...top3[i], risk:e.target.value}; setField("top3", top3); }} placeholder={t('risk_ph')} className="px-3 py-2 rounded-xl border" />
+                <input value={it.action} onChange={(e)=>{ const top3=[...data.top3]; top3[i]={...top3[i], action:e.target.value}; setField("top3", top3); }} placeholder={t('action_ph')} className="px-3 py-2 rounded-xl border" />
+                <input value={it.resp} onChange={(e)=>{ const top3=[...data.top3]; top3[i]={...top3[i], resp:e.target.value}; setField("top3", top3); }} placeholder={t('resp_ph')} className="px-3 py-2 rounded-xl border" />
+                <hr className="my-2 border-gray-200" />
               </div>
             ))}
-          </Row>
+          </div>
         </Section>
 
         <Section title={t('decision_title')}>
-          <Row>
+          <div className="flex flex-col gap-3">
             <div className="flex items-center gap-3">
               <button onClick={()=>setField("decision","GO")} className={"px-4 py-2 rounded-xl border "+(data.decision==="GO"?"bg-green-50 border-green-300":"")}>{t('go')}</button>
               <button onClick={()=>setField("decision","NO-GO")} className={"px-4 py-2 rounded-xl border "+(data.decision==="NO-GO"?"bg-red-50 border-red-300":"")}>{t('no_go')}</button>
@@ -1037,250 +995,315 @@ const MAP_KEYS = {
             {data.decision==="NO-GO" && (
               <div className="grid grid-cols-1 gap-2">
                 <input value={data.noGo.name} onChange={(e)=>setField("noGo",{...data.noGo, name:e.target.value})} placeholder={t('nogo_name_ph')} className="px-3 py-2 rounded-xl border" />
-                <input value={data.noGo.tel} onChange={(e)=>setField("noGo",{...data.noGo, tel:e.target.value})} placeholder={t('nogo_tel_ph')} className="px-3 py-2 rounded-xl border" />
+                <input value={data.noGo.tel}  onChange={(e)=>setField("noGo",{...data.noGo, tel:e.target.value})}  placeholder={t('nogo_tel_ph')}  className="px-3 py-2 rounded-xl border" />
               </div>
             )}
+            <label className="text-sm">{t('manager')}
+              <input value={data.responsable} onChange={(e)=>setField("responsable", e.target.value)} placeholder={t('manager_ph')} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+            </label>
             <label className="text-sm">{t('notes')}
               <textarea value={data.notes} onChange={(e)=>setField("notes", e.target.value)} rows={2} placeholder={t('notes_ph')} className="mt-1 w-full px-3 py-2 rounded-xl border" />
             </label>
-          </Row>
+          </div>
         </Section>
 
-        <Section title={t('send')}>
-          <Row>
-            <button onClick={envoyer} className="px-4 py-3 rounded-xl border bg-black text-white">{busy? t('sending') : t('send')}</button>
-          </Row>
-        </Section>
+        <div className="grid grid-cols-1 gap-2 mt-4">
+          <button onClick={envoyer} className="px-4 py-3 rounded-xl border bg-black text-white">{t('send')}</button>
+        </div>
       </main>
     );
   }
 </script>
 <!-- ===== FIN PARTIE 3/5 ===== -->
-
-  <!-- ===== DEBUT PARTIE 4/5 : FIRST AID + STOP ===== -->
+<!-- ===== DEBUT PARTIE 4/5 : PREMIERS SOINS + STOP ===== -->
 <script type="text/babel" data-presets="env,react">
-  // ===== FIRST AID =====
+  /* ======================= PREMIERS SOINS ======================= */
   function FirstAidScreen(){
     const { t } = useI18n();
-    const initial = ()=>({
-      datetime: nowLocalDateTime(), chantier:"", responsable:"", personne:"",
-      actions:{ coupant:false, disquant:false, soudant:false, percant:false, tirant:false, soulevant:false, autre:false, autreText:"" },
-      blessures:{ coupure:false, egratignure:false, contusion:false, projection:false, brulure:false, autre:false, autreText:"" },
-      localisation:{ main:false, bras:false, torse:false, jambe:false, pied:false, tete:false, oeil:false, autre:false, autreText:"" },
-      recharge:false, trousseNumero:"", remarques:""
+
+    const STATE_KEY = "qhse_firstaid_state_v1";
+    const prefs = loadLS(PREFS_KEY, { responsable:"", team:[] });
+
+    const nowLocalDateTime = () => {
+      const d=new Date(), pad=n=>String(n).padStart(2,"0");
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+
+    const initialState = () => ({
+      datetime: nowLocalDateTime(),
+      chantier: "",
+      responsable: prefs.responsable || "",
+      personne: "",
+      actions: { coupant:false, disquant:false, soudant:false, percant:false, tirant:false, soulevant:false, autre:false, autreText:"" },
+      blessures: { coupure:false, egratignure:false, contusion:false, projection:false, brulure:false, autre:false, autreText:"" },
+      localisation: { main:false, bras:false, torse:false, jambe:false, pied:false, tete:false, oeil:false, autre:false, autreText:"" },
+      recharge: false,
+      trousseNumero: "",
+      remarques: ""
     });
-    const [fa,setFA] = React.useState(initial());
-    const [busy,setBusy] = React.useState(false);
 
-    function currentPayload(){ return { meta:{ sentAt:new Date().toISOString(), page:location.href, userAgent:navigator.userAgent, formType:'firstaid' }, data:fa }; }
+    const [data, setData] = React.useState(loadLS(STATE_KEY, initialState()));
+    React.useEffect(()=>{ saveLS(STATE_KEY, data); }, [data]);
 
-    async function envoyer(){
-      setBusy(true);
-      const ok = await sendNow(currentPayload());
-      setBusy(false);
-      if(ok){ alert(t('alert_sent')); setFA(initial()); }
-      else{ enqueueOutbox(currentPayload()); alert(t('alert_offline_queued')); }
-    }
+    const setField = (k,v)=>setData({...data,[k]:v});
+    const resetAll = () => setData(initialState());
 
-    const CB = ({checked,onChange,label})=>(
-      <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={checked} onChange={(e)=>onChange(e.target.checked)} />{label}</label>
-    );
+    const envoyer = async () => {
+      const payload = {
+        meta: { sentAt:new Date().toISOString(), page:location.href, userAgent:navigator.userAgent, formType:"firstaid" },
+        data
+      };
+      const ok = await sendNow(payload);
+      if(ok){
+        alert(t('alert_sent'));
+        // Conserver responsable (prefs)
+        saveLS(PREFS_KEY, { ...loadLS(PREFS_KEY, {responsable:"", team:[]}), responsable:data.responsable });
+        setData(initialState());
+      }else{
+        enqueueOutbox(payload);
+        alert(t('alert_offline_queued'));
+      }
+    };
 
     return (
       <main className="max-w-md mx-auto p-4">
-        <Section title={t('fa_title')}>
-          <Row>
-            <button onClick={()=>setFA(initial())} className="px-3 py-1.5 rounded-xl border">{t('reset_all')}</button>
-          </Row>
-        </Section>
+        <div className="mb-3">
+          <button onClick={resetAll} className="px-3 py-2 rounded-xl border">{t('reset_all')}</button>
+        </div>
 
         <Section title={t('fa_info')}>
-          <Row>
+          <div className="flex flex-col gap-3">
             <label className="text-sm">{t('datetime')}
-              <input type="datetime-local" value={fa.datetime} onChange={(e)=>setFA({...fa, datetime:e.target.value})} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+              <input type="datetime-local" value={data.datetime} onChange={(e)=>setField("datetime", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
             </label>
             <label className="text-sm">{t('site')}
-              <input value={fa.chantier} onChange={(e)=>setFA({...fa, chantier:e.target.value})} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+              <input value={data.chantier} onChange={(e)=>setField("chantier", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
             </label>
             <label className="text-sm">{t('manager')}
-              <input value={fa.responsable} onChange={(e)=>setFA({...fa, responsable:e.target.value})} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+              <input value={data.responsable} onChange={(e)=>setField("responsable", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
             </label>
             <label className="text-sm">{t('person')}
-              <input value={fa.personne} onChange={(e)=>setFA({...fa, personne:e.target.value})} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+              <input value={data.personne} onChange={(e)=>setField("personne", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
             </label>
-          </Row>
+          </div>
         </Section>
 
         <Section title={t('action_title')}>
           <div className="grid grid-cols-2 gap-2">
-            <CB checked={fa.actions.coupant} onChange={(v)=>setFA({...fa, actions:{...fa.actions, coupant:v}})} label={t('a_cut')} />
-            <CB checked={fa.actions.disquant} onChange={(v)=>setFA({...fa, actions:{...fa.actions, disquant:v}})} label={t('a_grind')} />
-            <CB checked={fa.actions.soudant} onChange={(v)=>setFA({...fa, actions:{...fa.actions, soudant:v}})} label={t('a_weld')} />
-            <CB checked={fa.actions.percant} onChange={(v)=>setFA({...fa, actions:{...fa.actions, percant:v}})} label={t('a_drill')} />
-            <CB checked={fa.actions.tirant} onChange={(v)=>setFA({...fa, actions:{...fa.actions, tirant:v}})} label={t('a_pushpull')} />
-            <CB checked={fa.actions.soulevant} onChange={(v)=>setFA({...fa, actions:{...fa.actions, soulevant:v}})} label={t('a_lift')} />
-            <CB checked={fa.actions.autre} onChange={(v)=>setFA({...fa, actions:{...fa.actions, autre:v}})} label={t('other')} />
-          </div>
-          {fa.actions.autre && <input value={fa.actions.autreText} onChange={(e)=>setFA({...fa, actions:{...fa.actions, autreText:e.target.value}})} placeholder={t('other_specify')} className="mt-2 w-full px-3 py-2 rounded-xl border" />}
-        </Section>
-
-        <Section title={t('injury_title')}>
-          <div className="grid grid-cols-2 gap-2">
-            <CB checked={fa.blessures.coupure} onChange={(v)=>setFA({...fa, blessures:{...fa.blessures, coupure:v}})} label={t('i_cut')} />
-            <CB checked={fa.blessures.egratignure} onChange={(v)=>setFA({...fa, blessures:{...fa.blessures, egratignure:v}})} label={t('i_scratch')} />
-            <CB checked={fa.blessures.contusion} onChange={(v)=>setFA({...fa, blessures:{...fa.blessures, contusion:v}})} label={t('i_bruise')} />
-            <CB checked={fa.blessures.projection} onChange={(v)=>setFA({...fa, blessures:{...fa.blessures, projection:v}})} label={t('i_proj')} />
-            <CB checked={fa.blessures.brulure} onChange={(v)=>setFA({...fa, blessures:{...fa.blessures, brulure:v}})} label={t('i_burn')} />
-            <CB checked={fa.blessures.autre} onChange={(v)=>setFA({...fa, blessures:{...fa.blessures, autre:v}})} label={t('other')} />
-          </div>
-          {fa.blessures.autre && <input value={fa.blessures.autreText} onChange={(e)=>setFA({...fa, blessures:{...fa.blessures, autreText:e.target.value}})} placeholder={t('other_specify')} className="mt-2 w-full px-3 py-2 rounded-xl border" />}
-        </Section>
-
-        <Section title={t('location_title')}>
-          <div className="grid grid-cols-2 gap-2">
             {[
-              ['main','loc_hand'],['bras','loc_arm'],['torse','loc_torso'],['jambe','loc_leg'],['pied','loc_foot'],['tete','loc_head'],['oeil','loc_eye']
+              ['coupant','a_cut'],['disquant','a_grind'],['soudant','a_weld'],
+              ['percant','a_drill'],['tirant','a_pushpull'],['soulevant','a_lift']
             ].map(([k,label])=>(
               <label key={k} className="flex items-center gap-2 text-sm">
                 <input type="checkbox" className="w-4 h-4 accent-black"
-                  checked={fa.localisation[k]}
-                  onChange={(e)=>setFA({...fa, localisation:{...fa.localisation, [k]:e.target.checked}})} />
+                  checked={data.actions[k]}
+                  onChange={(e)=>setField("actions", {...data.actions, [k]:e.target.checked})} />
                 {t(label)}
               </label>
             ))}
             <label className="flex items-center gap-2 text-sm col-span-2">
               <input type="checkbox" className="w-4 h-4 accent-black"
-                checked={fa.localisation.autre}
-                onChange={(e)=>setFA({...fa, localisation:{...fa.localisation, autre:e.target.checked}})} />
+                checked={data.actions.autre}
+                onChange={(e)=>setField("actions", {...data.actions, autre:e.target.checked})} />
               {t('other')}
             </label>
+            {data.actions.autre && (
+              <input value={data.actions.autreText} onChange={(e)=>setField("actions", {...data.actions, autreText:e.target.value})} placeholder={t('other_specify')} className="mt-2 w-full px-3 py-2 rounded-xl border col-span-2" />
+            )}
           </div>
-          {fa.localisation.autre && <input value={fa.localisation.autreText} onChange={(e)=>setFA({...fa, localisation:{...fa.localisation, autreText:e.target.value}})} placeholder={t('other_specify')} className="mt-2 w-full px-3 py-2 rounded-xl border" />}
+        </Section>
+
+        <Section title={t('injury_title')}>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              ['coupure','i_cut'],['egratignure','i_scratch'],['contusion','i_bruise'],
+              ['projection','i_proj'],['brulure','i_burn']
+            ].map(([k,label])=>(
+              <label key={k} className="flex items-center gap-2 text-sm">
+                <input type="checkbox" className="w-4 h-4 accent-black"
+                  checked={data.blessures[k]}
+                  onChange={(e)=>setField("blessures", {...data.blessures, [k]:e.target.checked})} />
+                {t(label)}
+              </label>
+            ))}
+            <label className="flex items-center gap-2 text-sm col-span-2">
+              <input type="checkbox" className="w-4 h-4 accent-black"
+                checked={data.blessures.autre}
+                onChange={(e)=>setField("blessures", {...data.blessures, autre:e.target.checked})} />
+              {t('other')}
+            </label>
+            {data.blessures.autre && (
+              <input value={data.blessures.autreText} onChange={(e)=>setField("blessures", {...data.blessures, autreText:e.target.value})} placeholder={t('other_specify')} className="mt-2 w-full px-3 py-2 rounded-xl border col-span-2" />
+            )}
+          </div>
+        </Section>
+
+        <Section title={t('location_title')}>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              ['main','loc_hand'],['bras','loc_arm'],['torse','loc_torso'],
+              ['jambe','loc_leg'],['pied','loc_foot'],['tete','loc_head'],['oeil','loc_eye']
+            ].map(([k,label])=>(
+              <label key={k} className="flex items-center gap-2 text-sm">
+                <input type="checkbox" className="w-4 h-4 accent-black"
+                  checked={data.localisation[k]}
+                  onChange={(e)=>setField("localisation", {...data.localisation, [k]:e.target.checked})} />
+                {t(label)}
+              </label>
+            ))}
+            <label className="flex items-center gap-2 text-sm col-span-2">
+              <input type="checkbox" className="w-4 h-4 accent-black"
+                checked={data.localisation.autre}
+                onChange={(e)=>setField("localisation", {...data.localisation, autre:e.target.checked})} />
+              {t('other')}
+            </label>
+            {data.localisation.autre && (
+              <input value={data.localisation.autreText} onChange={(e)=>setField("localisation", {...data.localisation, autreText:e.target.value})} placeholder={t('other_specify')} className="mt-2 w-full px-3 py-2 rounded-xl border col-span-2" />
+            )}
+          </div>
         </Section>
 
         <Section title={t('kit_title')}>
-          <Row>
+          <div className="flex flex-col gap-3">
             <div className="flex items-center gap-3">
               <span className="text-sm">{t('kit_need')}</span>
-              <label className="text-sm flex items-center gap-2">
-                <input type="radio" name="recharge" checked={!fa.recharge} onChange={()=>setFA({...fa, recharge:false})} />{t('no')}
+              <label className="text-sm inline-flex items-center gap-1">
+                <input type="radio" name="recharge" checked={!data.recharge} onChange={()=>setField("recharge", false)} /> {t('no')}
               </label>
-              <label className="text-sm flex items-center gap-2">
-                <input type="radio" name="recharge" checked={fa.recharge} onChange={()=>setFA({...fa, recharge:true})} />{t('yes')}
+              <label className="text-sm inline-flex items-center gap-1">
+                <input type="radio" name="recharge" checked={data.recharge} onChange={()=>setField("recharge", true)} /> {t('yes')}
               </label>
             </div>
-            {fa.recharge && (
+            {data.recharge && (
               <label className="text-sm">{t('kit_number')}
-                <input value={fa.trousseNumero} onChange={(e)=>setFA({...fa, trousseNumero:e.target.value})} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+                <input value={data.trousseNumero} onChange={(e)=>setField("trousseNumero", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
               </label>
             )}
-            <label className="text-sm">{t('remarks')}
-              <textarea value={fa.remarques} onChange={(e)=>setFA({...fa, remarques:e.target.value})} rows={2} className="mt-1 w-full px-3 py-2 rounded-xl border" />
-            </label>
-          </Row>
+          </div>
         </Section>
 
-        <Section title={t('send')}>
-          <Row>
-            <button onClick={envoyer} className="px-4 py-3 rounded-xl border bg-black text-white">{busy? t('sending') : t('send')}</button>
-          </Row>
+        <Section title={t('remarks')}>
+          <textarea value={data.remarques} onChange={(e)=>setField("remarques", e.target.value)} rows={3} className="w-full px-3 py-2 rounded-xl border" />
         </Section>
+
+        <div className="grid grid-cols-1 gap-2 mt-4">
+          <button onClick={envoyer} className="px-4 py-3 rounded-xl border bg-black text-white">{t('send')}</button>
+        </div>
       </main>
     );
   }
 
-  // ===== STOP =====
+  /* ======================= STOP ======================= */
   function StopScreen(){
     const { t } = useI18n();
-    const initial = ()=>({ datetime:nowLocalDateTime(), chantier:"", responsable:"", situation:"", callNom:"", callFonction:"chef", solution:"", noGo:false });
-    const [st,setSt] = React.useState(initial());
-    const [busy,setBusy] = React.useState(false);
 
-    function currentPayload(){ return { meta:{ sentAt:new Date().toISOString(), page:location.href, userAgent:navigator.userAgent, formType:'stop' }, data:st }; }
-    async function envoyer(){
-      setBusy(true);
-      const ok = await sendNow(currentPayload());
-      setBusy(false);
-      if(ok){ alert(t('alert_sent')); setSt(initial()); }
-      else{ enqueueOutbox(currentPayload()); alert(t('alert_offline_queued')); }
-    }
+    const STATE_KEY = "qhse_stop_state_v1";
+    const prefs = loadLS(PREFS_KEY, { responsable:"", team:[] });
 
-    const Box = ({title, color, children})=>(
-      <div className={`rounded-2xl border-2 p-3 ${color==="red"?"border-red-500 bg-red-50":color==="orange"?"border-orange-500 bg-orange-50":"border-green-600 bg-green-50"}`}>
-        <div className="font-semibold mb-2">{title}</div>
-        {children}
-      </div>
-    );
+    const nowLocalDateTime = () => {
+      const d=new Date(), pad=n=>String(n).padStart(2,"0");
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+
+    const initialState = () => ({
+      datetime: nowLocalDateTime(),
+      chantier: "",
+      responsable: prefs.responsable || "",
+      situation: "",
+      callNom: "",
+      callFonction: "chef", // chef/site/pm/opm/cp/coord/client
+      solution: "",
+      noGo: ""
+    });
+
+    const [data, setData] = React.useState(loadLS(STATE_KEY, initialState()));
+    React.useEffect(()=>{ saveLS(STATE_KEY, data); }, [data]);
+
+    const setField = (k,v)=>setData({...data,[k]:v});
+    const resetAll = () => setData(initialState());
+
+    const envoyer = async () => {
+      const payload = {
+        meta: { sentAt:new Date().toISOString(), page:location.href, userAgent:navigator.userAgent, formType:"stop" },
+        data
+      };
+      const ok = await sendNow(payload);
+      if(ok){
+        alert(t('alert_sent'));
+        // Conserver responsable en prefs
+        saveLS(PREFS_KEY, { ...loadLS(PREFS_KEY, {responsable:"", team:[]}), responsable:data.responsable });
+        setData(initialState());
+      }else{
+        enqueueOutbox(payload);
+        alert(t('alert_offline_queued'));
+      }
+    };
 
     return (
       <main className="max-w-md mx-auto p-4">
-        <Section title={t('stop_title')}>
-          <Row><button onClick={()=>setSt(initial())} className="px-3 py-1.5 rounded-xl border">{t('reset_all')}</button></Row>
-        </Section>
+        <div className="mb-3">
+          <button onClick={resetAll} className="px-3 py-2 rounded-xl border">{t('reset_all')}</button>
+        </div>
 
         <Section title={t('coords')}>
-          <Row>
+          <div className="flex flex-col gap-3">
             <label className="text-sm">{t('datetime')}
-              <input type="datetime-local" value={st.datetime} onChange={(e)=>setSt({...st, datetime:e.target.value})} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+              <input type="datetime-local" value={data.datetime} onChange={(e)=>setField("datetime", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
             </label>
             <label className="text-sm">{t('site')}
-              <input value={st.chantier} onChange={(e)=>setSt({...st, chantier:e.target.value})} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+              <input value={data.chantier} onChange={(e)=>setField("chantier", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
             </label>
             <label className="text-sm">{t('manager')}
-              <input value={st.responsable} onChange={(e)=>setSt({...st, responsable:e.target.value})} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+              <input value={data.responsable} onChange={(e)=>setField("responsable", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
             </label>
-          </Row>
+          </div>
         </Section>
 
-        <Section title="STOP / CALL / ACT">
-          <Row>
-            <Box title={t('stop_box')} color="red">
-              <label className="text-sm">{t('stop_desc')}
-                <textarea value={st.situation} onChange={(e)=>setSt({...st, situation:e.target.value})} rows={2} className="mt-1 w-full px-3 py-2 rounded-xl border" />
-              </label>
-            </Box>
-
-            <Box title={t('call_box')} color="orange">
-              <div className="grid grid-cols-1 gap-2">
-                <label className="text-sm">{t('call_name')}
-                  <input value={st.callNom} onChange={(e)=>setSt({...st, callNom:e.target.value})} className="mt-1 w-full px-3 py-2 rounded-xl border" />
-                </label>
-                <label className="text-sm">{t('call_role')}
-                  <select value={st.callFonction} onChange={(e)=>setSt({...st, callFonction:e.target.value})} className="mt-1 w-full px-3 py-2 rounded-xl border">
-                    <option value="chef">{t('role_chef')}</option>
-                    <option value="site">{t('role_site')}</option>
-                    <option value="pm">{t('role_pm')}</option>
-                    <option value="opm">{t('role_opm')}</option>
-                    <option value="cp">{t('role_cp')}</option>
-                    <option value="coord">{t('role_coord')}</option>
-                    <option value="client">{t('role_client')}</option>
-                  </select>
-                </label>
-              </div>
-            </Box>
-
-            <Box title={t('act_box')} color="green">
-              <label className="text-sm">{t('solution')}
-                <textarea value={st.solution} onChange={(e)=>setSt({...st, solution:e.target.value})} rows={2} className="mt-1 w-full px-3 py-2 rounded-xl border" />
-              </label>
-              <label className="flex items-center gap-2 text-sm mt-2">
-                <input type="checkbox" className="w-4 h-4 accent-black" checked={st.noGo} onChange={(e)=>setSt({...st, noGo:e.target.checked})} />
-                {t('nogo_wait')}
-              </label>
-            </Box>
-          </Row>
+        <Section title={t('stop_box')} tone="red">
+          <textarea value={data.situation} onChange={(e)=>setField("situation", e.target.value)} rows={3} placeholder={t('stop_desc')} className="w-full px-3 py-2 rounded-xl border" />
         </Section>
 
-        <Section title={t('send')}>
-          <Row>
-            <button onClick={envoyer} className="px-4 py-3 rounded-xl border bg-black text-white">{busy? t('sending') : t('send')}</button>
-          </Row>
+        <Section title={t('call_box')} tone="amber">
+          <div className="grid grid-cols-1 gap-3">
+            <label className="text-sm">{t('call_name')}
+              <input value={data.callNom} onChange={(e)=>setField("callNom", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+            </label>
+            <label className="text-sm">{t('call_role')}
+              <select value={data.callFonction} onChange={(e)=>setField("callFonction", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border">
+                <option value="chef">{t('role_chef')}</option>
+                <option value="site">{t('role_site')}</option>
+                <option value="pm">{t('role_pm')}</option>
+                <option value="opm">{t('role_opm')}</option>
+                <option value="cp">{t('role_cp')}</option>
+                <option value="coord">{t('role_coord')}</option>
+                <option value="client">{t('role_client')}</option>
+              </select>
+            </label>
+          </div>
         </Section>
+
+        <Section title={t('act_box')} tone="green">
+          <div className="flex flex-col gap-3">
+            <label className="text-sm">{t('solution')}
+              <textarea value={data.solution} onChange={(e)=>setField("solution", e.target.value)} rows={3} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+            </label>
+            <label className="text-sm">{t('nogo_wait')}
+              <textarea value={data.noGo} onChange={(e)=>setField("noGo", e.target.value)} rows={2} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+            </label>
+          </div>
+        </Section>
+
+        <div className="grid grid-cols-1 gap-2 mt-4">
+          <button onClick={envoyer} className="px-4 py-3 rounded-xl border bg-black text-white">{t('send')}</button>
+        </div>
       </main>
     );
   }
 </script>
 <!-- ===== FIN PARTIE 4/5 ===== -->
+
+
+
 
 <!-- ===== DEBUT PARTIE 5/5 : APP SHELL + HEADER + RENDER (UX alignée) ===== -->
 <script type="text/babel" data-presets="env,react">
