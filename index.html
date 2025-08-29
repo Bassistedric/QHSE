@@ -607,7 +607,30 @@ const MAP_KEYS = {
     const useI18n = ()=>React.useContext(I18nContext);
 
     // Petits composants génériques
-    function Section({ title, children }){ return <section className="card"><h2 className="text-lg font-semibold mb-2">{title}</h2>{children}</section>; }
+    // Section encadrée avec barre de titre + support de "tone" (couleur)
+      function Section({ title, tone = "default", children }) {
+        const TONES = {
+          default: { border: "border-gray-200", bar: "bg-gray-50", title: "text-gray-800" },
+          slate:   { border: "border-slate-300", bar: "bg-slate-50", title: "text-slate-900" },
+          blue:    { border: "border-blue-300",  bar: "bg-blue-50",  title: "text-blue-900" },
+          green:   { border: "border-green-300", bar: "bg-green-50", title: "text-green-900" },
+          red:     { border: "border-red-300",   bar: "bg-red-50",   title: "text-red-900" },
+          amber:   { border: "border-amber-300", bar: "bg-amber-50", title: "text-amber-900" },
+        };
+        const c = TONES[tone] || TONES.default;
+      
+        return (
+          <section className={`rounded-2xl border ${c.border} bg-white shadow-sm overflow-hidden mb-4`}>
+            <div className={`px-4 py-2 border-b ${c.border} ${c.bar} text-sm font-semibold ${c.title}`}>
+              {title}
+            </div>
+            <div className="p-4">
+              {children}
+            </div>
+          </section>
+        );
+      }
+
     function Row({ children }){ return <div className="flex flex-col gap-3">{children}</div>; }
     function Toggle({ checked, onChange, label }){ return <label className="flex items-center justify-between gap-3 py-2"><span className="text-sm">{label}</span><input type="checkbox" className="w-5 h-5 accent-black" checked={checked} onChange={(e)=>onChange(e.target.checked)} /></label>; }
     function Divider(){ return <hr className="my-3 border-gray-200" />; }
