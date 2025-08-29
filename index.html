@@ -642,63 +642,46 @@ const MAP_KEYS = {
   </script>
 <!-- ===== FIN PARTIE 1/5 ===== -->
 
-<!-- ===== DEBUT PARTIE 2/5 : HOME SCREEN (lang, tuiles, QR, how-to) ===== -->
+<!-- ===== DEBUT PARTIE 2/5 : HOME (grille 2×2 cadrée, QR, how-to) ===== -->
 <script type="text/babel" data-presets="env,react">
-  function FlagBtn({code,label,onClick,active}){
+  function Tile({href, icon, title, sub, muted}) {
+    const base = "rounded-2xl p-4 text-center transition border";
+    const active = "hover:bg-gray-50";
+    const off = "border-dashed text-gray-300 pointer-events-none select-none";
     return (
-      <button onClick={onClick}
-        className={"px-3 py-1.5 rounded-xl border text-sm "+(active?"bg-black text-white":"bg-white")}>
-        {label}
-      </button>
+      <a href={href||"#"} className={[base, muted?off:active].join(" ")}>
+        <div className={"text-3xl font-bold " + (muted?"opacity-40":"")}>{icon || "＋"}</div>
+        {title && <div className="font-semibold mt-1">{title}</div>}
+        {sub && <div className="text-xs text-gray-500 mt-0.5">{sub}</div>}
+      </a>
     );
   }
 
   function HomeScreen(){
-    const { t, lang, setLang } = useI18n();
+    const { t } = useI18n();
     const installUrl = (location.origin + location.pathname).replace(/#.*$/,'');
+
     return (
       <main className="max-w-md mx-auto p-4">
-        <Section title={t('home_title')}>
-          <Row>
-            <div className="flex gap-2">
-              <FlagBtn code="fr" label="🇫🇷 FR" onClick={()=>setLang('fr')} active={lang==='fr'} />
-              <FlagBtn code="en" label="🇬🇧 EN" onClick={()=>setLang('en')} active={lang==='en'} />
-              <FlagBtn code="nl" label="🇳🇱 NL" onClick={()=>setLang('nl')} active={lang==='nl'} />
-            </div>
-          </Row>
-        </Section>
-
         <Section title={t('home_apps')}>
-          <div className="grid grid-cols-3 gap-3">
-            <a href="#lmra" className="rounded-2xl border p-3 text-center hover:bg-gray-50">
-              <div className="text-2xl font-bold">🦺</div>
-              <div className="font-semibold">{t('tile_lmra_title')}</div>
-              <div className="text-xs text-gray-500">{t('tile_lmra_sub')}</div>
-            </a>
-            <a href="#firstaid" className="rounded-2xl border p-3 text-center hover:bg-gray-50">
-              <div className="text-2xl font-bold">➕</div>
-              <div className="font-semibold">{t('tile_fa_title')}</div>
-              <div className="text-xs text-gray-500">{t('tile_fa_sub')}</div>
-            </a>
-            <a href="#stop" className="rounded-2xl border p-3 text-center hover:bg-gray-50">
-              <div className="text-2xl font-bold">🚦</div>
-              <div className="font-semibold">{t('tile_stop_title')}</div>
-              <div className="text-xs text-gray-500">{t('tile_stop_sub')}</div>
-            </a>
+          {/* Grille 2×2 : LMRA (HG), Premiers soins (HD), STOP (BG), Emplacement vide (BD) */}
+          <div className="grid grid-cols-2 gap-4">
+            <Tile href="#lmra" icon="🦺" title={t('tile_lmra_title')} sub={t('tile_lmra_sub')} />
+            <Tile href="#firstaid" icon="➕" title={t('tile_fa_title')} sub={t('tile_fa_sub')} />
+            <Tile href="#stop" icon="🚦" title={t('tile_stop_title')} sub={t('tile_stop_sub')} />
+            <Tile muted icon="＋" />
           </div>
         </Section>
 
         <Section title={t('home_install')}>
-          <Row>
-            <div className="flex flex-col items-center gap-2">
-              <img
-                src={"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(installUrl)}
-                alt="QR"
-                className="w-40 h-40 rounded-lg border bg-white"
-              />
-              <div className="text-xs text-gray-500">{t('home_scan')}</div>
-            </div>
-          </Row>
+          <div className="flex flex-col items-center gap-3">
+            <img
+              src={"https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=" + encodeURIComponent(installUrl)}
+              alt="QR"
+              className="w-44 h-44 rounded-lg border bg-white"
+            />
+            <div className="text-xs text-gray-500">{t('home_scan')}</div>
+          </div>
         </Section>
 
         <Section title={t('install_howto_title')}>
@@ -711,6 +694,8 @@ const MAP_KEYS = {
   }
 </script>
 <!-- ===== FIN PARTIE 2/5 ===== -->
+
+
 <!-- ===== DEBUT PARTIE 3/5 : LMRA (Team/Permits/Energies/Env/Ops/Measures + Screen) ===== -->
 <script type="text/babel" data-presets="env,react">
   // Hooks locaux
@@ -1246,8 +1231,37 @@ const MAP_KEYS = {
 </script>
 <!-- ===== FIN PARTIE 4/5 ===== -->
 
-  <!-- ===== DEBUT PARTIE 5/5 : APP SHELL + RENDER ===== -->
+<!-- ===== DEBUT PARTIE 5/5 : APP SHELL + HEADER + RENDER (UX alignée) ===== -->
 <script type="text/babel" data-presets="env,react">
+  // Petit composant logo (image + fallback texte)
+  function Brand(){
+    return (
+      <a href="#home" className="flex items-center gap-2">
+        <img src="qhse-logo.png" alt="QHSE" className="w-8 h-8 rounded-lg border"
+             onError={(e)=>{ e.currentTarget.replaceWith(Object.assign(document.createElement('span'),{className:'inline-flex items-center justify-center w-8 h-8 rounded-lg border font-bold', innerText:'QHSE'})); }} />
+        <span className="text-base font-semibold">QHSE</span>
+      </a>
+    );
+  }
+
+  // Sélecteur de langue compact (à droite du logo)
+  function LangPicker(){
+    const { lang, setLang } = useI18n();
+    const Btn = ({code,label}) => (
+      <button onClick={()=>setLang(code)}
+        className={"px-2 py-1 rounded-lg border text-xs "+(lang===code?"bg-black text-white":"bg-white")}>
+        {label}
+      </button>
+    );
+    return (
+      <div className="flex items-center gap-1">
+        <Btn code="fr" label="🇫🇷" />
+        <Btn code="en" label="🇬🇧" />
+        <Btn code="nl" label="🇳🇱" />
+      </div>
+    );
+  }
+
   function App(){
     const { t } = useI18n();
     const [route,setRoute] = React.useState(parseRoute());
@@ -1259,9 +1273,12 @@ const MAP_KEYS = {
     return (
       <div>
         <header className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b">
-          <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between gap-2">
-            <a href="#home" className="text-base font-semibold">QHSE</a>
-            <button onClick={()=>window.print()} className="px-3 py-1.5 rounded-xl border">{t('print')}</button>
+          <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between gap-3">
+            <Brand />
+            <div className="flex items-center gap-3">
+              <LangPicker />
+              <button onClick={()=>window.print()} className="px-3 py-1.5 rounded-xl border">{t('print')}</button>
+            </div>
           </div>
         </header>
 
@@ -1280,6 +1297,4 @@ const MAP_KEYS = {
   const root = ReactDOM.createRoot(document.getElementById("root"));
   root.render(<I18nProvider><App/></I18nProvider>);
 </script>
-</body>
-</html>
 <!-- ===== FIN PARTIE 5/5 ===== -->
