@@ -1,6 +1,8 @@
-// sw.js — v1-r2 (network-first pour HTML)
-const SW_VERSION   = 'v1-r2';
-const CACHE_STATIC = 'qhse-static-v4-logos';
+// sw.js — QHSE PWA (cache statique + dynamique) — v4-logos-THICK2
+const CACHE_STATIC  = 'qhse-static-v4-logos-THICK2';
+const CACHE_DYNAMIC = 'qhse-dyn-v4-logos-THICK2';
+
+// Ressources à mettre en cache lors de l'installation
 const ASSETS = [
   './',
   './index.html',
@@ -12,62 +14,69 @@ const ASSETS = [
   './firstaid-icon.svg'
 ];
 
-
-self.addEventListener('install', (evt) => {
-  evt.waitUntil(caches.open(CACHE_STATIC).then(c => c.addAll(ASSETS)));
+// Installation : pré-cache des assets
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_STATIC).then((cache) => cache.addAll(ASSETS))
+  );
   self.skipWaiting();
 });
 
-self.addEventListener('activate', (evt) => {
-  evt.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys
-        .filter(k => ![CACHE_STATIC, CACHE_DYNAMIC].includes(k))
-        .map(k => caches.delete(k))
+// Activation : nettoyage des anciens caches
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys
+          .filter((k) => k !== CACHE_STATIC && k !== CACHE_DYNAMIC)
+          .map((k) => caches.delete(k))
       )
     )
   );
   self.clients.claim();
 });
 
-self.addEventListener('fetch', (evt) => {
-  const req = evt.request;
+// Fetch : gestion des requêtes
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  if (req.method !== 'GET') return; // ignore POST/PUT/...
 
-  // HTML -> network-first
-  if (req.mode === 'navigate' || req.destination === 'document') {
-    evt.respondWith(
-      fetch(req)
-        .then(res => {
-          const copy = res.clone();
-          caches.open(CACHE_DYNAMIC).then(c => c.put('/', copy).catch(()=>{}));
-          return res;
-        })
-        .catch(() => caches.match('/') || caches.match('./') || caches.match('index.html'))
-    );
-    return;
-  }
-
-  // Assets même origine -> cache falling back to network
   const url = new URL(req.url);
-  if (url.origin === location.origin) {
-    evt.respondWith(
-      caches.match(req).then(cached =>
-        cached || fetch(req).then(res => {
-          const copy = res.clone();
-          caches.open(CACHE_DYNAMIC).then(c => c.put(req, copy).catch(()=>{}));
+  const sameOrigin = url.origin === location.origin;
+
+  // Helper: cache first pour nos ASSETS connus
+  const cacheFirst = () =>
+    caches.match(req).then((cached) => {
+      if (cached) return cached;
+      return fetch(req)
+        .then((res) => {
+          const resClone = res.clone();
+          caches.open(CACHE_DYNAMIC).then((c) => c.put(req, resClone));
           return res;
         })
-      )
-    );
-    return;
-  }
+        .catch(() => caches.match(req));
+    });
 
-  // Externe -> network, fallback cache
-  evt.respondWith(
-    fetch(req).then(res => {
-      const copy = res.clone();
-      caches.open(CACHE_DYNAMIC).then(c => c.put(req, copy).catch(()=>{}));
-      return res;
-    }).catch(() => caches.match(req))
-  );
+  // Helper: network first (avec fallback cache)
+  const networkFirst = () =>
+    fetch(req)
+      .then((res) => {
+        const resClone = res.clone();
+        caches.open(CACHE_DYNAMIC).then((c) => c.put(req, resClone));
+        return res;
+      })
+      .catch(() => caches.match(req));
+
+  // Politique : 
+  // - mêmes origines → cache-first pour les ASSETS, sinon network-first
+  // - autres origines → network-first (fallback cache)
+  if (sameOrigin) {
+    if (ASSETS.some((p) => url.pathname.endsWith(p.replace('./','/')) || url.pathname === p.replace('./','/'))) {
+      event.respondWith(cacheFirst());
+    } else {
+      event.respondWith(networkFirst());
+    }
+  } else {
+    event.respondWith(networkFirst());
+  }
 });
