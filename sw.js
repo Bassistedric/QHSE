@@ -1,13 +1,17 @@
 // sw.js — v1-r2 (network-first pour HTML)
 const SW_VERSION   = 'v1-r2';
-const CACHE_STATIC = 'qhse-static-' + SW_VERSION;
-const CACHE_DYNAMIC= 'qhse-dyn-' + SW_VERSION;
-
+const CACHE_STATIC = 'qhse-static-v4-logos';
 const ASSETS = [
+  './',
+  './index.html',
+  './sw.js',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png',
+  './qhse-logo.svg',
+  './firstaid-icon.svg'
 ];
+
 
 self.addEventListener('install', (evt) => {
   evt.waitUntil(caches.open(CACHE_STATIC).then(c => c.addAll(ASSETS)));
