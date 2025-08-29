@@ -1274,9 +1274,11 @@ const MAP_KEYS = {
   }
 
   // Sélecteur de langue compact (à droite du logo)
+  // === LangPicker (emoji only) ===
   function LangPicker(){
     const { lang, setLang } = useI18n();
-    const Btn = ({code,emoji}) => (
+  
+    const FlagBtn = ({ code, flag }) => (
       <button
         onClick={()=>setLang(code)}
         className={
@@ -1285,18 +1287,21 @@ const MAP_KEYS = {
         }
         aria-label={code.toUpperCase()}
         title={code.toUpperCase()}
+        style={{lineHeight:1}}
       >
-        {emoji}
+        <span style={{fontSize:"18px"}}>{flag}</span>
       </button>
     );
+  
     return (
       <div className="flex items-center gap-1.5">
-        <Btn code="fr" emoji="🇫🇷" />
-        <Btn code="en" emoji="🇬🇧" />
-        <Btn code="nl" emoji="🇳🇱" />
+        <FlagBtn code="fr" flag="🇫🇷" />
+        <FlagBtn code="en" flag="🇬🇧" />
+        <FlagBtn code="nl" flag="🇳🇱" />
       </div>
     );
   }
+
 
   function App(){
     const { t } = useI18n();
