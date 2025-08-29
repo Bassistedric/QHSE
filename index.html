@@ -644,18 +644,13 @@ const MAP_KEYS = {
 
 <!-- ===== DEBUT PARTIE 2/5 : HOME (grille 2×2 cadrée, QR, how-to) ===== -->
 <script type="text/babel" data-presets="env,react">
-  function Tile({href, icon, title, sub, muted}) {
-    const base = "rounded-2xl p-4 text-center transition border";
-    const active = "hover:bg-gray-50";
-    const off = "border-dashed text-gray-300 pointer-events-none select-none";
-    return (
-      <a href={href||"#"} className={[base, muted?off:active].join(" ")}>
-        <div className={"text-3xl font-bold " + (muted?"opacity-40":"")}>{icon || "＋"}</div>
-        {title && <div className="font-semibold mt-1">{title}</div>}
-        {sub && <div className="text-xs text-gray-500 mt-0.5">{sub}</div>}
-      </a>
-    );
-  }
+    <div className="grid grid-cols-2 gap-4">
+      <Tile href="#lmra" icon="🦺" title={t('tile_lmra_title')} sub={t('tile_lmra_sub')} />
+      <Tile href="#firstaid" img="firstaid-icon.svg" title={t('tile_fa_title')} sub={t('tile_fa_sub')} />
+      <Tile href="#stop" icon="🚦" title={t('tile_stop_title')} sub={t('tile_stop_sub')} />
+      <Tile muted img="" />
+    </div>
+
 
   function HomeScreen(){
     const { t } = useI18n();
@@ -665,12 +660,13 @@ const MAP_KEYS = {
       <main className="max-w-md mx-auto p-4">
         <Section title={t('home_apps')}>
           {/* Grille 2×2 : LMRA (HG), Premiers soins (HD), STOP (BG), Emplacement vide (BD) */}
-          <div className="grid grid-cols-2 gap-4">
-            <Tile href="#lmra" icon="🦺" title={t('tile_lmra_title')} sub={t('tile_lmra_sub')} />
-            <Tile href="#firstaid" icon="➕" title={t('tile_fa_title')} sub={t('tile_fa_sub')} />
-            <Tile href="#stop" icon="🚦" title={t('tile_stop_title')} sub={t('tile_stop_sub')} />
-            <Tile muted icon="＋" />
-          </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Tile href="#lmra" icon="🦺" title={t('tile_lmra_title')} sub={t('tile_lmra_sub')} />
+              <Tile href="#firstaid" img="firstaid-icon.svg" title={t('tile_fa_title')} sub={t('tile_fa_sub')} />
+              <Tile href="#stop" icon="🚦" title={t('tile_stop_title')} sub={t('tile_stop_sub')} />
+              <Tile muted img="" />
+            </div>
+
         </Section>
 
         <Section title={t('home_install')}>
@@ -1237,8 +1233,9 @@ const MAP_KEYS = {
   function Brand(){
     return (
       <a href="#home" className="flex items-center gap-2">
-        <img src="qhse-logo.png" alt="QHSE" className="w-8 h-8 rounded-lg border"
+        <img src="qhse-logo.svg" alt="QHSE" className="w-8 h-8 rounded-lg border"
              onError={(e)=>{ e.currentTarget.replaceWith(Object.assign(document.createElement('span'),{className:'inline-flex items-center justify-center w-8 h-8 rounded-lg border font-bold', innerText:'QHSE'})); }} />
+
         <span className="text-base font-semibold">QHSE</span>
       </a>
     );
@@ -1247,17 +1244,24 @@ const MAP_KEYS = {
   // Sélecteur de langue compact (à droite du logo)
   function LangPicker(){
     const { lang, setLang } = useI18n();
-    const Btn = ({code,label}) => (
-      <button onClick={()=>setLang(code)}
-        className={"px-2 py-1 rounded-lg border text-xs "+(lang===code?"bg-black text-white":"bg-white")}>
-        {label}
+    const Btn = ({code,emoji}) => (
+      <button
+        onClick={()=>setLang(code)}
+        className={
+          "w-9 h-9 flex items-center justify-center rounded-lg border text-base " +
+          (lang===code ? "bg-black text-white" : "bg-white")
+        }
+        aria-label={code.toUpperCase()}
+        title={code.toUpperCase()}
+      >
+        {emoji}
       </button>
     );
     return (
-      <div className="flex items-center gap-1">
-        <Btn code="fr" label="🇫🇷" />
-        <Btn code="en" label="🇬🇧" />
-        <Btn code="nl" label="🇳🇱" />
+      <div className="flex items-center gap-1.5">
+        <Btn code="fr" emoji="🇫🇷" />
+        <Btn code="en" emoji="🇬🇧" />
+        <Btn code="nl" emoji="🇳🇱" />
       </div>
     );
   }
