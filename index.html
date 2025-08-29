@@ -644,13 +644,23 @@ const MAP_KEYS = {
 
 <!-- ===== DEBUT PARTIE 2/5 : HOME (grille 2×2 cadrée, QR, how-to) ===== -->
 <script type="text/babel" data-presets="env,react">
-    <div className="grid grid-cols-2 gap-4">
-      <Tile href="#lmra" icon="🦺" title={t('tile_lmra_title')} sub={t('tile_lmra_sub')} />
-      <Tile href="#firstaid" img="firstaid-icon.svg" title={t('tile_fa_title')} sub={t('tile_fa_sub')} />
-      <Tile href="#stop" icon="🚦" title={t('tile_stop_title')} sub={t('tile_stop_sub')} />
-      <Tile muted img="" />
-    </div>
-
+  // Carte cliquable (accepte un emoji via `icon` ou une image via `img`)
+  function Tile({href, icon, img, title, sub, muted}) {
+    const base = "rounded-2xl p-4 text-center transition border";
+    const active = "hover:bg-gray-50";
+    const off = "border-dashed text-gray-300 pointer-events-none select-none";
+    return (
+      <a href={href||"#"} className={[base, muted?off:active].join(" ")}>
+        {img ? (
+          <img src={img} alt="" className={"w-10 h-10 mx-auto rounded " + (muted?"opacity-40":"")} />
+        ) : (
+          <div className={"text-3xl font-bold " + (muted?"opacity-40":"")}>{icon || "＋"}</div>
+        )}
+        {title && <div className="font-semibold mt-2">{title}</div>}
+        {sub && <div className="text-xs text-gray-500 mt-0.5">{sub}</div>}
+      </a>
+    );
+  }
 
   function HomeScreen(){
     const { t } = useI18n();
@@ -660,13 +670,12 @@ const MAP_KEYS = {
       <main className="max-w-md mx-auto p-4">
         <Section title={t('home_apps')}>
           {/* Grille 2×2 : LMRA (HG), Premiers soins (HD), STOP (BG), Emplacement vide (BD) */}
-            <div className="grid grid-cols-2 gap-4">
-              <Tile href="#lmra" icon="🦺" title={t('tile_lmra_title')} sub={t('tile_lmra_sub')} />
-              <Tile href="#firstaid" img="firstaid-icon.svg" title={t('tile_fa_title')} sub={t('tile_fa_sub')} />
-              <Tile href="#stop" icon="🚦" title={t('tile_stop_title')} sub={t('tile_stop_sub')} />
-              <Tile muted img="" />
-            </div>
-
+          <div className="grid grid-cols-2 gap-4">
+            <Tile href="#lmra" icon="🦺" title={t('tile_lmra_title')} sub={t('tile_lmra_sub')} />
+            <Tile href="#firstaid" img="firstaid-icon.svg" title={t('tile_fa_title')} sub={t('tile_fa_sub')} />
+            <Tile href="#stop" icon="🚦" title={t('tile_stop_title')} sub={t('tile_stop_sub')} />
+            <Tile muted img="" />
+          </div>
         </Section>
 
         <Section title={t('home_install')}>
