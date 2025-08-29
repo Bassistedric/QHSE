@@ -1,6 +1,6 @@
 // sw.js — QHSE PWA (cache statique + dynamique) — v4-logos-THICK2
-const CACHE_STATIC  = 'qhse-static-v4-logos-THICK2';
-const CACHE_DYNAMIC = 'qhse-dyn-v4-logos-THICK2';
+const CACHE_STATIC  = 'qhse-static-v4-lang-emoji-2';
+const CACHE_DYNAMIC = 'qhse-dyn-v4-lang-emoji-2';
 
 // Ressources à mettre en cache lors de l'installation
 const ASSETS = [
