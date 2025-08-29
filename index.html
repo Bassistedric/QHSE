@@ -1271,33 +1271,67 @@ const MAP_KEYS = {
     );
   }
 
-  // === LangPicker (drapeaux emoji uniquement) ===
-  function LangPicker(){
-    const { lang, setLang } = useI18n();
+ // === LangPicker (drapeaux SVG intégrés, pas de texte) ===
+function LangPicker(){
+  const { lang, setLang } = useI18n();
 
-    const FlagBtn = ({ code, flag }) => (
-      <button
-        onClick={()=>setLang(code)}
-        className={
-          "w-9 h-9 flex items-center justify-center rounded-lg border text-base " +
-          (lang===code ? "bg-black text-white" : "bg-white")
-        }
-        aria-label={code.toUpperCase()}
-        title={code.toUpperCase()}
-        style={{lineHeight:1}}
-      >
-        <span style={{fontSize:"18px"}}>{flag}</span>
-      </button>
-    );
+  const FlagFR = () => (
+    <svg viewBox="0 0 3 2" className="w-6 h-4">
+      <rect width="1" height="2" x="0" y="0" fill="#0055A4"/>
+      <rect width="1" height="2" x="1" y="0" fill="#FFFFFF"/>
+      <rect width="1" height="2" x="2" y="0" fill="#EF4135"/>
+    </svg>
+  );
 
-    return (
-      <div className="flex items-center gap-1.5">
-        <FlagBtn code="fr" flag="🇫🇷" />
-        <FlagBtn code="en" flag="🇬🇧" />
-        <FlagBtn code="nl" flag="🇳🇱" />
-      </div>
-    );
-  }
+  const FlagGB = () => (
+    <svg viewBox="0 0 60 40" className="w-6 h-4">
+      <rect width="60" height="40" fill="#012169"/>
+      {/* diagonales blanches */}
+      <path d="M0,0 L60,40" stroke="#FFF" strokeWidth="10"/>
+      <path d="M60,0 L0,40" stroke="#FFF" strokeWidth="10"/>
+      {/* diagonales rouges */}
+      <path d="M0,0 L60,40" stroke="#C8102E" strokeWidth="6"/>
+      <path d="M60,0 L0,40" stroke="#C8102E" strokeWidth="6"/>
+      {/* croix blanche */}
+      <rect x="0" y="16" width="60" height="8" fill="#FFF"/>
+      <rect x="26" y="0" width="8" height="40" fill="#FFF"/>
+      {/* croix rouge */}
+      <rect x="0" y="18" width="60" height="4" fill="#C8102E"/>
+      <rect x="28" y="0" width="4" height="40" fill="#C8102E"/>
+    </svg>
+  );
+
+  const FlagNL = () => (
+    <svg viewBox="0 0 3 2" className="w-6 h-4">
+      <rect width="3" height="2" fill="#FFF"/>
+      <rect width="3" height="0.666" y="0" fill="#AE1C28"/>
+      <rect width="3" height="0.666" y="1.333" fill="#21468B"/>
+    </svg>
+  );
+
+  const Btn = ({code, children}) => (
+    <button
+      onClick={()=>setLang(code)}
+      className={
+        "w-9 h-9 flex items-center justify-center rounded-lg border " +
+        (lang===code ? "bg-black" : "bg-white")
+      }
+      aria-label={code.toUpperCase()}
+      title={code.toUpperCase()}
+    >
+      <div className={lang===code ? "scale-110" : ""}>{children}</div>
+    </button>
+  );
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <Btn code="fr"><FlagFR/></Btn>
+      <Btn code="en"><FlagGB/></Btn>
+      <Btn code="nl"><FlagNL/></Btn>
+    </div>
+  );
+}
+
 
   function App(){
     const { t } = useI18n();
