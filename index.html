@@ -638,7 +638,20 @@ const MAP_KEYS = {
       }
 
     function Row({ children }){ return <div className="flex flex-col gap-3">{children}</div>; }
-    function Toggle({ checked, onChange, label }){ return <label className="flex items-center justify-between gap-3 py-2"><span className="text-sm">{label}</span><input type="checkbox" className="w-5 h-5 accent-black" checked={checked} onChange={(e)=>onChange(e.target.checked)} /></label>; }
+    function Toggle({ checked, onChange, label }){
+      return (
+        <label className="flex items-center justify-between gap-3 py-2">
+          <span className="text-sm">{label}</span>
+          <input
+            type="checkbox"
+            className="w-5 h-5 accent-black"
+            checked={checked}
+            onChange={(e)=>onChange(e.target.checked)}
+            aria-label={label}
+          />
+        </label>
+      );
+    }
     function Divider(){ return <hr className="my-3 border-gray-200" />; }
 
     // Envoi + file d’attente locale (offline)
@@ -872,43 +885,45 @@ const MAP_KEYS = {
 
         {step===1 && (
         <Section title={t('cond_title')}>
-          <div className="flex flex-col gap-3">
+          <fieldset className="flex flex-col gap-3">
+            <legend className="sr-only">{t('cond_title')}</legend>
             <Toggle checked={data.conditions.tacheClaires} onChange={(v)=>setData({...data, conditions:{...data.conditions, tacheClaires:v}})} label={t('cond_task_clear')} />
             <Toggle checked={data.conditions.coactivite}  onChange={(v)=>setData({...data, conditions:{...data.conditions, coactivite:v}})}   label={t('cond_coactivity')} />
             <Toggle checked={data.conditions.zonage}      onChange={(v)=>setData({...data, conditions:{...data.conditions, zonage:v}})}       label={t('cond_zone')} />
             <Toggle checked={data.conditions.epi}         onChange={(v)=>setData({...data, conditions:{...data.conditions, epi:v}})}          label={t('cond_epi')} />
             <hr className="my-3 border-gray-200" />
             {/* Permis */}
-            <div>
-              <div className="text-sm font-medium mb-2">{t('permits_title')}</div>
+            <fieldset>
+              <legend className="text-sm font-medium mb-2">{t('permits_title')}</legend>
               <div className="grid grid-cols-2 gap-2">
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.permits.feu} onChange={(e)=>setData({...data, permits:{...data.permits, feu:e.target.checked}})} />{t('permit_fire')}</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.permits.electrique} onChange={(e)=>setData({...data, permits:{...data.permits, electrique:e.target.checked}})} />{t('permit_elec')}</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.permits.confine} onChange={(e)=>setData({...data, permits:{...data.permits, confine:e.target.checked}})} />{t('permit_confined')}</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.permits.levage} onChange={(e)=>setData({...data, permits:{...data.permits, levage:e.target.checked}})} />{t('permit_lift')}</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.permits.autre} onChange={(e)=>setData({...data, permits:{...data.permits, autre:e.target.checked}})} />{t('permit_other')}</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.permits.na} onChange={(e)=>setData({...data, permits:{...data.permits, na:e.target.checked}})} />{t('permit_na')}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" aria-label={t('permit_fire')} checked={data.permits.feu} onChange={(e)=>setData({...data, permits:{...data.permits, feu:e.target.checked}})} />{t('permit_fire')}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" aria-label={t('permit_elec')} checked={data.permits.electrique} onChange={(e)=>setData({...data, permits:{...data.permits, electrique:e.target.checked}})} />{t('permit_elec')}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" aria-label={t('permit_confined')} checked={data.permits.confine} onChange={(e)=>setData({...data, permits:{...data.permits, confine:e.target.checked}})} />{t('permit_confined')}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" aria-label={t('permit_lift')} checked={data.permits.levage} onChange={(e)=>setData({...data, permits:{...data.permits, levage:e.target.checked}})} />{t('permit_lift')}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" aria-label={t('permit_other')} checked={data.permits.autre} onChange={(e)=>setData({...data, permits:{...data.permits, autre:e.target.checked}})} />{t('permit_other')}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" aria-label={t('permit_na')} checked={data.permits.na} onChange={(e)=>setData({...data, permits:{...data.permits, na:e.target.checked}})} />{t('permit_na')}</label>
               </div>
               {data.permits.autre && (
                 <input value={data.permits.autreText} onChange={(e)=>setData({...data, permits:{...data.permits, autreText:e.target.value}})} placeholder={t('permit_other_ph')} className="mt-2 w-full px-3 py-2 rounded-xl border" />
               )}
-            </div>
-          </div>
+            </fieldset>
+          </fieldset>
         </Section>
         )}
 
         {step===2 && (
         <Section title={t('risks_title')}>
-          <div className="flex flex-col gap-3">
+          <fieldset className="flex flex-col gap-3">
+            <legend className="sr-only">{t('risks_title')}</legend>
             {/* Énergies */}
             <div>
               <div className="text-sm font-medium mb-2">{t('energies_title')}</div>
               <div className="grid grid-cols-2 gap-2">
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.risks.energies.electrique} onChange={(e)=>setData({...data, risks:{...data.risks, energies:{...data.risks.energies, electrique:e.target.checked}}})} />{t('energy_electric')}</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.risks.energies.mecanique} onChange={(e)=>setData({...data, risks:{...data.risks, energies:{...data.risks.energies, mecanique:e.target.checked}}})} />{t('energy_mechanical')}</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.risks.energies.fluide} onChange={(e)=>setData({...data, risks:{...data.risks, energies:{...data.risks.energies, fluide:e.target.checked}}})} />{t('energy_fluid')}</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.risks.energies.gravite} onChange={(e)=>setData({...data, risks:{...data.risks, energies:{...data.risks.energies, gravite:e.target.checked}}})} />{t('energy_gravity')}</label>
-                <label className="flex items-center gap-2 text-sm col-span-2"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.risks.energies.autre} onChange={(e)=>setData({...data, risks:{...data.risks, energies:{...data.risks.energies, autre:e.target.checked}}})} />{t('other')}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" aria-label={t('energy_electric')} checked={data.risks.energies.electrique} onChange={(e)=>setData({...data, risks:{...data.risks, energies:{...data.risks.energies, electrique:e.target.checked}}})} />{t('energy_electric')}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" aria-label={t('energy_mechanical')} checked={data.risks.energies.mecanique} onChange={(e)=>setData({...data, risks:{...data.risks, energies:{...data.risks.energies, mecanique:e.target.checked}}})} />{t('energy_mechanical')}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" aria-label={t('energy_fluid')} checked={data.risks.energies.fluide} onChange={(e)=>setData({...data, risks:{...data.risks, energies:{...data.risks.energies, fluide:e.target.checked}}})} />{t('energy_fluid')}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" aria-label={t('energy_gravity')} checked={data.risks.energies.gravite} onChange={(e)=>setData({...data, risks:{...data.risks, energies:{...data.risks.energies, gravite:e.target.checked}}})} />{t('energy_gravity')}</label>
+                <label className="flex items-center gap-2 text-sm col-span-2"><input type="checkbox" className="w-4 h-4 accent-black" aria-label={t('other')} checked={data.risks.energies.autre} onChange={(e)=>setData({...data, risks:{...data.risks, energies:{...data.risks.energies, autre:e.target.checked}}})} />{t('other')}</label>
               </div>
               {data.risks.energies.autre && (
                 <input value={data.risks.energies.autreText} onChange={(e)=>setData({...data, risks:{...data.risks, energies:{...data.risks.energies, autreText:e.target.value}}})} placeholder={t('other_specify')} className="mt-2 w-full px-3 py-2 rounded-xl border" />
@@ -927,6 +942,7 @@ const MAP_KEYS = {
                 ].map(([k,label])=>(
                   <label key={k} className="flex items-center gap-2 text-sm">
                     <input type="checkbox" className="w-4 h-4 accent-black"
+                      aria-label={t(label)}
                       checked={data.risks.environnement[k]}
                       onChange={(e)=>setData({...data, risks:{...data.risks, environnement:{...data.risks.environnement, [k]:e.target.checked}}})} />
                     {t(label)}
@@ -947,6 +963,7 @@ const MAP_KEYS = {
                 ].map(([k,label])=>(
                   <label key={k} className="flex items-center gap-2 text-sm">
                     <input type="checkbox" className="w-4 h-4 accent-black"
+                      aria-label={t(label)}
                       checked={data.risks.operations[k]}
                       onChange={(e)=>setData({...data, risks:{...data.risks, operations:{...data.risks.operations, [k]:e.target.checked}}})} />
                     {t(label)}
@@ -954,6 +971,7 @@ const MAP_KEYS = {
                 ))}
                 <label className="flex items-center gap-2 text-sm col-span-2">
                   <input type="checkbox" className="w-4 h-4 accent-black"
+                    aria-label={t('ops_others')}
                     checked={data.risks.operations.autres}
                     onChange={(e)=>setData({...data, risks:{...data.risks, operations:{...data.risks.operations, autres:e.target.checked}}})} />
                   {t('ops_others')}
@@ -963,7 +981,7 @@ const MAP_KEYS = {
                 <input value={data.risks.operations.autresText} onChange={(e)=>setData({...data, risks:{...data.risks, operations:{...data.risks.operations, autresText:e.target.value}}})} placeholder={t('ops_others_ph')} className="mt-2 w-full px-3 py-2 rounded-xl border" />
               )}
             </div>
-          </div>
+          </fieldset>
         </Section>
         )}
 
@@ -978,6 +996,7 @@ const MAP_KEYS = {
             ].map(([k,label])=>(
               <label key={k} className="flex items-center gap-2 text-sm">
                 <input type="checkbox" className="w-4 h-4 accent-black"
+                  aria-label={t(label)}
                   checked={data.measures[k]}
                   onChange={(e)=>setData({...data, measures:{...data.measures, [k]:e.target.checked}})} />
                 {t(label)}
@@ -985,6 +1004,7 @@ const MAP_KEYS = {
             ))}
             <label className="flex items-center gap-2 text-sm col-span-2">
               <input type="checkbox" className="w-4 h-4 accent-black"
+                aria-label={t('other')}
                 checked={data.measures.autre}
                 onChange={(e)=>setData({...data, measures:{...data.measures, autre:e.target.checked}})} />
               {t('other')}
