@@ -760,6 +760,14 @@ const MAP_KEYS = {
 
     const next = () => {
       if(step === 0){
+        const name = data.teamInput.trim();
+        if(name){
+          if(data.team.includes(name)){
+            setData({...data, teamInput:""});
+          }else{
+            setData({...data, team:[...data.team, name], teamInput:""});
+          }
+        }
         const missing = { site: !data.site.trim(), responsable: !data.responsable.trim() };
         setErrors(missing);
         if(missing.site || missing.responsable){
