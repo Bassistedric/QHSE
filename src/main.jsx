@@ -983,15 +983,15 @@ const MAP_KEYS = {
         </Section>
         )}
 
-        <div className={"flex mt-4 " + (step>0 ? "justify-between" : "justify-end")}>
-          {step>0 && (
-            <button onClick={()=>setStep(step-1)} className="px-3 py-2 rounded-xl border">{t('prev')}</button>
-          )}
-          {step<totalSteps-1 ? (
-            <button onClick={()=>setStep(step+1)} className="px-3 py-2 rounded-xl border">{t('next')}</button>
-          ) : (
-            <button onClick={envoyer} className="px-4 py-3 rounded-xl border bg-black text-white">{t('send')}</button>
-          )}
+        <div className={"flex mt-4 " + (step>0 ? "justify-between" : "justify-end")}> 
+          {step>0 && ( 
+            <button onClick={()=>setStep(step-1)} className="px-3 py-2 rounded-xl border border-gray-300 bg-gray-200 text-gray-800 hover:bg-gray-300">{t('prev')}</button> 
+          )} 
+          {step<totalSteps-1 ? ( 
+            <button onClick={()=>setStep(step+1)} className="px-3 py-2 rounded-xl border border-blue-600 bg-blue-600 text-white hover:bg-blue-700">{t('next')}</button> 
+          ) : ( 
+            <button onClick={envoyer} className="px-4 py-3 rounded-xl border bg-black text-white">{t('send')}</button> 
+          )} 
         </div>
       </main>
     );
