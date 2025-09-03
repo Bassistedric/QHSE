@@ -586,17 +586,18 @@ const MAP_KEYS = {
     // Section encadrée avec barre de titre + support de "tone" (couleur)
       function Section({ title, tone = "default", children }) {
         const TONES = {
-          default: { border: "border-gray-200", bar: "bg-gray-50", title: "text-gray-800" },
-          slate:   { border: "border-slate-300", bar: "bg-slate-50", title: "text-slate-900" },
-          blue:    { border: "border-blue-300",  bar: "bg-blue-50",  title: "text-blue-900" },
-          green:   { border: "border-green-300", bar: "bg-green-50", title: "text-green-900" },
-          red:     { border: "border-red-300",   bar: "bg-red-50",   title: "text-red-900" },
-          amber:   { border: "border-amber-300", bar: "bg-amber-50", title: "text-amber-900" },
+          default: { border: "border-gray-200", bar: "bg-gray-50", title: "text-gray-800", bg: "bg-white" },
+          slate:   { border: "border-slate-300", bar: "bg-slate-50", title: "text-slate-900", bg: "bg-white" },
+          blue:    { border: "border-blue-300",  bar: "bg-blue-50",  title: "text-blue-900",  bg: "bg-white" },
+          green:   { border: "border-green-300", bar: "bg-green-50", title: "text-green-900", bg: "bg-white" },
+          red:     { border: "border-red-300",   bar: "bg-red-50",   title: "text-red-900",   bg: "bg-white" },
+          amber:   { border: "border-amber-300", bar: "bg-amber-50", title: "text-amber-900", bg: "bg-white" },
+          dark:    { border: "border-gray-700",  bar: "bg-gray-700", title: "text-white",     bg: "bg-gray-700" },
         };
         const c = TONES[tone] || TONES.default;
-      
+
         return (
-          <section className={`rounded-2xl border ${c.border} bg-white shadow-sm overflow-hidden mb-4`}>
+          <section className={`rounded-2xl border ${c.border} ${c.bg} shadow-sm overflow-hidden mb-4`}>
             <div className={`px-4 py-2 border-b ${c.border} ${c.bar} text-base font-medium ${c.title}`}>
               {title}
             </div>
@@ -1314,7 +1315,7 @@ const MAP_KEYS = {
           </label>
         </Section>
 
-        <Section tone="green" title={<><span className="text-red-600">{t('no_go')}</span> — {(t('nogo_wait').split('—')[1] || t('nogo_wait')).trim()}</>}>
+        <Section tone="dark" title={<><span className="text-red-600">{t('no_go')}</span> — {(t('nogo_wait').split('—')[1] || t('nogo_wait')).trim()}</>}>
           <textarea value={data.noGo} onChange={(e)=>setField('noGo', e.target.value)} rows={2} className="w-full px-3 py-2 rounded-xl border" />
         </Section>
 
