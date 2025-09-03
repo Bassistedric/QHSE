@@ -37,7 +37,7 @@ Ensuite, l’app peut fonctionner hors-ligne.`,
 
     print: "Imprimer",
     reset_all: "Réinitialiser le formulaire (tout remettre à zéro)",
-    reset_hint_team: "À utiliser si l’équipe change (Responsable & Équipe seront vidés).",
+    reset_hint_team: "Remet tout à zéro, excepté le nom du responsable.",
     send: "Envoyer",
     sending: "Envoi en cours…",
     queue_label: "File",
@@ -207,7 +207,7 @@ Then, the app can work offline.`,
 
     print: "Print",
     reset_all: "Reset form (clear everything)",
-    reset_hint_team: "Use this if the team changes (Manager & Team will be cleared).",
+    reset_hint_team: "Resets everything except the manager's name.",
     send: "Send",
     sending: "Sending…",
     queue_label: "Queue",
@@ -376,7 +376,7 @@ Daarna kan de app offline werken.`,
 
     print: "Afdrukken",
     reset_all: "Formulier resetten (alles wissen)",
-    reset_hint_team: "Gebruik dit als het team wijzigt (Verantwoordelijke & Team worden leeggemaakt).",
+    reset_hint_team: "Zet alles terug behalve de naam van de verantwoordelijke.",
     send: "Verzenden",
     sending: "Verzenden…",
     queue_label: "Wachtrij",
@@ -752,7 +752,10 @@ const MAP_KEYS = {
     React.useEffect(()=>{ saveLS(STATE_KEY, data); }, [data]);
 
     const setField = (k,v)=>setData({...data,[k]:v});
-    const resetAll = () => { setData(initialState()); setStep(0); };
+    const resetAll = () => {
+      setData({ ...initialState(), responsable: data.responsable, team: [] });
+      setStep(0);
+    };
 
     const next = () => {
       if(step === 0){
@@ -775,9 +778,9 @@ const MAP_KEYS = {
       if(ok){
         alert(t('alert_sent'));
         // Conserver Responsable & Équipe (prefs)
-        saveLS(PREFS_KEY, { responsable:data.responsable, team:data.team });
-        // Reset du reste, en ré-injectant prefs
-        setData(initialState());
+        saveLS(PREFS_KEY, { responsable: data.responsable, team: data.team });
+        // Réinitialiser en conservant Site, Responsable & Équipe
+        setData({ ...initialState(), site: data.site, responsable: data.responsable, team: data.team });
         setStep(0);
         setErrors({});
       }else{
