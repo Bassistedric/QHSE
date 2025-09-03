@@ -791,7 +791,7 @@ const MAP_KEYS = {
 
     return (
       <main className="max-w-md mx-auto p-4">
-        <h1 className="mb-3 px-4 py-2 rounded-xl bg-[#104861] text-[#D9D9D9]">{t('lmra_title')}</h1>
+        <h1 className="mb-3 px-4 py-2 rounded-xl bg-[#104861] text-[#D9D9D9] text-center">{t('lmra_title')}</h1>
         {/* Bouton reset tout en haut (UX) */}
         <div className="mb-3">
           <button onClick={resetAll} className="px-3 py-2 rounded-xl border">{t('reset_all')}</button>
@@ -1079,7 +1079,7 @@ const MAP_KEYS = {
 
     return (
       <main className="max-w-md mx-auto p-4">
-        <h1 className="mb-3 px-4 py-2 rounded-xl bg-[#104861] text-[#D9D9D9]">{t('fa_title')}</h1>
+        <h1 className="mb-3 px-4 py-2 rounded-xl bg-[#104861] text-[#D9D9D9] text-center">{t('fa_title')}</h1>
         <div className="mb-3">
           <button onClick={resetAll} className="px-3 py-2 rounded-xl border">{t('reset_all')}</button>
         </div>
@@ -1264,7 +1264,7 @@ const MAP_KEYS = {
 
     return (
       <main className="max-w-md mx-auto p-4">
-        <h1 className="mb-3 px-4 py-2 rounded-xl bg-[#104861] text-[#D9D9D9]">{t('stop_title')}</h1>
+        <h1 className="mb-3 px-4 py-2 rounded-xl bg-[#104861] text-[#D9D9D9] text-center">{t('stop_title')}</h1>
         <div className="mb-3">
           <button onClick={resetAll} className="px-3 py-2 rounded-xl border">{t('reset_all')}</button>
         </div>
