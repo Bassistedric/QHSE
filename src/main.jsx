@@ -1306,14 +1306,13 @@ const MAP_KEYS = {
         </Section>
 
         <Section title={t('act_box')} tone="green">
-          <div className="flex flex-col gap-3">
-            <label className="text-sm">{t('solution')}
-              <textarea value={data.solution} onChange={(e)=>setField("solution", e.target.value)} rows={3} className="mt-1 w-full px-3 py-2 rounded-xl border" />
-            </label>
-            <label className="text-sm">{t('nogo_wait')}
-              <textarea value={data.noGo} onChange={(e)=>setField("noGo", e.target.value)} rows={2} className="mt-1 w-full px-3 py-2 rounded-xl border" />
-            </label>
-          </div>
+          <label className="text-sm">{t('solution')}
+            <textarea value={data.solution} onChange={(e)=>setField("solution", e.target.value)} rows={3} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+          </label>
+        </Section>
+
+        <Section tone="green" title={<><span className="text-red-600">{t('no_go')}</span> — {(t('nogo_wait').split('—')[1] || t('nogo_wait')).trim()}</>}>
+          <textarea value={data.noGo} onChange={(e)=>setField('noGo', e.target.value)} rows={2} className="w-full px-3 py-2 rounded-xl border" />
         </Section>
 
         <div className="grid grid-cols-1 gap-2 mt-4">
