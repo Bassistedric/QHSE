@@ -591,7 +591,7 @@ const MAP_KEYS = {
       
         return (
           <section className={`rounded-2xl border ${c.border} bg-white shadow-sm overflow-hidden mb-4`}>
-            <div className={`px-4 py-2 border-b ${c.border} ${c.bar} text-sm font-semibold ${c.title}`}>
+            <div className={`px-4 py-2 border-b ${c.border} ${c.bar} text-base font-medium ${c.title}`}>
               {title}
             </div>
             <div className="p-4">
