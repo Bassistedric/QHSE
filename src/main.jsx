@@ -1,5 +1,5 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
+const React = window.React;
+const ReactDOM = window.ReactDOM;
 
     // ========================= CONFIG =========================
     // ⬇⬇ Remplacer l' URL Apps Script /exec si modification du GSheet
