@@ -47,6 +47,8 @@ Ensuite, l’app peut fonctionner hors-ligne.`,
     // Alerts
     alert_sent: "Envoyé ✅",
     alert_offline_queued: "Pas de réseau : enregistré localement. Envoi auto dès connexion.",
+    required_field: "Champ obligatoire",
+    required_fields: "Merci de remplir les champs obligatoires.",
 
     // LMRA
     lmra_title: "LMRA – Mobile (v3.2)",
@@ -214,6 +216,8 @@ Then, the app can work offline.`,
 
     alert_sent: "Sent ✅",
     alert_offline_queued: "No network: saved locally. Will auto-send when online.",
+    required_field: "Required field",
+    required_fields: "Please fill in required fields.",
 
     // LMRA
     lmra_title: "LMRA – Mobile (v3.2)",
@@ -381,6 +385,8 @@ Daarna kan de app offline werken.`,
 
     alert_sent: "Verzonden ✅",
     alert_offline_queued: "Geen netwerk: lokaal opgeslagen. Wordt automatisch verzonden zodra online.",
+    required_field: "Verplicht veld",
+    required_fields: "Vul de verplichte velden in.",
 
     // LMRA
     lmra_title: "LMRA – Mobiel (v3.2)",
@@ -742,12 +748,19 @@ const MAP_KEYS = {
     const [data, setData] = React.useState(loadLS(STATE_KEY, initialState()));
     const [step, setStep] = React.useState(0);
     const totalSteps = 6;
+    const [errors, setErrors] = React.useState({});
     React.useEffect(()=>{ saveLS(STATE_KEY, data); }, [data]);
 
     const setField = (k,v)=>setData({...data,[k]:v});
     const resetAll = () => { setData(initialState()); setStep(0); };
 
     const envoyer = async () => {
+      const missing = { site: !data.site.trim(), responsable: !data.responsable.trim() };
+      setErrors(missing);
+      if(missing.site || missing.responsable){
+        alert(t('required_fields'));
+        return;
+      }
       const payload = {
         meta: { sentAt:new Date().toISOString(), page:location.href, userAgent:navigator.userAgent, formType:"lmra" },
         data
@@ -760,6 +773,7 @@ const MAP_KEYS = {
         // Reset du reste, en ré-injectant prefs
         setData(initialState());
         setStep(0);
+        setErrors({});
       }else{
         enqueueOutbox(payload);
         alert(t('alert_offline_queued'));
@@ -788,13 +802,15 @@ const MAP_KEYS = {
               <input type="datetime-local" value={data.datetime} onChange={(e)=>setField("datetime", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
             </label>
             <label className="text-sm">{t('site')}
-              <input value={data.site} onChange={(e)=>setField("site", e.target.value)} placeholder={t('site_ph')} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+              <input value={data.site} onChange={(e)=>{ setField("site", e.target.value); if(errors.site) setErrors({...errors, site:false}); }} placeholder={t('site_ph')} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.site? 'border-red-500':''}`} />
+              {errors.site && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
             </label>
             <label className="text-sm">{t('task')}
               <input value={data.task} onChange={(e)=>setField("task", e.target.value)} placeholder={t('task_ph')} className="mt-1 w-full px-3 py-2 rounded-xl border" />
             </label>
             <label className="text-sm">{t('manager')}
-              <input value={data.responsable} onChange={(e)=>setField("responsable", e.target.value)} placeholder={t('manager_ph')} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+              <input value={data.responsable} onChange={(e)=>{ setField("responsable", e.target.value); if(errors.responsable) setErrors({...errors, responsable:false}); }} placeholder={t('manager_ph')} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable? 'border-red-500':''}`} />
+              {errors.responsable && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
             </label>
 
             {/* Équipe */}
@@ -1023,11 +1039,18 @@ const MAP_KEYS = {
 
     const [data, setData] = React.useState(loadLS(STATE_KEY, initialState()));
     React.useEffect(()=>{ saveLS(STATE_KEY, data); }, [data]);
+    const [errors, setErrors] = React.useState({});
 
     const setField = (k,v)=>setData({...data,[k]:v});
     const resetAll = () => setData(initialState());
 
     const envoyer = async () => {
+      const missing = { chantier: !data.chantier.trim(), responsable: !data.responsable.trim() };
+      setErrors(missing);
+      if(missing.chantier || missing.responsable){
+        alert(t('required_fields'));
+        return;
+      }
       const payload = {
         meta: { sentAt:new Date().toISOString(), page:location.href, userAgent:navigator.userAgent, formType:"firstaid" },
         data
@@ -1038,6 +1061,7 @@ const MAP_KEYS = {
         // Conserver responsable (prefs)
         saveLS(PREFS_KEY, { ...loadLS(PREFS_KEY, {responsable:"", team:[]}), responsable:data.responsable });
         setData(initialState());
+        setErrors({});
       }else{
         enqueueOutbox(payload);
         alert(t('alert_offline_queued'));
@@ -1057,10 +1081,12 @@ const MAP_KEYS = {
               <input type="datetime-local" value={data.datetime} onChange={(e)=>setField("datetime", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
             </label>
             <label className="text-sm">{t('site')}
-              <input value={data.chantier} onChange={(e)=>setField("chantier", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+              <input value={data.chantier} onChange={(e)=>{ setField("chantier", e.target.value); if(errors.chantier) setErrors({...errors, chantier:false}); }} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.chantier? 'border-red-500':''}`} />
+              {errors.chantier && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
             </label>
             <label className="text-sm">{t('manager')}
-              <input value={data.responsable} onChange={(e)=>setField("responsable", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+              <input value={data.responsable} onChange={(e)=>{ setField("responsable", e.target.value); if(errors.responsable) setErrors({...errors, responsable:false}); }} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable? 'border-red-500':''}`} />
+              {errors.responsable && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
             </label>
             <label className="text-sm">{t('person')}
               <input value={data.personne} onChange={(e)=>setField("personne", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
@@ -1198,11 +1224,18 @@ const MAP_KEYS = {
 
     const [data, setData] = React.useState(loadLS(STATE_KEY, initialState()));
     React.useEffect(()=>{ saveLS(STATE_KEY, data); }, [data]);
+    const [errors, setErrors] = React.useState({});
 
     const setField = (k,v)=>setData({...data,[k]:v});
     const resetAll = () => setData(initialState());
 
     const envoyer = async () => {
+      const missing = { chantier: !data.chantier.trim(), responsable: !data.responsable.trim() };
+      setErrors(missing);
+      if(missing.chantier || missing.responsable){
+        alert(t('required_fields'));
+        return;
+      }
       const payload = {
         meta: { sentAt:new Date().toISOString(), page:location.href, userAgent:navigator.userAgent, formType:"stop" },
         data
@@ -1213,6 +1246,7 @@ const MAP_KEYS = {
         // Conserver responsable en prefs
         saveLS(PREFS_KEY, { ...loadLS(PREFS_KEY, {responsable:"", team:[]}), responsable:data.responsable });
         setData(initialState());
+        setErrors({});
       }else{
         enqueueOutbox(payload);
         alert(t('alert_offline_queued'));
@@ -1232,10 +1266,12 @@ const MAP_KEYS = {
               <input type="datetime-local" value={data.datetime} onChange={(e)=>setField("datetime", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
             </label>
             <label className="text-sm">{t('site')}
-              <input value={data.chantier} onChange={(e)=>setField("chantier", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+              <input value={data.chantier} onChange={(e)=>{ setField("chantier", e.target.value); if(errors.chantier) setErrors({...errors, chantier:false}); }} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.chantier? 'border-red-500':''}`} />
+              {errors.chantier && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
             </label>
             <label className="text-sm">{t('manager')}
-              <input value={data.responsable} onChange={(e)=>setField("responsable", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+              <input value={data.responsable} onChange={(e)=>{ setField("responsable", e.target.value); if(errors.responsable) setErrors({...errors, responsable:false}); }} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable? 'border-red-500':''}`} />
+              {errors.responsable && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
             </label>
           </div>
         </Section>
