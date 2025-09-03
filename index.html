@@ -77,6 +77,8 @@ Ensuite, l’app peut fonctionner hors-ligne.`,
     send: "Envoyer",
     sending: "Envoi en cours…",
     queue_label: "File",
+    field_required: "Champ requis",
+    field_ok: "OK",
 
     // Alerts
     alert_sent: "Envoyé ✅",
@@ -243,6 +245,8 @@ Then, the app can work offline.`,
     send: "Send",
     sending: "Sending…",
     queue_label: "Queue",
+    field_required: "Required field",
+    field_ok: "OK",
 
     alert_sent: "Sent ✅",
     alert_offline_queued: "No network: saved locally. Will auto-send when online.",
@@ -408,6 +412,8 @@ Daarna kan de app offline werken.`,
     send: "Verzenden",
     sending: "Verzenden…",
     queue_label: "Wachtrij",
+    field_required: "Verplicht veld",
+    field_ok: "OK",
 
     alert_sent: "Verzonden ✅",
     alert_offline_queued: "Geen netwerk: lokaal opgeslagen. Wordt automatisch verzonden zodra online.",
@@ -791,7 +797,14 @@ const MAP_KEYS = {
     const setField = (k,v)=>setData({...data,[k]:v});
     const resetAll = () => setData(initialState());
 
+    const fieldFilled = v => v.trim().length > 0;
+    const siteOk = fieldFilled(data.site);
+    const taskOk = fieldFilled(data.task);
+    const responsableOk = fieldFilled(data.responsable);
+    const formOk = siteOk && taskOk && responsableOk;
+
     const envoyer = async () => {
+      if(!formOk) return;
       const payload = {
         meta: { sentAt:new Date().toISOString(), page:location.href, userAgent:navigator.userAgent, formType:"lmra" },
         data
@@ -823,14 +836,17 @@ const MAP_KEYS = {
             <label className="text-sm">{t('datetime')}
               <input type="datetime-local" value={data.datetime} onChange={(e)=>setField("datetime", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
             </label>
-            <label className="text-sm">{t('site')}
+            <label className="text-sm">{t('site')}<span className="text-red-500"> *</span>
               <input value={data.site} onChange={(e)=>setField("site", e.target.value)} placeholder={t('site_ph')} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+              <div className={`mt-1 text-xs ${siteOk ? 'text-green-600' : 'text-red-500'}`}>{t(siteOk ? 'field_ok' : 'field_required')}</div>
             </label>
-            <label className="text-sm">{t('task')}
+            <label className="text-sm">{t('task')}<span className="text-red-500"> *</span>
               <input value={data.task} onChange={(e)=>setField("task", e.target.value)} placeholder={t('task_ph')} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+              <div className={`mt-1 text-xs ${taskOk ? 'text-green-600' : 'text-red-500'}`}>{t(taskOk ? 'field_ok' : 'field_required')}</div>
             </label>
-            <label className="text-sm">{t('manager')}
+            <label className="text-sm">{t('manager')}<span className="text-red-500"> *</span>
               <input value={data.responsable} onChange={(e)=>setField("responsable", e.target.value)} placeholder={t('manager_ph')} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+              <div className={`mt-1 text-xs ${responsableOk ? 'text-green-600' : 'text-red-500'}`}>{t(responsableOk ? 'field_ok' : 'field_required')}</div>
             </label>
 
             {/* Équipe */}
@@ -999,8 +1015,9 @@ const MAP_KEYS = {
                 <input value={data.noGo.tel}  onChange={(e)=>setField("noGo",{...data.noGo, tel:e.target.value})}  placeholder={t('nogo_tel_ph')}  className="px-3 py-2 rounded-xl border" />
               </div>
             )}
-            <label className="text-sm">{t('manager')}
+            <label className="text-sm">{t('manager')}<span className="text-red-500"> *</span>
               <input value={data.responsable} onChange={(e)=>setField("responsable", e.target.value)} placeholder={t('manager_ph')} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+              <div className={`mt-1 text-xs ${responsableOk ? 'text-green-600' : 'text-red-500'}`}>{t(responsableOk ? 'field_ok' : 'field_required')}</div>
             </label>
             <label className="text-sm">{t('notes')}
               <textarea value={data.notes} onChange={(e)=>setField("notes", e.target.value)} rows={2} placeholder={t('notes_ph')} className="mt-1 w-full px-3 py-2 rounded-xl border" />
@@ -1009,7 +1026,7 @@ const MAP_KEYS = {
         </Section>
 
         <div className="grid grid-cols-1 gap-2 mt-4">
-          <button onClick={envoyer} className="px-4 py-3 rounded-xl border bg-black text-white">{t('send')}</button>
+          <button onClick={envoyer} disabled={!formOk} className={`px-4 py-3 rounded-xl border ${formOk ? 'bg-black text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}>{t('send')}</button>
         </div>
       </main>
     );
