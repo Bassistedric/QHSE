@@ -37,7 +37,7 @@ Ensuite, l’app peut fonctionner hors-ligne.`,
 
     print: "Imprimer",
     reset_all: "Réinitialiser le formulaire (tout remettre à zéro)",
-    reset_hint_team: "Remet tout à zéro, excepté le nom du responsable.",
+    reset_hint_team: "Remet tout à zéro, excepté le nom du responsable et l'équipe.",
     send: "Envoyer",
     sending: "Envoi en cours…",
     queue_label: "File",
@@ -207,7 +207,7 @@ Then, the app can work offline.`,
 
     print: "Print",
     reset_all: "Reset form (clear everything)",
-    reset_hint_team: "Resets everything except the manager's name.",
+    reset_hint_team: "Resets everything except the manager's name and team.",
     send: "Send",
     sending: "Sending…",
     queue_label: "Queue",
@@ -376,7 +376,7 @@ Daarna kan de app offline werken.`,
 
     print: "Afdrukken",
     reset_all: "Formulier resetten (alles wissen)",
-    reset_hint_team: "Zet alles terug behalve de naam van de verantwoordelijke.",
+    reset_hint_team: "Zet alles terug behalve de naam van de verantwoordelijke en het team.",
     send: "Verzenden",
     sending: "Verzenden…",
     queue_label: "Wachtrij",
@@ -754,7 +754,7 @@ const MAP_KEYS = {
 
     const setField = (k,v)=>setData({...data,[k]:v});
     const resetAll = () => {
-      setData({ ...initialState(), responsable: data.responsable, team: [] });
+      setData({ ...initialState(), responsable: data.responsable, team: data.team });
       setStep(0);
     };
 
