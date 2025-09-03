@@ -62,7 +62,8 @@ Ensuite, l’app peut fonctionner hors-ligne.`,
     manager_ph: "Ex: Jean Dupont",
     team: "Équipe",
     team_member_ph: "Nom & prénom",
-    team_add: "Valider",
+    team_validate: "Valider",
+    team_add: "Ajouter",
     team_empty: "(Ajouter les membres)",
 
     cond_title: "Conditions du jour",
@@ -231,7 +232,8 @@ Then, the app can work offline.`,
     manager_ph: "e.g. John Smith",
     team: "Team",
     team_member_ph: "First & last name",
-    team_add: "Validate",
+    team_validate: "Validate",
+    team_add: "Add",
     team_empty: "(Add members)",
 
     cond_title: "Day conditions",
@@ -400,7 +402,8 @@ Daarna kan de app offline werken.`,
     manager_ph: "Bv. Jan Jansen",
     team: "Team",
     team_member_ph: "Voor- & achternaam",
-    team_add: "Bevestigen",
+    team_validate: "Bevestigen",
+    team_add: "Toevoegen",
     team_empty: "(Voeg teamleden toe)",
 
     cond_title: "Dagcondities",
@@ -836,7 +839,7 @@ const MAP_KEYS = {
               <label className="text-sm block mb-2">{t('team')}</label>
               <div className="flex gap-2 mb-2">
                 <input value={data.teamInput} onChange={(e)=>setData({...data, teamInput:e.target.value})} placeholder={t('team_member_ph')} className="flex-1 px-3 py-2 rounded-xl border" />
-                <button onClick={()=>{ const name=data.teamInput.trim(); if(!name) return; if(data.team.includes(name)) return setData({...data, teamInput:""}); setData({...data, team:[...data.team, name], teamInput:""}); }} className="px-3 py-2 rounded-xl border">{t('team_add')}</button>
+                <button onClick={()=>{ const name=data.teamInput.trim(); if(!name) return; if(data.team.includes(name)) return setData({...data, teamInput:""}); setData({...data, team:[...data.team, name], teamInput:""}); }} className="px-3 py-2 rounded-xl border">{data.team.length === 0 ? t('team_validate') : t('team_add')}</button>
               </div>
               <div className="flex flex-wrap gap-2">
                 {data.team.map((n)=>(
