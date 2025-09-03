@@ -1,10 +1,8 @@
-// sw.js — QHSE PWA (cache statique + dynamique) — v4-logos-THICK2
-const CACHE_STATIC  = 'qhse-static-v4-borders-3';
-const CACHE_DYNAMIC = 'qhse-dyn-v4-borders-3';
+// sw.js — QHSE PWA (cache statique + dynamique) — v5
+const CACHE_STATIC  = 'qhse-static-v5';
+const CACHE_DYNAMIC = 'qhse-dyn-v5';
 
 const ASSETS = [
-  './',
-  './index.html',
   './sw.js',
   './manifest.webmanifest',
   './icon-192.png',
