@@ -754,13 +754,19 @@ const MAP_KEYS = {
     const setField = (k,v)=>setData({...data,[k]:v});
     const resetAll = () => { setData(initialState()); setStep(0); };
 
-    const envoyer = async () => {
-      const missing = { site: !data.site.trim(), responsable: !data.responsable.trim() };
-      setErrors(missing);
-      if(missing.site || missing.responsable){
-        alert(t('required_fields'));
-        return;
+    const next = () => {
+      if(step === 0){
+        const missing = { site: !data.site.trim(), responsable: !data.responsable.trim() };
+        setErrors(missing);
+        if(missing.site || missing.responsable){
+          alert(t('required_fields'));
+          return;
+        }
       }
+      setStep(step+1);
+    };
+
+    const envoyer = async () => {
       const payload = {
         meta: { sentAt:new Date().toISOString(), page:location.href, userAgent:navigator.userAgent, formType:"lmra" },
         data
@@ -1004,7 +1010,7 @@ const MAP_KEYS = {
             <button onClick={()=>setStep(step-1)} className="px-3 py-2 rounded-xl border border-gray-300 bg-gray-200 text-gray-800 hover:bg-gray-300">{t('prev')}</button> 
           )} 
           {step<totalSteps-1 ? ( 
-            <button onClick={()=>setStep(step+1)} className="px-3 py-2 rounded-xl border border-blue-600 bg-blue-600 text-white hover:bg-blue-700">{t('next')}</button> 
+            <button onClick={next} className="px-3 py-2 rounded-xl border border-blue-600 bg-blue-600 text-white hover:bg-blue-700">{t('next')}</button>
           ) : ( 
             <button onClick={envoyer} className="px-4 py-3 rounded-xl border bg-black text-white">{t('send')}</button> 
           )} 
