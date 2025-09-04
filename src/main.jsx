@@ -35,6 +35,9 @@ Ensuite, l’app peut fonctionner hors-ligne.`,
     tile_stop_title: "STOP chantier",
     tile_stop_sub: "Imprévu / arrêt",
 
+    tile_tbm_title: "TBM",
+    tile_tbm_sub: "Toolbox meeting",
+
     print: "Imprimer",
     reset_all: "Réinitialiser le formulaire (tout remettre à zéro)",
     reset_hint_team: "Remet tout à zéro, excepté le nom du responsable et l'équipe.",
@@ -206,6 +209,9 @@ Then, the app can work offline.`,
     tile_stop_title: "STOP",
     tile_stop_sub: "Unplanned / stop",
 
+    tile_tbm_title: "TBM",
+    tile_tbm_sub: "Toolbox meeting",
+
     print: "Print",
     reset_all: "Reset form (clear everything)",
     reset_hint_team: "Resets everything except the manager's name and team.",
@@ -375,6 +381,9 @@ Daarna kan de app offline werken.`,
     tile_fa_sub: "Gebruik EHBO-koffer",
     tile_stop_title: "STOP",
     tile_stop_sub: "Onvoorziene stop",
+
+    tile_tbm_title: "TBM",
+    tile_tbm_sub: "Toolbox meeting",
 
     print: "Afdrukken",
     reset_all: "Formulier resetten (alles wissen)",
@@ -691,9 +700,9 @@ const MAP_KEYS = {
             <TileC href="#lmra" icon="🦺" title={t('tile_lmra_title')} sub={t('tile_lmra_sub')} />
             <TileC href="#firstaid" img="firstaid-icon.svg" title={t('tile_fa_title')} sub={t('tile_fa_sub')} />
             <TileC href="#stop" icon="🚦" title={t('tile_stop_title')} sub={t('tile_stop_sub')} />
-            <TileC muted img="" />
+            <TileC href="tbm.html" icon="🧰" title={t('tile_tbm_title')} sub={t('tile_tbm_sub')} />
           </div>
-        </Section>
+          </Section>
 
         <Section title={t('home_install')}>
           <div className="flex flex-col items-center gap-3">
