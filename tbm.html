@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>TBM</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-4 min-h-screen">
+  <header class="flex items-center gap-2 mb-4">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-10 h-10 text-red-600">
+      <path d="M3 7a2 2 0 012-2h2V5a3 3 0 013-3h4a3 3 0 013 3v0h2a2 2 0 012 2v4a2 2 0 01-2 2v5a3 3 0 01-3 3H6a3 3 0 01-3-3v-5a2 2 0 01-2-2V7zM9 5a1 1 0 00-1 1v1h8V6a1 1 0 00-1-1H9z"/>
+    </svg>
+    <h1 class="text-2xl font-bold">TBM</h1>
+  </header>
+  <main class="space-y-4">
+    <section class="bg-white rounded shadow p-4">
+      <label for="sheetUrl" class="block text-sm font-medium mb-1">URL Google Sheet</label>
+      <div class="flex gap-2">
+        <input id="sheetUrl" type="url" class="flex-1 border rounded px-2 py-1" value="https://docs.google.com/spreadsheets/d/EXPORT?output=ods">
+        <button id="testBtn" class="px-3 py-1 bg-blue-600 text-white rounded disabled:opacity-50">Tester le chargement</button>
+      </div>
+      <p id="loadStatus" class="text-sm mt-1 text-gray-500"></p>
+    </section>
+
+    <section class="bg-white rounded shadow p-4">
+      <label for="dateInput" class="block text-sm font-medium mb-1">Date / heure</label>
+      <input id="dateInput" type="datetime-local" class="border rounded px-2 py-1 w-full">
+    </section>
+
+    <section class="bg-white rounded shadow p-4">
+      <label for="metier" class="block text-sm font-medium mb-1">Métier</label>
+      <input id="metier" type="text" class="border rounded px-2 py-1 w-full">
+    </section>
+
+    <section class="bg-white rounded shadow p-4">
+      <label for="chantierSelect" class="block text-sm font-medium mb-1">Chantier</label>
+      <select id="chantierSelect" class="border rounded px-2 py-1 w-full"></select>
+    </section>
+
+    <section class="bg-white rounded shadow p-4">
+      <label for="responsableSelect" class="block text-sm font-medium mb-1">Responsable (CE)</label>
+      <select id="responsableSelect" class="border rounded px-2 py-1 w-full"></select>
+      <p id="responsableHelper" class="text-sm text-gray-500 mt-1"></p>
+    </section>
+
+    <section class="bg-white rounded shadow p-4">
+      <div class="flex justify-between items-center mb-2">
+        <label class="text-sm font-medium">Équipe</label>
+        <button id="toggleAll" class="text-sm text-blue-600 underline">Tout cocher</button>
+      </div>
+      <div id="teamContainer" class="flex flex-col gap-1 mb-2"></div>
+      <div>
+        <input id="manualInput" type="text" class="border rounded px-2 py-1 w-full" placeholder="Ajouter manuellement (séparés par des virgules)">
+        <div id="manualChips" class="flex flex-wrap gap-2 mt-2"></div>
+      </div>
+    </section>
+
+    <section class="bg-white rounded shadow p-4">
+      <div class="flex items-center gap-4">
+        <div id="thumbContainer" class="w-64 h-36 bg-gray-200 flex items-center justify-center text-sm text-gray-500">Vidéo non disponible</div>
+        <div id="qrcode" class="w-32 h-32"></div>
+      </div>
+      <div class="mt-2 flex gap-2">
+        <button id="playBtn" class="px-3 py-1 bg-blue-600 text-white rounded disabled:opacity-50">Lire la vidéo</button>
+        <button id="copyLink" class="px-3 py-1 bg-blue-600 text-white rounded disabled:opacity-50">Copier le lien</button>
+      </div>
+      <dialog id="videoDialog" class="p-0">
+        <iframe id="videoFrame" width="560" height="315" allow="autoplay" allowfullscreen></iframe>
+      </dialog>
+    </section>
+
+    <section class="bg-white rounded shadow p-4">
+      <button id="sendBtn" class="px-3 py-1 bg-green-600 text-white rounded w-full">Envoyer</button>
+      <p id="sendStatus" class="text-sm mt-1"></p>
+    </section>
+
+    <section class="bg-white rounded shadow p-4">
+      <h2 class="text-lg font-medium mb-2">Historique</h2>
+      <div class="flex gap-2 mb-2">
+        <button id="exportBtn" class="px-3 py-1 bg-blue-600 text-white rounded">Exporter CSV</button>
+        <button id="clearBtn" class="px-3 py-1 bg-red-600 text-white rounded">Vider l'historique</button>
+      </div>
+      <table id="historyTable" class="w-full text-sm"></table>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script type="module">
+    const sheetUrlInput = document.getElementById('sheetUrl');
+    const testBtn = document.getElementById('testBtn');
+    const loadStatus = document.getElementById('loadStatus');
+    const dateInput = document.getElementById('dateInput');
+    const chantierSelect = document.getElementById('chantierSelect');
+    const responsableSelect = document.getElementById('responsableSelect');
+    const responsableHelper = document.getElementById('responsableHelper');
+    const teamContainer = document.getElementById('teamContainer');
+    const toggleAllBtn = document.getElementById('toggleAll');
+    const manualInput = document.getElementById('manualInput');
+    const manualChips = document.getElementById('manualChips');
+    const thumbContainer = document.getElementById('thumbContainer');
+    const qrcodeEl = document.getElementById('qrcode');
+    const playBtn = document.getElementById('playBtn');
+    const copyLinkBtn = document.getElementById('copyLink');
+    const videoDialog = document.getElementById('videoDialog');
+    const videoFrame = document.getElementById('videoFrame');
+    const metierInput = document.getElementById('metier');
+    const sendBtn = document.getElementById('sendBtn');
+    const sendStatus = document.getElementById('sendStatus');
+    const exportBtn = document.getElementById('exportBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const historyTable = document.getElementById('historyTable');
+
+    let equipeData = null;
+    let tbmData = null;
+    let manualMembers = [];
+    let lastVideoUrl = '';
+
+    function normalize(str){
+      return str.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    }
+
+    function csvUrl(base, sheet){
+      try{
+        const u = new URL(base);
+        u.searchParams.set('output','csv');
+        u.searchParams.set('sheet',sheet);
+        return u.toString();
+      }catch(e){
+        return base;
+      }
+    }
+
+    function parseCsv(url){
+      return new Promise((resolve,reject)=>{
+        Papa.parse(url,{
+          download:true,
+          complete: res => resolve(res.data),
+          error: err => reject(err)
+        });
+      });
+    }
+
+    async function loadSheets(){
+      loadStatus.textContent = 'Chargement...';
+      try{
+        const base = sheetUrlInput.value.trim();
+        [equipeData, tbmData] = await Promise.all([
+          parseCsv(csvUrl(base,'Equipe')),
+          parseCsv(csvUrl(base,'TBM'))
+        ]);
+        loadStatus.textContent = 'Feuilles chargées';
+        updateAll();
+      }catch(e){
+        console.error(e);
+        loadStatus.textContent = 'Erreur de chargement';
+      }
+    }
+
+    function updateAll(){
+      populateChantiers();
+      populateVideo();
+    }
+
+    function findColumnIndex(data, date){
+      if(!data || data.length < 2) return -1;
+      const monthName = date.toLocaleString('fr-FR',{month:'long'}).toLowerCase();
+      const day = String(date.getDate());
+      const monthsRow = data[0].map(c => (c||'').toString().toLowerCase());
+      const daysRow = data[1].map(c => (c||'').toString());
+      for(let i=0;i<monthsRow.length;i++){
+        if(monthsRow[i] === monthName && daysRow[i] === day){
+          return i;
+        }
+      }
+      return -1;
+    }
+
+    function populateChantiers(){
+      chantierSelect.innerHTML = '';
+      responsableSelect.innerHTML = '';
+      teamContainer.innerHTML = '';
+      if(!equipeData) return;
+      const date = new Date(dateInput.value);
+      const col = findColumnIndex(equipeData,date);
+      if(col===-1) return;
+      const chantiers = new Set();
+      for(let r=7;r<equipeData.length;r++){
+        const val = (equipeData[r][col]||'').trim();
+        if(!val) continue;
+        const norm = normalize(val).toLowerCase();
+        if(norm==='conge' || norm==='malade') continue;
+        chantiers.add(val);
+      }
+      const sorted = Array.from(chantiers).sort((a,b)=>a.localeCompare(b,'fr'));
+      sorted.forEach(ch => {
+        const opt = document.createElement('option');
+        opt.value = ch;
+        opt.textContent = ch;
+        chantierSelect.appendChild(opt);
+      });
+      if(sorted.length){
+        chantierSelect.value = sorted[0];
+        populateResponsableAndTeam();
+      }
+    }
+
+    function populateResponsableAndTeam(){
+      responsableSelect.innerHTML = '';
+      teamContainer.innerHTML = '';
+      const chantier = chantierSelect.value;
+      if(!chantier || !equipeData) return;
+      const date = new Date(dateInput.value);
+      const col = findColumnIndex(equipeData,date);
+      if(col===-1) return;
+      const resps = [];
+      const members = [];
+      for(let r=7;r<equipeData.length;r++){
+        const role = (equipeData[r][0]||'').trim().toUpperCase();
+        const name = (equipeData[r][1]||'').trim();
+        const affect = (equipeData[r][col]||'').trim();
+        if(affect !== chantier) continue;
+        if(role==='CE') resps.push(name); else members.push(name);
+      }
+      if(resps.length){
+        resps.forEach(n=>{
+          const opt=document.createElement('option');
+          opt.value=n; opt.textContent=n;
+          responsableSelect.appendChild(opt);
+        });
+        responsableSelect.disabled=false;
+        responsableHelper.textContent='';
+      }else{
+        responsableSelect.disabled=true;
+        responsableHelper.textContent='Aucun CE trouvé';
+      }
+      members.sort((a,b)=>a.localeCompare(b,'fr'));
+      members.forEach(n=>{
+        const lbl=document.createElement('label');
+        lbl.className='inline-flex items-center gap-2';
+        const cb=document.createElement('input');
+        cb.type='checkbox'; cb.value=n; cb.className='rounded';
+        lbl.appendChild(cb); lbl.append(n);
+        teamContainer.appendChild(lbl);
+      });
+    }
+
+    function populateVideo(){
+      thumbContainer.innerHTML='Vidéo non disponible';
+      qrcodeEl.innerHTML='';
+      playBtn.disabled=true;
+      copyLinkBtn.disabled=true;
+      lastVideoUrl='';
+      if(!tbmData) return;
+      const monthName = new Date(dateInput.value).toLocaleString('fr-FR',{month:'long'}).toLowerCase();
+      for(const row of tbmData){
+        if((row[0]||'').toString().toLowerCase() === monthName){
+          const url = row[1];
+          if(url){
+            lastVideoUrl = url;
+            renderVideo(url);
+          }
+          break;
+        }
+      }
+    }
+
+    function renderVideo(url){
+      const id = extractYoutubeId(url);
+      const img = new Image();
+      img.alt='Miniature';
+      img.className='w-64 h-36 object-cover rounded';
+      img.src=`https://img.youtube.com/vi/${id}/maxresdefault.jpg`;
+      img.onerror=()=>{img.src=`https://img.youtube.com/vi/${id}/hqdefault.jpg`;};
+      thumbContainer.innerHTML='';
+      thumbContainer.appendChild(img);
+      playBtn.disabled=false;
+      copyLinkBtn.disabled=false;
+      qrcodeEl.innerHTML='';
+      new QRCode(qrcodeEl,{text:url,width:128,height:128});
+    }
+
+    function extractYoutubeId(url){
+      const m = url.match(/(?:v=|\.be\/)([\w-]{11})/);
+      return m?m[1]:'';
+    }
+
+    toggleAllBtn.addEventListener('click',()=>{
+      const boxes = teamContainer.querySelectorAll('input[type="checkbox"]');
+      const allChecked = Array.from(boxes).every(b=>b.checked);
+      boxes.forEach(b=>b.checked=!allChecked);
+    });
+
+    chantierSelect.addEventListener('change', populateResponsableAndTeam);
+    dateInput.addEventListener('change', updateAll);
+
+    manualInput.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){e.preventDefault();addManual();}
+    });
+    manualInput.addEventListener('blur',addManual);
+
+    function addManual(){
+      const names = manualInput.value.split(',').map(n=>n.trim()).filter(n=>n);
+      names.forEach(n=>{
+        manualMembers.push(n);
+        const chip=document.createElement('span');
+        chip.className='bg-blue-100 px-2 py-1 rounded-full flex items-center gap-1';
+        chip.textContent=n;
+        const x=document.createElement('button');
+        x.textContent='×';
+        x.className='text-red-600';
+        x.addEventListener('click',()=>{
+          manualMembers=manualMembers.filter(m=>m!==n);
+          chip.remove();
+        });
+        chip.appendChild(x);
+        manualChips.appendChild(chip);
+      });
+      manualInput.value='';
+    }
+
+    playBtn.addEventListener('click',()=>{
+      if(!lastVideoUrl) return;
+      videoFrame.src = `${lastVideoUrl}?autoplay=1`;
+      videoDialog.showModal();
+    });
+    videoDialog.addEventListener('click',e=>{if(e.target===videoDialog){videoDialog.close();videoFrame.src='';}});
+
+    copyLinkBtn.addEventListener('click',async()=>{
+      if(!lastVideoUrl) return;
+      try{await navigator.clipboard.writeText(lastVideoUrl);}catch(e){}
+    });
+
+    sendBtn.addEventListener('click',()=>{
+      const dateVal=dateInput.value;
+      const metier=metierInput.value.trim();
+      const chantier=chantierSelect.value;
+      const responsable=responsableSelect.disabled?'':responsableSelect.value;
+      const members=[...teamContainer.querySelectorAll('input[type="checkbox"]:checked')].map(b=>b.value).concat(manualMembers);
+      if(!dateVal||!metier||!chantier||!responsable||!members.length||!lastVideoUrl){
+        sendStatus.textContent='Veuillez remplir tous les champs.';
+        return;
+      }
+      const entries=JSON.parse(localStorage.getItem('tbmEntries')||'[]');
+      entries.push({
+        savedAt:new Date().toISOString(),
+        dateHeure:dateVal,
+        metier,chantier,responsable,equipe:members,youtubeUrl:lastVideoUrl
+      });
+      localStorage.setItem('tbmEntries',JSON.stringify(entries));
+      sendStatus.textContent='Enregistré';
+      teamContainer.querySelectorAll('input[type="checkbox"]').forEach(b=>b.checked=false);
+      manualMembers=[];manualChips.innerHTML='';
+      loadHistory();
+    });
+
+    function loadHistory(){
+      const entries=JSON.parse(localStorage.getItem('tbmEntries')||'[]');
+      historyTable.innerHTML='';
+      entries.forEach(e=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td class='border px-1'>${e.dateHeure}</td><td class='border px-1'>${e.metier}</td><td class='border px-1'>${e.chantier}</td><td class='border px-1'>${e.responsable}</td><td class='border px-1'>${e.equipe.join(', ')}</td>`;
+        historyTable.appendChild(tr);
+      });
+    }
+
+    exportBtn.addEventListener('click',()=>{
+      const entries=JSON.parse(localStorage.getItem('tbmEntries')||'[]');
+      if(!entries.length) return;
+      const header=['savedAt','dateHeure','metier','chantier','responsable','equipe','youtubeUrl'];
+      const rows=entries.map(e=>header.map(h=>Array.isArray(e[h])?e[h].join('|'):e[h]));
+      let csv=header.join(',')+'\n';
+      rows.forEach(r=>{csv+=r.join(',')+'\n';});
+      const blob=new Blob([csv],{type:'text/csv'});
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download='tbm.csv';
+      a.click();
+    });
+
+    clearBtn.addEventListener('click',()=>{
+      localStorage.removeItem('tbmEntries');
+      loadHistory();
+    });
+
+    testBtn.addEventListener('click',loadSheets);
+
+    function init(){
+      const now=new Date();
+      now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
+      dateInput.value=now.toISOString().slice(0,16);
+      loadHistory();
+    }
+    init();
+  </script>
+</body>
+</html>
