@@ -184,7 +184,10 @@
     }
 
     function findColumnIndex(data, date){
-      if(!data || data.length < 2) return -1;
+      // The sheet stores months on row 4 and days on row 5 (1-based indexing).
+      // Adjust the row lookup accordingly instead of using the first two rows.
+      // Fallback gracefully if these rows are missing.
+      if(!data || data.length < 5) return -1;
       const monthName = normalize(date.toLocaleString('fr-FR',{month:'long'})).toLowerCase();
       const m = date.getMonth()+1;
       const monthNum = String(m);
@@ -200,8 +203,8 @@
       const day = String(date.getDate());
       const dayPadded = day.padStart(2,'0');
       const dayVariants = [day, dayPadded];
-      const monthsRow = data[0].map(c => normalize((c||'').toString()).toLowerCase());
-      const daysRow = data[1].map(c => normalize((c||'').toString()).toLowerCase());
+      const monthsRow = (data[3] || []).map(c => normalize((c||'').toString()).toLowerCase());
+      const daysRow = (data[4] || []).map(c => normalize((c||'').toString()).toLowerCase());
       for(let i=0;i<monthsRow.length;i++){
         if(monthVariants.includes(monthsRow[i]) && dayVariants.includes(daysRow[i])){
           return i;
