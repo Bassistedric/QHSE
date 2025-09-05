@@ -168,7 +168,7 @@
       try{
         const base = sheetUrlInput.value.trim();
         [equipeData, tbmData] = await Promise.all([
-          parseCsv(csvUrl(base,'Equipe')),
+          parseCsv(csvUrl(base,'Equipe_Elec')),
           parseCsv(csvUrl(base,'TBM'))
         ]);
         loadStatus.textContent = 'Feuilles chargées';
