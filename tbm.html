@@ -185,15 +185,29 @@
 
     function findColumnIndex(data, date){
       if(!data || data.length < 2) return -1;
-      const monthName = date.toLocaleString('fr-FR',{month:'long'}).toLowerCase();
+      const monthName = normalize(date.toLocaleString('fr-FR',{month:'long'})).toLowerCase();
+      const m = date.getMonth()+1;
+      const monthNum = String(m);
+      const monthNumPadded = monthNum.padStart(2,'0');
+      const year = String(date.getFullYear());
+      const monthVariants = [
+        monthName,
+        monthNum,
+        monthNumPadded,
+        `${monthNum}/${year}`,
+        `${monthNumPadded}/${year}`
+      ];
       const day = String(date.getDate());
-      const monthsRow = data[0].map(c => (c||'').toString().toLowerCase());
-      const daysRow = data[1].map(c => (c||'').toString());
+      const dayPadded = day.padStart(2,'0');
+      const dayVariants = [day, dayPadded];
+      const monthsRow = data[0].map(c => normalize((c||'').toString()).toLowerCase());
+      const daysRow = data[1].map(c => normalize((c||'').toString()).toLowerCase());
       for(let i=0;i<monthsRow.length;i++){
-        if(monthsRow[i] === monthName && daysRow[i] === day){
+        if(monthVariants.includes(monthsRow[i]) && dayVariants.includes(daysRow[i])){
           return i;
         }
       }
+      loadStatus.textContent = 'Date non trouvée dans la feuille';
       return -1;
     }
 
