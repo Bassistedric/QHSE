@@ -231,8 +231,12 @@
       const date = new Date(dateInput.value);
       if(!equipeData){
         loadStatus.textContent = 'Sélectionnez un métier';
+        chantierSelect.disabled = true;
+        responsableSelect.disabled = true;
         return;
       }
+      chantierSelect.disabled = false;
+      responsableSelect.disabled = true;
       const col = findColumnIndex(equipeData,date);
       if(col===-1){
         loadStatus.textContent = 'Aucun chantier disponible pour cette date';
@@ -355,6 +359,7 @@
           equipeSheets[metier] = data;
         }catch(e){
           console.error(e);
+          loadStatus.textContent = "Impossible de charger les données pour ce métier";
         }
       }
       equipeData = equipeSheets[metier] || null;
