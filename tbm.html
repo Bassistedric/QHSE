@@ -26,18 +26,11 @@
       </div>
     </div>
   </header>
-  <main class="space-y-4 max-w-md mx-auto px-4 py-4">
-    <h1 class="text-2xl font-bold mb-4 px-4 py-2 rounded-xl bg-[#104861] text-[#D9D9D9] text-center">TBM</h1>
-    <section class="bg-white rounded shadow p-4">
-      <label for="sheetUrl" class="block text-sm font-medium mb-1">URL Google Sheet</label>
-      <div class="flex gap-2">
-        <input id="sheetUrl" type="url" class="flex-1 border rounded px-2 py-1" value="https://docs.google.com/spreadsheets/d/EXPORT?output=ods">
-        <button id="testBtn" class="px-3 py-1 bg-blue-600 text-white rounded disabled:opacity-50">Tester le chargement</button>
-      </div>
-      <p id="loadStatus" class="text-sm mt-1 text-gray-500"></p>
-    </section>
+    <main class="space-y-4 max-w-md mx-auto px-4 py-4">
+      <h1 class="text-2xl font-bold mb-4 px-4 py-2 rounded-xl bg-[#104861] text-[#D9D9D9] text-center">TBM</h1>
+      <p id="loadStatus" class="text-sm text-gray-500"></p>
 
-    <section class="bg-white rounded shadow p-4">
+      <section class="bg-white rounded shadow p-4">
       <label for="dateInput" class="block text-sm font-medium mb-1">Date / heure</label>
       <input id="dateInput" type="datetime-local" class="border rounded px-2 py-1 w-full">
     </section>
@@ -113,11 +106,10 @@
   </script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script type="module">
-    const sheetUrlInput = document.getElementById('sheetUrl');
-    const testBtn = document.getElementById('testBtn');
-    const loadStatus = document.getElementById('loadStatus');
-    const dateInput = document.getElementById('dateInput');
+    <script type="module">
+      const SHEET_BASE_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTNJqvjeu_Hox7I64HhX3y4j1SBWHswa6QO1mPwHEt2siXMP609WT__DnuGK-0Brlfq5D1a2R_iyL3g/pub?output=csv';
+      const loadStatus = document.getElementById('loadStatus');
+      const dateInput = document.getElementById('dateInput');
     const chantierSelect = document.getElementById('chantierSelect');
     const responsableSelect = document.getElementById('responsableSelect');
     const responsableHelper = document.getElementById('responsableHelper');
@@ -171,7 +163,7 @@
     async function loadSheets(){
       loadStatus.textContent = 'Chargement...';
       try{
-        const base = sheetUrlInput.value.trim();
+        const base = SHEET_BASE_URL;
         [equipeData, tbmData] = await Promise.all([
           parseCsv(csvUrl(base,'Equipe_Elec')),
           parseCsv(csvUrl(base,'TBM'))
@@ -410,13 +402,12 @@
       loadHistory();
     });
 
-    testBtn.addEventListener('click',loadSheets);
-
     function init(){
       const now=new Date();
       now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
       dateInput.value=now.toISOString().slice(0,16);
       loadHistory();
+      loadSheets();
     }
     init();
   </script>
