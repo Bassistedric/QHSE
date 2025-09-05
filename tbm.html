@@ -131,10 +131,11 @@
     const clearBtn = document.getElementById('clearBtn');
     const historyTable = document.getElementById('historyTable');
 
-    const METIER_TO_SHEET = {
-      Elec: "Equipe_Elec",
-      HVAC_REF: "Equipe_HVAC_REF"
+    const METIER_TO_GID = {
+      Elec: "1111111111",
+      HVAC_REF: "2222222222"
     };
+    const TBM_GID = "3333333333";
 
     let equipeData = null;
     let equipeSheets = {};
@@ -146,11 +147,11 @@
       return str.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
     }
 
-    function csvUrl(base, sheet){
+    function csvUrl(base, gid){
       try{
         const u = new URL(base);
         u.searchParams.set('output','csv');
-        u.searchParams.set('sheet',sheet);
+        u.searchParams.set('gid',gid);
         return u.toString();
       }catch(e){
         return base;
@@ -171,12 +172,12 @@
       loadStatus.textContent = 'Chargement...';
       try{
         const base = SHEET_BASE_URL;
-        const sheetPromises = Object.entries(METIER_TO_SHEET).map(([metier, sheet]) =>
-          parseCsv(csvUrl(base, sheet)).then(data => {
+        const sheetPromises = Object.entries(METIER_TO_GID).map(([metier, gid]) =>
+          parseCsv(csvUrl(base, gid)).then(data => {
             equipeSheets[metier] = data;
           })
         );
-        const tbmPromise = parseCsv(csvUrl(base,'TBM')).then(data => { tbmData = data; });
+        const tbmPromise = parseCsv(csvUrl(base, TBM_GID)).then(data => { tbmData = data; });
         await Promise.all([...sheetPromises, tbmPromise]);
         equipeData = equipeSheets[metierInput.value] || null;
         loadStatus.textContent = 'Feuilles chargées';
@@ -347,9 +348,10 @@
 
     metierInput.addEventListener('change',async()=>{
       const metier = metierInput.value;
-      if(!equipeSheets[metier] && METIER_TO_SHEET[metier]){
+      const gid = METIER_TO_GID[metier];
+      if(!equipeSheets[metier] && gid){
         try{
-          const data = await parseCsv(csvUrl(SHEET_BASE_URL, METIER_TO_SHEET[metier]));
+          const data = await parseCsv(csvUrl(SHEET_BASE_URL, gid));
           equipeSheets[metier] = data;
         }catch(e){
           console.error(e);
