@@ -29,6 +29,7 @@
     <main class="space-y-4 max-w-md mx-auto px-4 py-4">
       <h1 class="text-2xl font-bold mb-4 px-4 py-2 rounded-xl bg-[#104861] text-[#D9D9D9] text-center">TBM</h1>
       <p id="loadStatus" class="text-sm text-gray-500"></p>
+      <button id="retryBtn" class="text-sm text-blue-600 underline">Réessayer</button>
 
       <section class="bg-white rounded shadow p-4">
       <label for="dateInput" class="block text-sm font-medium mb-1">Date / heure</label>
@@ -109,6 +110,7 @@
     <script type="module">
       const SHEET_BASE_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTNJqvjeu_Hox7I64HhX3y4j1SBWHswa6QO1mPwHEt2siXMP609WT__DnuGK-0Brlfq5D1a2R_iyL3g/pub?output=csv';
       const loadStatus = document.getElementById('loadStatus');
+      const retryBtn = document.getElementById('retryBtn');
       const dateInput = document.getElementById('dateInput');
     const chantierSelect = document.getElementById('chantierSelect');
     const responsableSelect = document.getElementById('responsableSelect');
@@ -171,8 +173,8 @@
         loadStatus.textContent = 'Feuilles chargées';
         updateAll();
       }catch(e){
+        loadStatus.textContent = 'Impossible de charger les données';
         console.error(e);
-        loadStatus.textContent = 'Erreur de chargement';
       }
     }
 
@@ -199,10 +201,16 @@
       chantierSelect.innerHTML = '';
       responsableSelect.innerHTML = '';
       teamContainer.innerHTML = '';
-      if(!equipeData) return;
       const date = new Date(dateInput.value);
+      if(!equipeData){
+        loadStatus.textContent = 'Aucun chantier disponible pour cette date';
+        return;
+      }
       const col = findColumnIndex(equipeData,date);
-      if(col===-1) return;
+      if(col===-1){
+        loadStatus.textContent = 'Aucun chantier disponible pour cette date';
+        return;
+      }
       const chantiers = new Set();
       for(let r=7;r<equipeData.length;r++){
         const val = (equipeData[r][col]||'').trim();
@@ -304,6 +312,7 @@
       return m?m[1]:'';
     }
 
+    retryBtn.addEventListener('click', loadSheets);
     toggleAllBtn.addEventListener('click',()=>{
       const boxes = teamContainer.querySelectorAll('input[type="checkbox"]');
       const allChecked = Array.from(boxes).every(b=>b.checked);
