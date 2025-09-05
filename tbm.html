@@ -107,7 +107,7 @@
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script type="module">
-      const SHEET_BASE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTNJqvjeu_Hox7I64HhX3y4j1SBWHswa6QO1mPwHEt2siXMP609WT__DnuGK-0Brlfq5D1a2R_iyL3g/pub?output=csv";
+      import { SHEET_BASE_URL, METIER_TO_GID, TBM_GID } from './sheetConfig.js';
       const loadStatus = document.getElementById('loadStatus');
       const retryBtn = document.getElementById('retryBtn');
       const dateInput = document.getElementById('dateInput');
@@ -130,12 +130,6 @@
     const exportBtn = document.getElementById('exportBtn');
     const clearBtn = document.getElementById('clearBtn');
     const historyTable = document.getElementById('historyTable');
-
-    const METIER_TO_GID = {
-      Elec: "1111111111",
-      HVAC_REF: "2222222222"
-    };
-    const TBM_GID = "3333333333";
 
     let equipeData = null;
     let equipeSheets = {};
