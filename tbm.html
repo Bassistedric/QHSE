@@ -194,10 +194,11 @@
     }
 
     function findColumnIndex(data, date){
-      // The sheet stores months on row 4 and days on row 5 (1-based indexing).
-      // Adjust the row lookup accordingly instead of using the first two rows.
-      // Fallback gracefully if these rows are missing.
-      if(!data || data.length < 5) return -1;
+      if(!data || !data.length){
+        loadStatus.textContent = 'Données de feuille indisponibles';
+        return -1;
+      }
+
       const monthName = normalize(date.toLocaleString('fr-FR',{month:'long'})).toLowerCase();
       const m = date.getMonth()+1;
       const monthNum = String(m);
@@ -213,14 +214,41 @@
       const day = String(date.getDate());
       const dayPadded = day.padStart(2,'0');
       const dayVariants = [day, dayPadded];
-      const monthsRow = (data[3] || []).map(c => normalize((c||'').toString()).toLowerCase());
-      const daysRow = (data[4] || []).map(c => normalize((c||'').toString()).toLowerCase());
-      for(let i=0;i<monthsRow.length;i++){
-        if(monthVariants.includes(monthsRow[i]) && dayVariants.includes(daysRow[i])){
-          return i;
+
+      function tryRows(monthRowIndex, dayRowIndex){
+        const monthsRow = (data[monthRowIndex] || []).map(c => normalize((c||'').toString()).toLowerCase());
+        const daysRow = (data[dayRowIndex] || []).map(c => normalize((c||'').toString()).toLowerCase());
+        const len = Math.max(monthsRow.length, daysRow.length);
+        for(let i=0;i<len;i++){
+          if(monthVariants.includes(monthsRow[i]) && dayVariants.includes(daysRow[i])){
+            return i;
+          }
         }
+        return -1;
       }
-      loadStatus.textContent = 'Date non trouvée dans la feuille';
+
+      // Try rows 4-5 first (1-based indices)
+      let col = tryRows(3,4);
+      if(col !== -1) return col;
+
+      // Fallback to rows 1-2
+      col = tryRows(0,1);
+      if(col !== -1) return col;
+
+      // Auto-detect rows containing months and days
+      let monthRowIdx=-1, dayRowIdx=-1;
+      for(let r=0;r<Math.min(10,data.length);r++){
+        const row = (data[r] || []).map(c => normalize((c||'').toString()).toLowerCase());
+        if(monthRowIdx===-1 && row.some(c=>monthVariants.includes(c))) monthRowIdx=r;
+        if(dayRowIdx===-1 && row.some(c=>dayVariants.includes(c))) dayRowIdx=r;
+        if(monthRowIdx!==-1 && dayRowIdx!==-1) break;
+      }
+      if(monthRowIdx!==-1 && dayRowIdx!==-1){
+        col = tryRows(monthRowIdx, dayRowIdx);
+        if(col !== -1) return col;
+      }
+
+      loadStatus.textContent = 'Impossible de trouver une colonne pour cette date';
       return -1;
     }
 
@@ -235,8 +263,7 @@
       }
       const col = findColumnIndex(equipeData,date);
       if(col===-1){
-        loadStatus.textContent = 'Aucun chantier disponible pour cette date';
-        return;
+        return; // Message already handled in findColumnIndex
       }
       const chantiers = new Set();
       for(let r=7;r<equipeData.length;r++){
