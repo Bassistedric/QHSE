@@ -148,13 +148,16 @@
     }
 
     function csvUrl(base, gid){
-      try{
+      if (typeof gid !== 'string' || gid.trim() === '') {
+        return null;
+      }
+      try {
         const u = new URL(base);
         u.searchParams.set('output','csv');
-        u.searchParams.set('gid',gid);
+        u.searchParams.set('gid', gid);
         return u.toString();
-      }catch(e){
-        return base;
+      } catch (e) {
+        return null;
       }
     }
 
@@ -172,12 +175,34 @@
       loadStatus.textContent = 'Chargement...';
       try{
         const base = SHEET_BASE_URL;
-        const sheetPromises = Object.entries(METIER_TO_GID).map(([metier, gid]) =>
-          parseCsv(csvUrl(base, gid)).then(data => {
-            equipeSheets[metier] = data;
-          })
-        );
-        const tbmPromise = parseCsv(csvUrl(base, TBM_GID)).then(data => { tbmData = data; });
+        const sheetPromises = Object.entries(METIER_TO_GID).map(([metier, gid]) => {
+          const url = csvUrl(base, gid);
+          if (!url) {
+            console.error(`Invalid GID for ${metier}`);
+            return Promise.resolve();
+          }
+          return parseCsv(url)
+            .then(data => {
+              equipeSheets[metier] = data;
+            })
+            .catch(err => {
+              console.error(`Failed to load sheet ${metier}`, err);
+            });
+        });
+        let tbmPromise;
+        const tbmUrl = csvUrl(base, TBM_GID);
+        if (tbmUrl) {
+          tbmPromise = parseCsv(tbmUrl)
+            .then(data => {
+              tbmData = data;
+            })
+            .catch(err => {
+              console.error('Failed to load TBM sheet', err);
+            });
+        } else {
+          console.error('Invalid TBM GID');
+          tbmPromise = Promise.resolve();
+        }
         await Promise.all([...sheetPromises, tbmPromise]);
         equipeData = equipeSheets[metierInput.value] || null;
         loadStatus.textContent = 'Feuilles chargées';
@@ -380,14 +405,22 @@
     metierInput.addEventListener('change',async()=>{
       const metier = metierInput.value;
       const gid = METIER_TO_GID[metier];
-      if(!equipeSheets[metier] && gid){
-        try{
-          const data = await parseCsv(csvUrl(SHEET_BASE_URL, gid));
-          equipeSheets[metier] = data;
-        }catch(e){
+      if (!equipeSheets[metier] && typeof gid === 'string' && gid.trim() !== '') {
+        try {
+          const url = csvUrl(SHEET_BASE_URL, gid);
+          if (url) {
+            const data = await parseCsv(url);
+            equipeSheets[metier] = data;
+          } else {
+            console.error(`Invalid GID for ${metier}`);
+            loadStatus.textContent = "Impossible de charger les données pour ce métier";
+          }
+        } catch (e) {
           console.error(e);
           loadStatus.textContent = "Impossible de charger les données pour ce métier";
         }
+      } else if (!gid) {
+        console.error(`Invalid GID for ${metier}`);
       }
       equipeData = equipeSheets[metier] || null;
       updateAll();
