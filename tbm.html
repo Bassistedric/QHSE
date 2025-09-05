@@ -132,6 +132,7 @@
     const historyTable = document.getElementById('historyTable');
 
     let equipeData = null;
+    let equipeSheets = {};
     let tbmData = null;
     let manualMembers = [];
     let lastVideoUrl = '';
@@ -165,10 +166,15 @@
       loadStatus.textContent = 'Chargement...';
       try{
         const base = SHEET_BASE_URL;
-        [equipeData, tbmData] = await Promise.all([
+        const [elec, hvac, tbm] = await Promise.all([
           parseCsv(csvUrl(base,'Equipe_Elec')),
+          parseCsv(csvUrl(base,'Equipe HVAC-REF')),
           parseCsv(csvUrl(base,'TBM'))
         ]);
+        equipeSheets['Elec.'] = elec;
+        equipeSheets['HVAC-Ref.'] = hvac;
+        tbmData = tbm;
+        equipeData = equipeSheets[metierInput.value] || null;
         loadStatus.textContent = 'Feuilles chargées';
         updateAll();
       }catch(e){
@@ -219,7 +225,7 @@
       teamContainer.innerHTML = '';
       const date = new Date(dateInput.value);
       if(!equipeData){
-        loadStatus.textContent = 'Aucun chantier disponible pour cette date';
+        loadStatus.textContent = 'Sélectionnez un métier';
         return;
       }
       const col = findColumnIndex(equipeData,date);
@@ -333,6 +339,11 @@
       const boxes = teamContainer.querySelectorAll('input[type="checkbox"]');
       const allChecked = Array.from(boxes).every(b=>b.checked);
       boxes.forEach(b=>b.checked=!allChecked);
+    });
+
+    metierInput.addEventListener('change',()=>{
+      equipeData = equipeSheets[metierInput.value] || null;
+      updateAll();
     });
 
     chantierSelect.addEventListener('change', populateResponsableAndTeam);
