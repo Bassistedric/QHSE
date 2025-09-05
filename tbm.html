@@ -40,8 +40,8 @@
       <label for="metier" class="block text-sm font-medium mb-1">Métier</label>
       <select id="metier" class="border rounded px-2 py-1 w-full">
         <option value="">Sélectionnez...</option>
-        <option value="Elec.">Elec.</option>
-        <option value="HVAC-Ref.">HVAC-Ref.</option>
+        <option value="Elec">Elec</option>
+        <option value="HVAC-Ref">HVAC-Ref</option>
       </select>
     </section>
 
@@ -131,6 +131,11 @@
     const clearBtn = document.getElementById('clearBtn');
     const historyTable = document.getElementById('historyTable');
 
+    const METIER_TO_SHEET = {
+      Elec: "Equipe_Elec",
+      "HVAC-Ref": "Equipe HVAC-REF"
+    };
+
     let equipeData = null;
     let equipeSheets = {};
     let tbmData = null;
@@ -166,14 +171,13 @@
       loadStatus.textContent = 'Chargement...';
       try{
         const base = SHEET_BASE_URL;
-        const [elec, hvac, tbm] = await Promise.all([
-          parseCsv(csvUrl(base,'Equipe_Elec')),
-          parseCsv(csvUrl(base,'Equipe HVAC-REF')),
-          parseCsv(csvUrl(base,'TBM'))
-        ]);
-        equipeSheets['Elec.'] = elec;
-        equipeSheets['HVAC-Ref.'] = hvac;
-        tbmData = tbm;
+        const sheetPromises = Object.entries(METIER_TO_SHEET).map(([metier, sheet]) =>
+          parseCsv(csvUrl(base, sheet)).then(data => {
+            equipeSheets[metier] = data;
+          })
+        );
+        const tbmPromise = parseCsv(csvUrl(base,'TBM')).then(data => { tbmData = data; });
+        await Promise.all([...sheetPromises, tbmPromise]);
         equipeData = equipeSheets[metierInput.value] || null;
         loadStatus.textContent = 'Feuilles chargées';
         updateAll();
@@ -341,8 +345,17 @@
       boxes.forEach(b=>b.checked=!allChecked);
     });
 
-    metierInput.addEventListener('change',()=>{
-      equipeData = equipeSheets[metierInput.value] || null;
+    metierInput.addEventListener('change',async()=>{
+      const metier = metierInput.value;
+      if(!equipeSheets[metier] && METIER_TO_SHEET[metier]){
+        try{
+          const data = await parseCsv(csvUrl(SHEET_BASE_URL, METIER_TO_SHEET[metier]));
+          equipeSheets[metier] = data;
+        }catch(e){
+          console.error(e);
+        }
+      }
+      equipeData = equipeSheets[metier] || null;
       updateAll();
     });
 
