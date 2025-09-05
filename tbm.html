@@ -6,14 +6,28 @@
   <title>TBM</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 p-4 min-h-screen">
-  <header class="flex items-center gap-2 mb-4">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-10 h-10 text-red-600">
-      <path d="M3 7a2 2 0 012-2h2V5a3 3 0 013-3h4a3 3 0 013 3v0h2a2 2 0 012 2v4a2 2 0 01-2 2v5a3 3 0 01-3 3H6a3 3 0 01-3-3v-5a2 2 0 01-2-2V7zM9 5a1 1 0 00-1 1v1h8V6a1 1 0 00-1-1H9z"/>
-    </svg>
-    <h1 class="text-2xl font-bold">TBM</h1>
+<body class="min-h-screen bg-gray-50">
+  <header class="sticky top-0 z-10 bg-white/90 backdrop-blur border-b">
+    <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <a href="index.html#home" class="flex items-center gap-2" aria-label="QHSE">
+        <img src="qhse-logo.svg" alt="" class="w-8 h-8 rounded-lg border"
+             onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'inline-flex items-center justify-center w-8 h-8 rounded-lg border font-bold',innerText:'QHSE'}))" />
+      </a>
+      <div class="flex items-center gap-1.5">
+        <button onclick="setLang('fr')" class="w-9 h-9 flex items-center justify-center rounded-lg border bg-white" aria-label="FR" title="FR">
+          <img src="flag-fr.svg" alt="FR" class="w-6 h-4 rounded-sm pointer-events-none select-none" />
+        </button>
+        <button onclick="setLang('en')" class="w-9 h-9 flex items-center justify-center rounded-lg border bg-white" aria-label="EN" title="EN">
+          <img src="flag-gb.svg" alt="EN" class="w-6 h-4 rounded-sm pointer-events-none select-none" />
+        </button>
+        <button onclick="setLang('nl')" class="w-9 h-9 flex items-center justify-center rounded-lg border bg-white" aria-label="NL" title="NL">
+          <img src="flag-nl.svg" alt="NL" class="w-6 h-4 rounded-sm pointer-events-none select-none" />
+        </button>
+      </div>
+    </div>
   </header>
-  <main class="space-y-4">
+  <main class="space-y-4 max-w-md mx-auto px-4 py-4">
+    <h1 class="text-2xl font-bold mb-4">TBM</h1>
     <section class="bg-white rounded shadow p-4">
       <label for="sheetUrl" class="block text-sm font-medium mb-1">URL Google Sheet</label>
       <div class="flex gap-2">
@@ -85,6 +99,13 @@
     </section>
   </main>
 
+  <script>
+    const LANG_KEY = "qhse_lang_v1";
+    function setLang(l){
+      try{ localStorage.setItem(LANG_KEY, JSON.stringify(l)); }catch{}
+      document.documentElement.lang = l;
+    }
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script type="module">
