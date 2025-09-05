@@ -10,6 +10,11 @@ const ReactDOM = window.ReactDOM;
     const PREFS_KEY       = "qhse_prefs_v1"; // conserve Responsable & Équipe
     const LANG_KEY        = "qhse_lang_v1";  // fr/en/nl
 
+    const RESPONSABLES_PAR_CHANTIER = {
+      "Chantier A": ["Alice", "Albert"],
+      "Chantier B": ["Brigitte", "Bob"],
+    };
+
     // ========================= I18N (FR/EN/NL) =========================
     // >>> ensemble des libellés ici, FR par défaut.
      if (!window.QHSE_I18N) {
@@ -832,14 +837,17 @@ const MAP_KEYS = {
               <input type="datetime-local" value={data.datetime} onChange={(e)=>setField("datetime", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
             </label>
             <label className="text-sm">{t('site')}
-              <input value={data.site} onChange={(e)=>{ setField("site", e.target.value); if(errors.site) setErrors({...errors, site:false}); }} placeholder={t('site_ph')} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.site? 'border-red-500':''}`} />
+              <input name="site" value={data.site} onChange={(e)=>{ const v=e.target.value; setData({...data, site:v, responsable:""}); if(errors.site) setErrors({...errors, site:false}); }} placeholder={t('site_ph')} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.site? 'border-red-500':''}`} />
               {errors.site && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
             </label>
             <label className="text-sm">{t('task')}
               <input value={data.task} onChange={(e)=>setField("task", e.target.value)} placeholder={t('task_ph')} className="mt-1 w-full px-3 py-2 rounded-xl border" />
             </label>
             <label className="text-sm">{t('manager')}
-              <input value={data.responsable} onChange={(e)=>{ setField("responsable", e.target.value); if(errors.responsable) setErrors({...errors, responsable:false}); }} placeholder={t('manager_ph')} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable? 'border-red-500':''}`} />
+              <select name="responsable" value={data.responsable} onChange={(e)=>{ setField("responsable", e.target.value); if(errors.responsable) setErrors({...errors, responsable:false}); }} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable? 'border-red-500':''}`} required>
+                <option value="">{t('manager_ph')}</option>
+                {(RESPONSABLES_PAR_CHANTIER[data.site || data.chantier] || []).map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
               {errors.responsable && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
             </label>
 
@@ -1111,11 +1119,14 @@ const MAP_KEYS = {
               <input type="datetime-local" value={data.datetime} onChange={(e)=>setField("datetime", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
             </label>
             <label className="text-sm">{t('site')}
-              <input value={data.chantier} onChange={(e)=>{ setField("chantier", e.target.value); if(errors.chantier) setErrors({...errors, chantier:false}); }} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.chantier? 'border-red-500':''}`} />
+              <input name="chantier" value={data.chantier} onChange={(e)=>{ const v=e.target.value; setData({...data, chantier:v, responsable:""}); if(errors.chantier) setErrors({...errors, chantier:false}); }} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.chantier? 'border-red-500':''}`} />
               {errors.chantier && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
             </label>
             <label className="text-sm">{t('manager')}
-              <input value={data.responsable} onChange={(e)=>{ setField("responsable", e.target.value); if(errors.responsable) setErrors({...errors, responsable:false}); }} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable? 'border-red-500':''}`} />
+              <select name="responsable" value={data.responsable} onChange={(e)=>{ setField("responsable", e.target.value); if(errors.responsable) setErrors({...errors, responsable:false}); }} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable? 'border-red-500':''}`} required>
+                <option value="">{t('manager_ph')}</option>
+                {(RESPONSABLES_PAR_CHANTIER[data.site || data.chantier] || []).map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
               {errors.responsable && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
             </label>
             <label className="text-sm">{t('person')}
@@ -1296,11 +1307,14 @@ const MAP_KEYS = {
               <input type="datetime-local" value={data.datetime} onChange={(e)=>setField("datetime", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
             </label>
             <label className="text-sm">{t('site')}
-              <input value={data.chantier} onChange={(e)=>{ setField("chantier", e.target.value); if(errors.chantier) setErrors({...errors, chantier:false}); }} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.chantier? 'border-red-500':''}`} />
+              <input name="chantier" value={data.chantier} onChange={(e)=>{ const v=e.target.value; setData({...data, chantier:v, responsable:""}); if(errors.chantier) setErrors({...errors, chantier:false}); }} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.chantier? 'border-red-500':''}`} />
               {errors.chantier && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
             </label>
             <label className="text-sm">{t('manager')}
-              <input value={data.responsable} onChange={(e)=>{ setField("responsable", e.target.value); if(errors.responsable) setErrors({...errors, responsable:false}); }} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable? 'border-red-500':''}`} />
+              <select name="responsable" value={data.responsable} onChange={(e)=>{ setField("responsable", e.target.value); if(errors.responsable) setErrors({...errors, responsable:false}); }} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable? 'border-red-500':''}`} required>
+                <option value="">{t('manager_ph')}</option>
+                {(RESPONSABLES_PAR_CHANTIER[data.site || data.chantier] || []).map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
               {errors.responsable && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
             </label>
           </div>
