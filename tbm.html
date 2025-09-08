@@ -524,8 +524,6 @@
     });
 
     sendBtn.addEventListener('click',async()=>{
-      sendBtn.disabled=true;
-      sendStatus.textContent='Envoi en cours…';
       const dateVal=dateInput.value;
       const metier=metierInput.value.trim();
       const chantier=chantierManualInput.value.trim()||chantierSelect.value;
@@ -533,7 +531,6 @@
       const members=[...teamContainer.querySelectorAll('input[type="checkbox"]:checked')].map(b=>b.value).concat(manualMembers);
       if(!dateVal||!metier||!chantier||!responsable||!members.length||!lastVideoUrl){
         sendStatus.textContent='Veuillez remplir tous les champs.';
-        sendBtn.disabled=false;
         return;
       }
       const payload={
@@ -543,15 +540,12 @@
       };
       try{
         await fetch(COLLECT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
-        sendStatus.textContent='Bien envoyé';
+        sendStatus.textContent='Envoyé';
         teamContainer.querySelectorAll('input[type="checkbox"]').forEach(b=>b.checked=false);
         manualMembers=[];manualChips.innerHTML='';
       }catch(e){
         sendStatus.textContent="Erreur d'envoi, enregistré localement.";
         enqueue(payload);
-        sendBtn.disabled=false;
-      }finally{
-        sendBtn.disabled=false;
       }
       const entries=JSON.parse(localStorage.getItem('tbmEntries')||'[]');
       entries.push({
