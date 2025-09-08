@@ -1,3 +1,5 @@
+import React from 'react';
+import ReactDOM from 'react-dom/client';
 import { nowLocalDateTime } from './utils/date.js';
 
     // ========================= CONFIG =========================
