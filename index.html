@@ -28,12 +28,9 @@
       );
     }
   </script>
-  <!-- React + Babel for direct browser execution -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Third-party libraries -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <script type="module" src="sheetConfig.js"></script>
-  <script type="module" src="src/main.jsx"></script>
+  <!-- Bundled React app -->
+  <script type="module" src="dist/bundle.js"></script>
 </body>
 </html>
