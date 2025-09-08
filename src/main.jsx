@@ -1,4 +1,3 @@
-import { SHEET_BASE_URL, METIER_TO_GID } from '../sheetConfig.js';
 import { nowLocalDateTime } from './utils/date.js';
 
     // ========================= CONFIG =========================
@@ -14,47 +13,6 @@ import { nowLocalDateTime } from './utils/date.js';
       "Chantier A": ["Alice", "Albert"],
       "Chantier B": ["Brigitte", "Bob"],
     };
-
-    // Helpers importés du TBM pour lecture des feuilles Google
-    function normalize(str){
-      return str.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-    }
-
-    function csvUrl(base, gid){
-      try{
-        const u = new URL(base);
-        u.searchParams.set('output','csv');
-        u.searchParams.set('gid', gid);
-        return u.toString();
-      }catch(e){
-        return null;
-      }
-    }
-
-    function parseCsv(url){
-      return new Promise((resolve,reject)=>{
-        if(!url){ reject(new Error('URL invalide')); return; }
-        Papa.parse(url,{ download:true, complete: res=>resolve(res.data), error: err=>reject(err) });
-      });
-    }
-
-    function findColumnIndex(data, date){
-      if(!data || !data.length) return -1;
-      const monthName = normalize(date.toLocaleString('fr-FR',{month:'long'})).toLowerCase();
-      const m = date.getMonth()+1;
-      const variantsMonth = [monthName, String(m), String(m).padStart(2,'0'), `${String(m)}/${date.getFullYear()}`, `${String(m).padStart(2,'0')}/${date.getFullYear()}`];
-      const day = String(date.getDate());
-      const variantsDay = [day, day.padStart(2,'0')];
-      for(let i=0;i<data.length;i++){
-        const row = (data[i]||[]).map(c=>normalize((c||'').toString()).toLowerCase());
-        for(let j=0;j<row.length;j++){
-          if(variantsMonth.includes(row[j]) && variantsDay.includes((data[i+1]||[])[j] ? normalize((data[i+1][j]||'').toString()).toLowerCase() : '')){
-            return j;
-          }
-        }
-      }
-      return -1;
-    }
 
     // ========================= I18N (FR/EN/NL) =========================
     // >>> ensemble des libellés ici, FR par défaut.
@@ -103,8 +61,7 @@ Ensuite, l’app peut fonctionner hors-ligne.`,
     lmra_title: "LMRA – Mobile (v3.2)",
     general_info: "Infos générales",
     datetime: "Date & heure",
-    trade: "Métier",
-    site: "Chantier",
+    site: "Site / Zone",
     site_ph: "Ex: Bât. A – Toiture",
     task: "Tâche",
     task_ph: "Ex: Remplacement moteur ventilo",
@@ -277,8 +234,7 @@ Then, the app can work offline.`,
     lmra_title: "LMRA – Mobile (v3.2)",
     general_info: "General info",
     datetime: "Date & time",
-    trade: "Trade",
-    site: "Construction site",
+    site: "Site / Area",
     site_ph: "e.g. Building A – Roof",
     task: "Task",
     task_ph: "e.g. Replace fan motor",
@@ -451,8 +407,7 @@ Daarna kan de app offline werken.`,
     lmra_title: "LMRA – Mobiel (v3.2)",
     general_info: "Algemene info",
     datetime: "Datum & tijd",
-    trade: "Vak",
-    site: "Werf",
+    site: "Werf / Zone",
     site_ph: "Bv. Gebouw A – Dak",
     task: "Taak",
     task_ph: "Bv. Vervangen ventilatormotor",
@@ -780,11 +735,8 @@ const MAP_KEYS = {
     const initialState = () => ({
       version: "v3.2",
       datetime: nowLocalDateTime(),
-      metier: "",
       site: "", task: "",
-      chantierManual: "",
       responsable: prefs.responsable || "",
-      responsableManual: "",
       team: Array.isArray(prefs.team) ? [...prefs.team] : [],
       teamInput: "",
       conditions: { tacheClaires:false, coactivite:false, zonage:false, epi:false },
@@ -805,84 +757,7 @@ const MAP_KEYS = {
     const [step, setStep] = React.useState(0);
     const totalSteps = 6;
     const [errors, setErrors] = React.useState({});
-    const [chantierOptions, setChantierOptions] = React.useState([]);
-    const [responsableOptions, setResponsableOptions] = React.useState([]);
-    const [teamOptions, setTeamOptions] = React.useState([]);
-    const equipeSheets = React.useRef({});
-    const [equipeData, setEquipeData] = React.useState(null);
     React.useEffect(()=>{ saveLS(STATE_KEY, data); }, [data]);
-
-    // Chargement des données selon le métier sélectionné
-    React.useEffect(()=>{
-      const metier = data.metier;
-      if(!metier){
-        setEquipeData(null);
-        setChantierOptions([]);
-        setResponsableOptions([]);
-        setTeamOptions([]);
-        return;
-      }
-      const gid = METIER_TO_GID[metier];
-      if(equipeSheets.current[metier]){
-        const sheet = equipeSheets.current[metier];
-        setEquipeData(sheet);
-      }else if(gid){
-        const url = csvUrl(SHEET_BASE_URL, gid);
-        parseCsv(url).then(sheet=>{
-          equipeSheets.current[metier] = sheet;
-          setEquipeData(sheet);
-        }).catch(()=>{
-          setEquipeData(null);
-        });
-      }
-    }, [data.metier]);
-
-    // Met à jour les chantiers disponibles
-    React.useEffect(()=>{
-      if(!equipeData || data.chantierManual.trim()){
-        setChantierOptions([]);
-        return;
-      }
-      const col = findColumnIndex(equipeData, new Date(data.datetime));
-      if(col===-1){ setChantierOptions([]); return; }
-      const chantiers = new Set();
-      for(let r=7;r<equipeData.length;r++){
-        const val = (equipeData[r][col]||'').trim();
-        if(!val) continue;
-        const norm = normalize(val).toLowerCase();
-        if(norm==='conge' || norm==='malade') continue;
-        chantiers.add(val);
-      }
-      setChantierOptions(Array.from(chantiers).sort((a,b)=>a.localeCompare(b,'fr')));
-    }, [equipeData, data.datetime, data.chantierManual]);
-
-    // Met à jour responsables & équipe selon chantier choisi
-    React.useEffect(()=>{
-      if(!equipeData || data.chantierManual.trim()){
-        setResponsableOptions([]);
-        setTeamOptions([]);
-        return;
-      }
-      const chantier = data.site;
-      if(!chantier){
-        setResponsableOptions([]);
-        setTeamOptions([]);
-        return;
-      }
-      const col = findColumnIndex(equipeData, new Date(data.datetime));
-      if(col===-1){ setResponsableOptions([]); setTeamOptions([]); return; }
-      const resps = [];
-      const members = [];
-      for(let r=7;r<equipeData.length;r++){
-        const role = (equipeData[r][0]||'').trim().toUpperCase();
-        const name = (equipeData[r][1]||'').trim();
-        const affect = (equipeData[r][col]||'').trim();
-        if(affect !== chantier) continue;
-        if(role==='CE') resps.push(name); else members.push(name);
-      }
-      setResponsableOptions(resps);
-      setTeamOptions(members.sort((a,b)=>a.localeCompare(b,'fr')));
-    }, [equipeData, data.site, data.datetime, data.chantierManual]);
 
     const setField = (k,v)=>setData({...data,[k]:v});
     const resetAll = () => {
@@ -900,14 +775,9 @@ const MAP_KEYS = {
             setData({...data, team:[...data.team, name], teamInput:""});
           }
         }
-        const missing = {
-          metier: !data.metier.trim(),
-          site: !(data.chantierManual.trim() || data.site.trim()),
-          responsable: !(data.responsableManual.trim() || data.responsable.trim()),
-          team: data.team.length===0
-        };
+        const missing = { site: !data.site.trim(), responsable: !data.responsable.trim() };
         setErrors(missing);
-        if(missing.metier || missing.site || missing.responsable || missing.team){
+        if(missing.site || missing.responsable){
           alert(t('required_fields'));
           return;
         }
@@ -918,21 +788,15 @@ const MAP_KEYS = {
     const envoyer = async () => {
       const payload = {
         meta: { sentAt:new Date().toISOString(), page:location.href, userAgent:navigator.userAgent, formType:"lmra" },
-        data: {
-          ...data,
-          site: data.chantierManual.trim() || data.site,
-          responsable: data.responsableManual.trim() || data.responsable,
-        }
+        data
       };
       const ok = await sendNow(payload);
       if(ok){
         alert(t('alert_sent'));
         // Conserver Responsable & Équipe (prefs)
-        const finalSite = data.chantierManual.trim() || data.site;
-        const finalResp = data.responsableManual.trim() || data.responsable;
-        saveLS(PREFS_KEY, { responsable: finalResp, team: data.team });
+        saveLS(PREFS_KEY, { responsable: data.responsable, team: data.team });
         // Réinitialiser en conservant Site, Responsable & Équipe
-        setData({ ...initialState(), site: finalSite, responsable: finalResp, team: data.team });
+        setData({ ...initialState(), site: data.site, responsable: data.responsable, team: data.team });
         setStep(0);
         setErrors({});
       }else{
@@ -962,72 +826,34 @@ const MAP_KEYS = {
             <label className="text-sm">{t('datetime')}
               <input type="datetime-local" value={data.datetime} onChange={(e)=>setField("datetime", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
             </label>
-            <label className="text-sm">{t('trade')}
-              <select value={data.metier} onChange={(e)=>{ const v=e.target.value; setData({ ...data, metier:v, site:'', chantierManual:'', responsable:'', responsableManual:'', team:[], teamInput:'' }); if(errors.metier) setErrors({...errors, metier:false}); }} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.metier? 'border-red-500':''}`}>
-                <option value=""></option>
-                {Object.keys(METIER_TO_GID).map(m=> <option key={m} value={m}>{m}</option>)}
-              </select>
-              {errors.metier && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
-            </label>
             <label className="text-sm">{t('site')}
-              <select value={data.site} onChange={(e)=>{ const v=e.target.value; setData({...data, site:v, chantierManual:'', responsable:"", responsableManual:'', team:[]}); if(errors.site) setErrors({...errors, site:false}); }} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.site? 'border-red-500':''}`} disabled={!!data.chantierManual.trim() || !chantierOptions.length}>
-                <option value=""></option>
-                {chantierOptions.map(ch=><option key={ch} value={ch}>{ch}</option>)}
-              </select>
-              <input value={data.chantierManual} onChange={(e)=>{ const v=e.target.value; setData({...data, chantierManual:v, site:v?"":data.site, responsable:v?"":data.responsable, responsableManual:'', team:v?[]:data.team}); }} placeholder="Ajouter manuellement" className="mt-1 w-full px-3 py-2 rounded-xl border" />
+              <input value={data.site} onChange={(e)=>{ setField("site", e.target.value); if(errors.site) setErrors({...errors, site:false}); }} placeholder={t('site_ph')} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.site? 'border-red-500':''}`} />
               {errors.site && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
             </label>
             <label className="text-sm">{t('task')}
               <input value={data.task} onChange={(e)=>setField("task", e.target.value)} placeholder={t('task_ph')} className="mt-1 w-full px-3 py-2 rounded-xl border" />
             </label>
             <label className="text-sm">{t('manager')}
-              <select value={data.responsable} onChange={(e)=>{ const v=e.target.value; setData({...data, responsable:v, responsableManual:''}); if(errors.responsable) setErrors({...errors, responsable:false}); }} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable? 'border-red-500':''}`} disabled={!!data.responsableManual.trim() || !responsableOptions.length}>
-                <option value=""></option>
-                {responsableOptions.map(r=><option key={r} value={r}>{r}</option>)}
-              </select>
-              <input value={data.responsableManual} onChange={(e)=>{ const v=e.target.value; setData({...data, responsableManual:v, responsable:v?"":data.responsable}); if(errors.responsable) setErrors({...errors, responsable:false}); }} placeholder={t('manager_ph')} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+              <input value={data.responsable} onChange={(e)=>{ setField("responsable", e.target.value); if(errors.responsable) setErrors({...errors, responsable:false}); }} placeholder={t('manager_ph')} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable? 'border-red-500':''}`} />
               {errors.responsable && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
             </label>
 
             {/* Équipe */}
             <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="text-sm">{t('team')}</label>
-                {teamOptions.length > 0 && (
-                  <button onClick={()=>{
-                    const allChecked = teamOptions.every(n=>data.team.includes(n));
-                    if(allChecked){
-                      setData({...data, team: data.team.filter(n=>!teamOptions.includes(n))});
-                    }else{
-                      setData({...data, team: Array.from(new Set([...data.team, ...teamOptions]))});
-                    }
-                  }} className="text-sm text-blue-600 underline">Tout cocher</button>
-                )}
-              </div>
-              <div className="flex flex-col gap-1 mb-2">
-                {teamOptions.map(n=>(
-                  <label key={n} className="inline-flex items-center gap-2">
-                    <input type="checkbox" className="rounded" checked={data.team.includes(n)} onChange={(e)=>{
-                      if(e.target.checked) setData({...data, team:[...data.team, n]});
-                      else setData({...data, team:data.team.filter(x=>x!==n)});
-                    }} />{n}
-                  </label>
-                ))}
-              </div>
+              <label className="text-sm block mb-2">{t('team')}</label>
               <div className="flex gap-2 mb-2">
                 <input value={data.teamInput} onChange={(e)=>setData({...data, teamInput:e.target.value})} placeholder={t('team_member_ph')} className="flex-1 px-3 py-2 rounded-xl border" />
-                <button onClick={()=>{ const names=data.teamInput.split(',').map(n=>n.trim()).filter(n=>n); if(!names.length) return; const newTeam=Array.from(new Set([...data.team,...names])); setData({...data, team:newTeam, teamInput:""}); }} className="px-3 py-2 rounded-xl border">{t('team_add')}</button>
+                <button onClick={()=>{ const name=data.teamInput.trim(); if(!name) return; if(data.team.includes(name)) return setData({...data, teamInput:""}); setData({...data, team:[...data.team, name], teamInput:""}); }} className="px-3 py-2 rounded-xl border">{data.team.length === 0 ? t('team_validate') : t('team_add')}</button>
               </div>
               <div className="flex flex-wrap gap-2">
-                {data.team.filter(n=>!teamOptions.includes(n)).map((n)=>(
+                {data.team.map((n)=>(
                   <span key={n} className="inline-flex items-center gap-2 text-sm px-3 py-1 rounded-full bg-gray-100">
                     {n}
                     <button onClick={()=>setData({...data, team: data.team.filter(x=>x!==n)})} className="w-5 h-5 inline-flex items-center justify-center rounded-full border border-gray-300">×</button>
                   </span>
                 ))}
-                {data.team.length===0 && <span className="text-sm text-gray-400">{t('team_empty')}</span>}
+                {!data.team.length && <span className="text-sm text-gray-400">{t('team_empty')}</span>}
               </div>
-              {errors.team && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
             </div>
           </div>
         </Section>
