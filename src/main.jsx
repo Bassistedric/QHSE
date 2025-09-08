@@ -1548,6 +1548,29 @@ const MAP_KEYS = {
   }
 
 
+  class ErrorBoundary extends React.Component {
+    constructor(props) {
+      super(props);
+      this.state = { hasError: false };
+    }
+    static getDerivedStateFromError() {
+      return { hasError: true };
+    }
+    componentDidCatch(error, info) {
+      console.error('ErrorBoundary caught an error', error, info);
+    }
+    render() {
+      if (this.state.hasError) {
+        return (
+          <div className="p-4 text-center text-red-600">
+            Une erreur inattendue est survenue. Merci de recharger la page.
+          </div>
+        );
+      }
+      return this.props.children;
+    }
+  }
+
   function App(){
     const { t } = useI18n();
     const [route,setRoute] = React.useState(parseRoute());
@@ -1581,4 +1604,10 @@ const MAP_KEYS = {
   }
 
   const root = ReactDOM.createRoot(document.getElementById("root"));
-  root.render(<I18nProvider><App/></I18nProvider>);
+  root.render(
+    <I18nProvider>
+      <ErrorBoundary>
+        <App/>
+      </ErrorBoundary>
+    </I18nProvider>
+  );
