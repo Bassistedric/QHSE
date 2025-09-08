@@ -48,11 +48,13 @@
     <section class="bg-white rounded shadow p-4">
       <label for="chantierSelect" class="block text-sm font-medium mb-1">Chantier</label>
       <select id="chantierSelect" class="border rounded px-2 py-1 w-full"></select>
+      <input id="chantierManual" type="text" class="border rounded px-2 py-1 w-full mt-1 text-sm" placeholder="Ajouter manuellement">
     </section>
 
     <section class="bg-white rounded shadow p-4">
       <label for="responsableSelect" class="block text-sm font-medium mb-1">Responsable (CE)</label>
       <select id="responsableSelect" class="border rounded px-2 py-1 w-full"></select>
+      <input id="responsableManual" type="text" class="border rounded px-2 py-1 w-full mt-1 text-sm" placeholder="Ajouter manuellement">
       <p id="responsableHelper" class="text-sm text-gray-500 mt-1"></p>
     </section>
 
@@ -114,6 +116,8 @@
       const dateInput = document.getElementById('dateInput');
     const chantierSelect = document.getElementById('chantierSelect');
     const responsableSelect = document.getElementById('responsableSelect');
+    const chantierManualInput = document.getElementById('chantierManual');
+    const responsableManualInput = document.getElementById('responsableManual');
     const responsableHelper = document.getElementById('responsableHelper');
     const teamContainer = document.getElementById('teamContainer');
     const toggleAllBtn = document.getElementById('toggleAll');
@@ -292,6 +296,14 @@
     }
 
     function populateChantiers(){
+      if(chantierManualInput.value.trim()){
+        chantierSelect.innerHTML='';
+        responsableSelect.innerHTML='';
+        teamContainer.innerHTML='';
+        chantierSelect.disabled=true;
+        responsableSelect.disabled=true;
+        return;
+      }
       chantierSelect.innerHTML = '';
       responsableSelect.innerHTML = '';
       teamContainer.innerHTML = '';
@@ -330,6 +342,12 @@
     }
 
     function populateResponsableAndTeam(){
+      if(chantierManualInput.value.trim()){
+        responsableSelect.innerHTML='';
+        teamContainer.innerHTML='';
+        responsableSelect.disabled=true;
+        return;
+      }
       responsableSelect.innerHTML = '';
       teamContainer.innerHTML = '';
       const chantier = chantierSelect.value;
@@ -357,6 +375,9 @@
       }else{
         responsableSelect.disabled=true;
         responsableHelper.textContent='Aucun CE trouvé';
+      }
+      if(responsableManualInput.value.trim()){
+        responsableSelect.disabled=true;
       }
       members.sort((a,b)=>a.localeCompare(b,'fr'));
       members.forEach(n=>{
@@ -441,6 +462,30 @@
     });
 
     chantierSelect.addEventListener('change', populateResponsableAndTeam);
+    chantierManualInput.addEventListener('input',()=>{
+      if(chantierManualInput.value.trim()){
+        chantierSelect.disabled=true;
+        chantierSelect.value='';
+        responsableSelect.innerHTML='';
+        responsableSelect.disabled=true;
+        responsableHelper.textContent='';
+        teamContainer.innerHTML='';
+      }else{
+        chantierSelect.disabled=false;
+        populateChantiers();
+      }
+    });
+    responsableManualInput.addEventListener('input',()=>{
+      if(responsableManualInput.value.trim()){
+        responsableSelect.disabled=true;
+        responsableSelect.value='';
+        responsableHelper.textContent='';
+      }else{
+        if(!chantierManualInput.value.trim()){
+          populateResponsableAndTeam();
+        }
+      }
+    });
     dateInput.addEventListener('change', updateAll);
 
     manualInput.addEventListener('keydown',e=>{
@@ -483,8 +528,8 @@
       sendStatus.textContent='Envoi en cours…';
       const dateVal=dateInput.value;
       const metier=metierInput.value.trim();
-      const chantier=chantierSelect.value;
-      const responsable=responsableSelect.disabled?'':responsableSelect.value;
+      const chantier=chantierManualInput.value.trim()||chantierSelect.value;
+      const responsable=responsableManualInput.value.trim()||(responsableSelect.disabled?'':responsableSelect.value);
       const members=[...teamContainer.querySelectorAll('input[type="checkbox"]:checked')].map(b=>b.value).concat(manualMembers);
       if(!dateVal||!metier||!chantier||!responsable||!members.length||!lastVideoUrl){
         sendStatus.textContent='Veuillez remplir tous les champs.';
