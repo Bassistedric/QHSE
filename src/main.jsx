@@ -844,10 +844,10 @@ const MAP_KEYS = {
               <input value={data.task} onChange={(e)=>setField("task", e.target.value)} placeholder={t('task_ph')} className="mt-1 w-full px-3 py-2 rounded-xl border" />
             </label>
             <label className="text-sm">{t('manager')}
-              <select name="responsable" value={data.responsable} onChange={(e)=>{ setField("responsable", e.target.value); if(errors.responsable) setErrors({...errors, responsable:false}); }} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable? 'border-red-500':''}`} required>
-                <option value="">{t('manager_ph')}</option>
-                {(RESPONSABLES_PAR_CHANTIER[data.site || data.chantier] || []).map(n => <option key={n} value={n}>{n}</option>)}
-              </select>
+              <input list="responsables-lmra" name="responsable" value={data.responsable} onChange={(e)=>{ setField("responsable", e.target.value); if(errors.responsable) setErrors({...errors, responsable:false}); }} placeholder={t('manager_ph')} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable? 'border-red-500':''}`} required />
+              <datalist id="responsables-lmra">
+                {(RESPONSABLES_PAR_CHANTIER[data.site || data.chantier] || []).map(n => <option key={n} value={n} />)}
+              </datalist>
               {errors.responsable && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
             </label>
 
@@ -1123,10 +1123,10 @@ const MAP_KEYS = {
               {errors.chantier && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
             </label>
             <label className="text-sm">{t('manager')}
-              <select name="responsable" value={data.responsable} onChange={(e)=>{ setField("responsable", e.target.value); if(errors.responsable) setErrors({...errors, responsable:false}); }} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable? 'border-red-500':''}`} required>
-                <option value="">{t('manager_ph')}</option>
-                {(RESPONSABLES_PAR_CHANTIER[data.site || data.chantier] || []).map(n => <option key={n} value={n}>{n}</option>)}
-              </select>
+              <input list="responsables-fa" name="responsable" value={data.responsable} onChange={(e)=>{ setField("responsable", e.target.value); if(errors.responsable) setErrors({...errors, responsable:false}); }} placeholder={t('manager_ph')} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable? 'border-red-500':''}`} required />
+              <datalist id="responsables-fa">
+                {(RESPONSABLES_PAR_CHANTIER[data.site || data.chantier] || []).map(n => <option key={n} value={n} />)}
+              </datalist>
               {errors.responsable && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
             </label>
             <label className="text-sm">{t('person')}
@@ -1311,10 +1311,10 @@ const MAP_KEYS = {
               {errors.chantier && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
             </label>
             <label className="text-sm">{t('manager')}
-              <select name="responsable" value={data.responsable} onChange={(e)=>{ setField("responsable", e.target.value); if(errors.responsable) setErrors({...errors, responsable:false}); }} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable? 'border-red-500':''}`} required>
-                <option value="">{t('manager_ph')}</option>
-                {(RESPONSABLES_PAR_CHANTIER[data.site || data.chantier] || []).map(n => <option key={n} value={n}>{n}</option>)}
-              </select>
+              <input list="responsables-stop" name="responsable" value={data.responsable} onChange={(e)=>{ setField("responsable", e.target.value); if(errors.responsable) setErrors({...errors, responsable:false}); }} placeholder={t('manager_ph')} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable? 'border-red-500':''}`} required />
+              <datalist id="responsables-stop">
+                {(RESPONSABLES_PAR_CHANTIER[data.site || data.chantier] || []).map(n => <option key={n} value={n} />)}
+              </datalist>
               {errors.responsable && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
             </label>
           </div>
