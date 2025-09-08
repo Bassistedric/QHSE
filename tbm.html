@@ -77,9 +77,6 @@
         <button id="playBtn" class="px-3 py-1 bg-blue-600 text-white rounded disabled:opacity-50">Lire la vidéo</button>
         <button id="copyLink" class="px-3 py-1 bg-blue-600 text-white rounded disabled:opacity-50">Copier le lien</button>
       </div>
-      <dialog id="videoDialog" class="p-0">
-        <iframe id="videoFrame" width="560" height="315" allow="autoplay" allowfullscreen></iframe>
-      </dialog>
     </section>
 
     <section class="bg-white rounded shadow p-4">
@@ -122,8 +119,6 @@
     const qrcodeEl = document.getElementById('qrcode');
     const playBtn = document.getElementById('playBtn');
     const copyLinkBtn = document.getElementById('copyLink');
-    const videoDialog = document.getElementById('videoDialog');
-    const videoFrame = document.getElementById('videoFrame');
     const metierInput = document.getElementById('metier');
     const sendBtn = document.getElementById('sendBtn');
     const sendStatus = document.getElementById('sendStatus');
@@ -450,10 +445,8 @@
 
     playBtn.addEventListener('click',()=>{
       if(!lastVideoUrl) return;
-      videoFrame.src = `${lastVideoUrl}?autoplay=1`;
-      videoDialog.showModal();
+      window.open(lastVideoUrl, '_blank');
     });
-    videoDialog.addEventListener('click',e=>{if(e.target===videoDialog){videoDialog.close();videoFrame.src='';}});
 
     copyLinkBtn.addEventListener('click',async()=>{
       if(!lastVideoUrl) return;
