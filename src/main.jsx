@@ -41,7 +41,7 @@ const ReactDOM = window.ReactDOM;
     function parseCsv(url){
       return new Promise((resolve,reject)=>{
         if(!url){ reject(new Error('URL invalide')); return; }
-        if(!window.Papa || !window.Papa.parse){
+        if(!window.Papa?.parse){
           reject(new Error('PapaParse non disponible'));
           return;
         }
