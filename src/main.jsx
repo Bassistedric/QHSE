@@ -1,4 +1,5 @@
 import { SHEET_BASE_URL, METIER_TO_GID } from '../sheetConfig.js';
+import { nowLocalDateTime } from './utils/date.js';
 
     // ========================= CONFIG =========================
     // ⬇⬇ Remplacer l' URL Apps Script /exec si modification du GSheet
@@ -624,10 +625,6 @@ const MAP_KEYS = {
 
 
     // ========================= HELPERS =========================
-    const nowLocalDateTime = () => {
-      const d=new Date(), pad=n=>String(n).padStart(2,"0");
-      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    };
     const parseRoute = () => (location.hash.replace(/^#\/?/, '') || 'home');
     const saveLS = (k,v)=>{ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{} };
     const loadLS = (k,def)=>{ try{ const raw=localStorage.getItem(k); return raw? JSON.parse(raw): def; }catch{return def;} };
@@ -779,11 +776,6 @@ const MAP_KEYS = {
 
     // --- Préférences globales (définies en PARTIE 1/5)
     const prefs = loadLS(PREFS_KEY, { responsable:"", team:[] });
-
-    const nowLocalDateTime = () => {
-      const d=new Date(), pad=n=>String(n).padStart(2,"0");
-      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    };
 
     const initialState = () => ({
       version: "v3.2",
@@ -1226,11 +1218,6 @@ const MAP_KEYS = {
     const STATE_KEY = "qhse_firstaid_state_v1";
     const prefs = loadLS(PREFS_KEY, { responsable:"", team:[] });
 
-    const nowLocalDateTime = () => {
-      const d=new Date(), pad=n=>String(n).padStart(2,"0");
-      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    };
-
     const initialState = () => ({
       datetime: nowLocalDateTime(),
       chantier: "",
@@ -1415,11 +1402,6 @@ const MAP_KEYS = {
 
     const STATE_KEY = "qhse_stop_state_v1";
     const prefs = loadLS(PREFS_KEY, { responsable:"", team:[] });
-
-    const nowLocalDateTime = () => {
-      const d=new Date(), pad=n=>String(n).padStart(2,"0");
-      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    };
 
     const initialState = () => ({
       datetime: nowLocalDateTime(),
