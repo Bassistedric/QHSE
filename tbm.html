@@ -105,6 +105,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script type="module">
       import { SHEET_BASE_URL, METIER_TO_GID, TBM_GID } from './sheetConfig.js';
+      // URL de l'application Apps Script (modifier si changement de Sheet)
+      const COLLECT_URL = "https://script.google.com/macros/s/AKfycbw53EiERifnozNg9ybNfbn_Ofm9NrFquashw_mbYoWyqtQROS6xXXzwVT2UQ4XxcJYK/exec";
+      const OUTBOX_KEY = 'tbm_outbox_v1';
+
       const loadStatus = document.getElementById('loadStatus');
       const retryBtn = document.getElementById('retryBtn');
       const dateInput = document.getElementById('dateInput');
@@ -131,6 +135,27 @@
     let tbmData = null;
     let manualMembers = [];
     let lastVideoUrl = '';
+
+    function enqueue(item){
+      const queue = JSON.parse(localStorage.getItem(OUTBOX_KEY) || '[]');
+      queue.push(item);
+      localStorage.setItem(OUTBOX_KEY, JSON.stringify(queue));
+    }
+
+    async function flushQueue(){
+      const queue = JSON.parse(localStorage.getItem(OUTBOX_KEY) || '[]');
+      const remaining = [];
+      for(const item of queue){
+        try{
+          await fetch(COLLECT_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(item)});
+        }catch(e){
+          remaining.push(item);
+        }
+      }
+      localStorage.setItem(OUTBOX_KEY, JSON.stringify(remaining));
+    }
+
+    window.addEventListener('online', flushQueue);
 
     function normalize(str){
       return str.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
@@ -453,7 +478,7 @@
       try{await navigator.clipboard.writeText(lastVideoUrl);}catch(e){}
     });
 
-    sendBtn.addEventListener('click',()=>{
+    sendBtn.addEventListener('click',async()=>{
       const dateVal=dateInput.value;
       const metier=metierInput.value.trim();
       const chantier=chantierSelect.value;
@@ -463,6 +488,20 @@
         sendStatus.textContent='Veuillez remplir tous les champs.';
         return;
       }
+      const payload={
+        type:'tbm',
+        meta:{userAgent:navigator.userAgent},
+        data:{datetime:dateVal,metier,chantier,responsable,equipe:members,youtubeUrl:lastVideoUrl}
+      };
+      try{
+        await fetch(COLLECT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+        sendStatus.textContent='Envoyé';
+        teamContainer.querySelectorAll('input[type="checkbox"]').forEach(b=>b.checked=false);
+        manualMembers=[];manualChips.innerHTML='';
+      }catch(e){
+        sendStatus.textContent="Erreur d'envoi, enregistré localement.";
+        enqueue(payload);
+      }
       const entries=JSON.parse(localStorage.getItem('tbmEntries')||'[]');
       entries.push({
         savedAt:new Date().toISOString(),
@@ -470,9 +509,6 @@
         metier,chantier,responsable,equipe:members,youtubeUrl:lastVideoUrl
       });
       localStorage.setItem('tbmEntries',JSON.stringify(entries));
-      sendStatus.textContent='Enregistré';
-      teamContainer.querySelectorAll('input[type="checkbox"]').forEach(b=>b.checked=false);
-      manualMembers=[];manualChips.innerHTML='';
       loadHistory();
     });
 
@@ -509,6 +545,7 @@
       const now=new Date();
       now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
       dateInput.value=now.toISOString().slice(0,16);
+      flushQueue();
       loadHistory();
       loadSheets();
     }
