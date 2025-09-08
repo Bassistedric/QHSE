@@ -1,6 +1,4 @@
-const React = window.React;
-const ReactDOM = window.ReactDOM;
-const { SHEET_BASE_URL, METIER_TO_GID } = window;
+import { SHEET_BASE_URL, METIER_TO_GID } from '../sheetConfig.js';
 
     // ========================= CONFIG =========================
     // ⬇⬇ Remplacer l' URL Apps Script /exec si modification du GSheet
@@ -35,7 +33,7 @@ const { SHEET_BASE_URL, METIER_TO_GID } = window;
     function parseCsv(url){
       return new Promise((resolve,reject)=>{
         if(!url){ reject(new Error('URL invalide')); return; }
-        window.Papa.parse(url,{ download:true, complete: res=>resolve(res.data), error: err=>reject(err) });
+        Papa.parse(url,{ download:true, complete: res=>resolve(res.data), error: err=>reject(err) });
       });
     }
 
@@ -59,8 +57,8 @@ const { SHEET_BASE_URL, METIER_TO_GID } = window;
 
     // ========================= I18N (FR/EN/NL) =========================
     // >>> ensemble des libellés ici, FR par défaut.
-     if (!window.QHSE_I18N) {
-    window.QHSE_I18N = {
+     if (!globalThis.QHSE_I18N) {
+    globalThis.QHSE_I18N = {
       fr: {
 
     // Accueil / global
@@ -586,7 +584,7 @@ Daarna kan de app offline werken.`,
     },
   };
 }
-const I18N = window.QHSE_I18N; // alias unique    
+const I18N = globalThis.QHSE_I18N; // alias unique
    // Clés i18n pour les listes
 const MAP_KEYS = {
   energies: {
@@ -697,12 +695,12 @@ const MAP_KEYS = {
       saveLS(OUTBOX_KEY, left);
       return {sent,left:left.length};
     }
-    window.addEventListener('online', ()=>{ flushOutbox(); });
+    globalThis.addEventListener('online', ()=>{ flushOutbox(); });
 
     // Préférences (Responsable & Équipe conservés)
     const defaultPrefs = { responsable:"", team:[] };
-  if (!window.QHSE_Tile) {
-    window.QHSE_Tile = function Tile({href, icon, img, title, sub, muted}) {
+  if (!globalThis.QHSE_Tile) {
+    globalThis.QHSE_Tile = function Tile({href, icon, img, title, sub, muted}) {
       const base = "rounded-2xl p-4 text-center transition border";
       const active = "hover:bg-gray-50";
       const off = "border-dashed text-gray-300 pointer-events-none select-none";
@@ -723,7 +721,7 @@ const MAP_KEYS = {
     const { t } = useI18n();
 
     // Fallback : si le composant global n’existe pas, on en crée un local
-    const TileC = window.QHSE_Tile || function Tile({href, icon, img, title, sub, muted}) {
+    const TileC = globalThis.QHSE_Tile || function Tile({href, icon, img, title, sub, muted}) {
       const base = "rounded-2xl p-4 text-center transition border";
       const active = "hover:bg-gray-50";
       const off = "border-dashed text-gray-300 pointer-events-none select-none";
@@ -1573,8 +1571,8 @@ const MAP_KEYS = {
     const [route,setRoute] = React.useState(parseRoute());
     React.useEffect(()=>{
       const onHash=()=>setRoute(parseRoute());
-      window.addEventListener('hashchange', onHash);
-      return ()=>window.removeEventListener('hashchange', onHash);
+      globalThis.addEventListener('hashchange', onHash);
+      return ()=>globalThis.removeEventListener('hashchange', onHash);
     },[]);
     return (
       <div>
@@ -1583,7 +1581,7 @@ const MAP_KEYS = {
             <Brand />
             <div className="flex items-center gap-3">
               <LangPicker />
-              <button onClick={()=>window.print()} className="px-3 py-1.5 rounded-xl border">{t('print')}</button>
+              <button onClick={()=>globalThis.print()} className="px-3 py-1.5 rounded-xl border">{t('print')}</button>
             </div>
           </div>
         </header>
