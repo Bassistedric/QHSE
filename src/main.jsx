@@ -1,5 +1,6 @@
 const React = window.React;
 const ReactDOM = window.ReactDOM;
+const { SHEET_BASE_URL, METIER_TO_GID } = window;
 
     // ========================= CONFIG =========================
     // ⬇⬇ Remplacer l' URL Apps Script /exec si modification du GSheet
@@ -13,13 +14,6 @@ const ReactDOM = window.ReactDOM;
     const RESPONSABLES_PAR_CHANTIER = {
       "Chantier A": ["Alice", "Albert"],
       "Chantier B": ["Brigitte", "Bob"],
-    };
-
-    // Données Google Sheet pour les recherches (identique TBM)
-    const SHEET_BASE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTNJqvjeu_Hox7I64HhX3y4j1SBWHswa6QO1mPwHEt2siXMP609WT__DnuGK-0Brlfq5D1a2R_iyL3g/pub?output=csv";
-    const METIER_TO_GID = {
-      Elec: "0",
-      HVAC_REF: "2005844218",
     };
 
     // Helpers importés du TBM pour lecture des feuilles Google

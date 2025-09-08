@@ -6,3 +6,8 @@ export const METIER_TO_GID = {
 };
 
 export const TBM_GID = "2013584163";
+
+// Expose constants globally for non-module scripts
+if (typeof window !== 'undefined') {
+  Object.assign(window, { SHEET_BASE_URL, METIER_TO_GID, TBM_GID });
+}
