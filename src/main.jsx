@@ -63,6 +63,7 @@ Ensuite, l’app peut fonctionner hors-ligne.`,
     lmra_title: "LMRA – Mobile (v3.2)",
     general_info: "Infos générales",
     datetime: "Date & heure",
+    trade: "Métier",
     site: "Chantier",
     site_ph: "Ex: Bât. A – Toiture",
     task: "Tâche",
@@ -236,6 +237,7 @@ Then, the app can work offline.`,
     lmra_title: "LMRA – Mobile (v3.2)",
     general_info: "General info",
     datetime: "Date & time",
+    trade: "Trade",
     site: "Site / Area",
     site_ph: "e.g. Building A – Roof",
     task: "Task",
@@ -409,6 +411,7 @@ Daarna kan de app offline werken.`,
     lmra_title: "LMRA – Mobiel (v3.2)",
     general_info: "Algemene info",
     datetime: "Datum & tijd",
+    trade: "Vak",
     site: "Werf / Zone",
     site_ph: "Bv. Gebouw A – Dak",
     task: "Taak",
@@ -737,6 +740,7 @@ const MAP_KEYS = {
     const initialState = () => ({
       version: "v3.2",
       datetime: nowLocalDateTime(),
+      trade: "",
       site: "", task: "",
       responsable: prefs.responsable || "",
       team: Array.isArray(prefs.team) ? [...prefs.team] : [],
@@ -755,7 +759,7 @@ const MAP_KEYS = {
       notes: "",
     });
 
-    const [data, setData] = React.useState(loadLS(STATE_KEY, initialState()));
+    const [data, setData] = React.useState({...initialState(), ...loadLS(STATE_KEY, initialState())});
     const [step, setStep] = React.useState(0);
     const totalSteps = 6;
     const [errors, setErrors] = React.useState({});
@@ -798,7 +802,7 @@ const MAP_KEYS = {
         // Conserver Responsable & Équipe (prefs)
         saveLS(PREFS_KEY, { responsable: data.responsable, team: data.team });
         // Réinitialiser en conservant Site, Responsable & Équipe
-        setData({ ...initialState(), site: data.site, responsable: data.responsable, team: data.team });
+        setData({ ...initialState(), site: data.site, trade: data.trade, responsable: data.responsable, team: data.team });
         setStep(0);
         setErrors({});
       }else{
@@ -827,6 +831,13 @@ const MAP_KEYS = {
             <div className="flex flex-col gap-3">
             <label className="text-sm">{t('datetime')}
               <input type="datetime-local" value={data.datetime} onChange={(e)=>setField("datetime", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+            </label>
+            <label className="text-sm">{t('trade')}
+              <select value={data.trade} onChange={(e)=>setField("trade", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border">
+                <option value=""></option>
+                <option value="Elec">Elec</option>
+                <option value="HVAC-Ref">HVAC-Ref</option>
+              </select>
             </label>
             <label className="text-sm">{t('site')}
               <input value={data.site} onChange={(e)=>{ setField("site", e.target.value); if(errors.site) setErrors({...errors, site:false}); }} placeholder={t('site_ph')} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.site? 'border-red-500':''}`} />
