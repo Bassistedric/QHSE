@@ -836,7 +836,11 @@ const MAP_KEYS = {
               <input type="datetime-local" value={data.datetime} onChange={(e)=>setField("datetime", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
             </label>
             <label className="text-sm">{t('job')}
-              <input value={data.job} onChange={(e)=>setField("job", e.target.value)} placeholder={t('job_ph')} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+              <select value={data.job} onChange={(e)=>setField("job", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border">
+                <option value="" disabled>{t('job_ph')}</option>
+                <option value="Elec">Elec</option>
+                <option value="HVAC-Ref">HVAC-Ref</option>
+              </select>
             </label>
             <label className="text-sm">{t('site')}
               <input value={data.site} onChange={(e)=>{ setField("site", e.target.value); if(errors.site) setErrors({...errors, site:false}); }} placeholder={t('site_ph')} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.site? 'border-red-500':''}`} />
