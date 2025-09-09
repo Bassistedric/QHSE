@@ -63,6 +63,8 @@ Ensuite, l’app peut fonctionner hors-ligne.`,
     lmra_title: "LMRA",
     general_info: "Infos générales",
     datetime: "Date & heure",
+    job: "Métier",
+    job_ph: "Ex: électricien",
     site: "Chantier",
     site_ph: "Ex: Bât. A – Toiture",
     task: "Tâche",
@@ -236,6 +238,8 @@ Then, the app can work offline.`,
     lmra_title: "LMRA",
     general_info: "General info",
     datetime: "Date & time",
+    job: "Job",
+    job_ph: "e.g. Electrician",
     site: "Site / Area",
     site_ph: "e.g. Building A – Roof",
     task: "Task",
@@ -409,6 +413,8 @@ Daarna kan de app offline werken.`,
     lmra_title: "LMRA",
     general_info: "Algemene info",
     datetime: "Datum & tijd",
+    job: "Beroep",
+    job_ph: "Bv. elektricien",
     site: "Werf / Zone",
     site_ph: "Bv. Gebouw A – Dak",
     task: "Taak",
@@ -737,6 +743,7 @@ const MAP_KEYS = {
     const initialState = () => ({
       version: "v3.2",
       datetime: nowLocalDateTime(),
+      job: "",
       site: "", task: "",
       responsable: prefs.responsable || "",
       team: Array.isArray(prefs.team) ? [...prefs.team] : [],
@@ -827,6 +834,9 @@ const MAP_KEYS = {
             <div className="flex flex-col gap-3">
             <label className="text-sm">{t('datetime')}
               <input type="datetime-local" value={data.datetime} onChange={(e)=>setField("datetime", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+            </label>
+            <label className="text-sm">{t('job')}
+              <input value={data.job} onChange={(e)=>setField("job", e.target.value)} placeholder={t('job_ph')} className="mt-1 w-full px-3 py-2 rounded-xl border" />
             </label>
             <label className="text-sm">{t('site')}
               <input value={data.site} onChange={(e)=>{ setField("site", e.target.value); if(errors.site) setErrors({...errors, site:false}); }} placeholder={t('site_ph')} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.site? 'border-red-500':''}`} />
