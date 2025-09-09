@@ -59,6 +59,17 @@
     </section>
 
     <section class="bg-white rounded shadow p-4">
+      <div class="flex items-center gap-4">
+        <div id="thumbContainer" class="w-64 h-36 bg-gray-200 flex items-center justify-center text-sm text-gray-500">Vidéo non disponible</div>
+        <div id="qrcode" class="w-32 h-32"></div>
+      </div>
+      <div class="mt-2 flex gap-2">
+        <button id="playBtn" class="px-3 py-1 bg-blue-600 text-white rounded disabled:opacity-50">Lire la vidéo</button>
+        <button id="copyLink" class="px-3 py-1 bg-blue-600 text-white rounded disabled:opacity-50">Copier le lien</button>
+      </div>
+    </section>
+
+    <section class="bg-white rounded shadow p-4">
       <div class="flex justify-between items-center mb-2">
         <label class="text-sm font-medium">Équipe</label>
         <button id="toggleAll" class="text-sm text-blue-600 underline">Tout cocher</button>
@@ -67,17 +78,6 @@
       <div>
         <input id="manualInput" type="text" class="border rounded px-2 py-1 w-full" placeholder="Ajouter manuellement (séparés par des virgules)">
         <div id="manualChips" class="flex flex-wrap gap-2 mt-2"></div>
-      </div>
-    </section>
-
-    <section class="bg-white rounded shadow p-4">
-      <div class="flex items-center gap-4">
-        <div id="thumbContainer" class="w-64 h-36 bg-gray-200 flex items-center justify-center text-sm text-gray-500">Vidéo non disponible</div>
-        <div id="qrcode" class="w-32 h-32"></div>
-      </div>
-      <div class="mt-2 flex gap-2">
-        <button id="playBtn" class="px-3 py-1 bg-blue-600 text-white rounded disabled:opacity-50">Lire la vidéo</button>
-        <button id="copyLink" class="px-3 py-1 bg-blue-600 text-white rounded disabled:opacity-50">Copier le lien</button>
       </div>
     </section>
 
