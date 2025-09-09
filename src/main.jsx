@@ -60,7 +60,7 @@ Ensuite, l’app peut fonctionner hors-ligne.`,
     required_fields: "Merci de remplir les champs obligatoires.",
 
     // LMRA
-    lmra_title: "LMRA – Mobile (v3.2)",
+    lmra_title: "LMRA",
     general_info: "Infos générales",
     datetime: "Date & heure",
     site: "Chantier",
@@ -233,7 +233,7 @@ Then, the app can work offline.`,
     required_fields: "Please fill in required fields.",
 
     // LMRA
-    lmra_title: "LMRA – Mobile (v3.2)",
+    lmra_title: "LMRA",
     general_info: "General info",
     datetime: "Date & time",
     site: "Site / Area",
@@ -406,7 +406,7 @@ Daarna kan de app offline werken.`,
     required_fields: "Vul de verplichte velden in.",
 
     // LMRA
-    lmra_title: "LMRA – Mobiel (v3.2)",
+    lmra_title: "LMRA",
     general_info: "Algemene info",
     datetime: "Datum & tijd",
     site: "Werf / Zone",
