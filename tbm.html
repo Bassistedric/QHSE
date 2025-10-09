@@ -85,7 +85,7 @@
       <button id="sendBtn" class="px-3 py-1 bg-black text-white rounded w-full">Envoyer</button>
       <p id="sendStatus" class="text-sm mt-1"></p>
     </section>
-
+  
     <section class="bg-white rounded shadow p-4">
       <h2 class="text-lg font-medium mb-2">Historique</h2>
       <div class="flex gap-2 mb-2">
@@ -95,6 +95,14 @@
       <table id="historyTable" class="w-full text-sm"></table>
     </section>
   </main>
+
+  <div id="confirmationModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-labelledby="confirmationTitle" aria-hidden="true">
+    <div class="bg-white rounded-lg shadow-xl max-w-sm w-full p-6 text-center space-y-4">
+      <h2 id="confirmationTitle" class="text-lg font-semibold">Confirmation</h2>
+      <p data-modal-message class="text-sm text-gray-700">Votre envoi a bien été pris en compte.</p>
+      <button id="closeConfirmation" class="px-4 py-2 bg-blue-600 text-white rounded">OK</button>
+    </div>
+  </div>
 
   <script>
     const LANG_KEY = "qhse_lang_v1";
@@ -133,6 +141,9 @@
     const exportBtn = document.getElementById('exportBtn');
     const clearBtn = document.getElementById('clearBtn');
     const historyTable = document.getElementById('historyTable');
+    const confirmationModal = document.getElementById('confirmationModal');
+    const closeConfirmationBtn = document.getElementById('closeConfirmation');
+    const confirmationMessage = confirmationModal.querySelector('[data-modal-message]');
 
     let equipeData = null;
     let equipeSheets = {};
@@ -523,6 +534,31 @@
       try{await navigator.clipboard.writeText(lastVideoUrl);}catch(e){}
     });
 
+    function showConfirmation(message){
+      confirmationMessage.textContent = message;
+      confirmationModal.classList.remove('hidden');
+      confirmationModal.setAttribute('aria-hidden','false');
+      closeConfirmationBtn.focus();
+    }
+
+    function hideConfirmation(){
+      confirmationModal.classList.add('hidden');
+      confirmationModal.setAttribute('aria-hidden','true');
+      sendBtn.focus();
+    }
+
+    closeConfirmationBtn.addEventListener('click', hideConfirmation);
+    confirmationModal.addEventListener('click', event => {
+      if(event.target === confirmationModal){
+        hideConfirmation();
+      }
+    });
+    document.addEventListener('keydown', event => {
+      if(event.key === 'Escape' && !confirmationModal.classList.contains('hidden')){
+        hideConfirmation();
+      }
+    });
+
     sendBtn.addEventListener('click',async()=>{
       const dateVal=dateInput.value;
       const metier=metierInput.value.trim();
@@ -533,6 +569,9 @@
         sendStatus.textContent='Veuillez remplir tous les champs.';
         return;
       }
+      sendBtn.disabled = true;
+      const originalLabel = sendBtn.textContent;
+      sendBtn.textContent = 'Envoi...';
       const payload={
         type:'tbm',
         meta:{userAgent:navigator.userAgent},
@@ -541,11 +580,13 @@
       try{
         await fetch(COLLECT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
         sendStatus.textContent='Envoyé';
+        showConfirmation('Votre envoi a bien été pris en compte.');
         teamContainer.querySelectorAll('input[type="checkbox"]').forEach(b=>b.checked=false);
         manualMembers=[];manualChips.innerHTML='';
       }catch(e){
         sendStatus.textContent="Erreur d'envoi, enregistré localement.";
         enqueue(payload);
+        showConfirmation("Une erreur réseau est survenue. L'envoi sera retenté automatiquement.");
       }
       const entries=JSON.parse(localStorage.getItem('tbmEntries')||'[]');
       entries.push({
@@ -555,6 +596,8 @@
       });
       localStorage.setItem('tbmEntries',JSON.stringify(entries));
       loadHistory();
+      sendBtn.disabled = false;
+      sendBtn.textContent = originalLabel;
     });
 
     function loadHistory(){
