@@ -200,34 +200,43 @@
       });
     }
 
-    const IGNORED_ASSIGNMENTS = new Set([
-      'conge','conges','malade','maladie','abs','absent','absence','repos','rtt','formation','off'
+    const ABSENCE_KEYWORDS = new Set([
+      'conge','conges','malade','malades','maladie','abs','absent','absente','absence','absences','repos','rtt','formation','off'
     ]);
 
-    function extractAssignments(value){
-      if(!value) return [];
-      const normalized = value.replace(/\r\n?/g,'\n');
+    function collectAssignments(value){
+      const results = [];
+      if(!value) return results;
+      const normalized = String(value).replace(/\r\n?/g,'\n');
       const segments = normalized.split(/[\n;]+/);
-      const assignments = [];
       for(const segment of segments){
         if(!segment) continue;
         const slashPieces = segment.split(/\s*\/\s*/);
         for(const slashPiece of slashPieces){
           if(!slashPiece) continue;
-          const trimmedSlashPiece = slashPiece.trim();
-          if(!trimmedSlashPiece) continue;
-          if(trimmedSlashPiece.includes(', ')){
-            const commaPieces = trimmedSlashPiece.split(/,\s+/);
-            for(const piece of commaPieces){
-              const trimmed = piece.trim();
-              if(trimmed) assignments.push(trimmed);
-            }
-          }else{
-            assignments.push(trimmedSlashPiece);
+          const commaPieces = slashPiece.split(/,\s*/);
+          for(const piece of commaPieces){
+            const trimmed = piece.trim();
+            if(!trimmed) continue;
+            results.push(trimmed);
           }
         }
       }
-      return assignments;
+      return results;
+    }
+
+    function isAbsenceEntry(normValue){
+      if(!normValue) return false;
+      if(ABSENCE_KEYWORDS.has(normValue)) return true;
+      const separators = [' ', '-', '/', '.', ',', ';', ':'];
+      for(const keyword of ABSENCE_KEYWORDS){
+        for(const sep of separators){
+          if(normValue.startsWith(keyword + sep)){
+            return true;
+          }
+        }
+      }
+      return false;
     }
 
     async function loadSheets(){
@@ -363,11 +372,10 @@
       }
       const chantiers = new Set();
       for(let r=7;r<equipeData.length;r++){
-        const cell = equipeData[r][col] || '';
-        const assignments = extractAssignments(cell);
+        const assignments = collectAssignments(equipeData[r][col]);
         for(const val of assignments){
           const norm = normalize(val).toLowerCase();
-          if(IGNORED_ASSIGNMENTS.has(norm)) continue;
+          if(isAbsenceEntry(norm)) continue;
           chantiers.add(val);
         }
       }
@@ -404,8 +412,7 @@
       for(let r=7;r<equipeData.length;r++){
         const role = (equipeData[r][0]||'').trim().toUpperCase();
         const name = (equipeData[r][1]||'').trim();
-        const cell = equipeData[r][col] || '';
-        const assignments = extractAssignments(cell);
+        const assignments = collectAssignments(equipeData[r][col]);
         const matches = assignments.some(val => normalize(val).toLowerCase() === targetNormalized);
         if(!matches) continue;
         if(role==='CE') resps.push(name); else members.push(name);
