@@ -200,6 +200,36 @@
       });
     }
 
+    const IGNORED_ASSIGNMENTS = new Set([
+      'conge','conges','malade','maladie','abs','absent','absence','repos','rtt','formation','off'
+    ]);
+
+    function extractAssignments(value){
+      if(!value) return [];
+      const normalized = value.replace(/\r\n?/g,'\n');
+      const segments = normalized.split(/[\n;]+/);
+      const assignments = [];
+      for(const segment of segments){
+        if(!segment) continue;
+        const slashPieces = segment.split(/\s*\/\s*/);
+        for(const slashPiece of slashPieces){
+          if(!slashPiece) continue;
+          const trimmedSlashPiece = slashPiece.trim();
+          if(!trimmedSlashPiece) continue;
+          if(trimmedSlashPiece.includes(', ')){
+            const commaPieces = trimmedSlashPiece.split(/,\s+/);
+            for(const piece of commaPieces){
+              const trimmed = piece.trim();
+              if(trimmed) assignments.push(trimmed);
+            }
+          }else{
+            assignments.push(trimmedSlashPiece);
+          }
+        }
+      }
+      return assignments;
+    }
+
     async function loadSheets(){
       loadStatus.textContent = 'Chargement...';
       try{
@@ -333,11 +363,13 @@
       }
       const chantiers = new Set();
       for(let r=7;r<equipeData.length;r++){
-        const val = (equipeData[r][col]||'').trim();
-        if(!val) continue;
-        const norm = normalize(val).toLowerCase();
-        if(norm==='conge' || norm==='malade') continue;
-        chantiers.add(val);
+        const cell = equipeData[r][col] || '';
+        const assignments = extractAssignments(cell);
+        for(const val of assignments){
+          const norm = normalize(val).toLowerCase();
+          if(IGNORED_ASSIGNMENTS.has(norm)) continue;
+          chantiers.add(val);
+        }
       }
       const sorted = Array.from(chantiers).sort((a,b)=>a.localeCompare(b,'fr'));
       sorted.forEach(ch => {
@@ -368,11 +400,14 @@
       if(col===-1) return;
       const resps = [];
       const members = [];
+      const targetNormalized = normalize(chantier).toLowerCase();
       for(let r=7;r<equipeData.length;r++){
         const role = (equipeData[r][0]||'').trim().toUpperCase();
         const name = (equipeData[r][1]||'').trim();
-        const affect = (equipeData[r][col]||'').trim();
-        if(affect !== chantier) continue;
+        const cell = equipeData[r][col] || '';
+        const assignments = extractAssignments(cell);
+        const matches = assignments.some(val => normalize(val).toLowerCase() === targetNormalized);
+        if(!matches) continue;
         if(role==='CE') resps.push(name); else members.push(name);
       }
       if(resps.length){
