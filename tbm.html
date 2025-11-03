@@ -216,7 +216,7 @@
           if(!slashPiece) continue;
           const commaPieces = slashPiece.split(/,\s*/);
           for(const piece of commaPieces){
-            const trimmed = piece.trim();
+            const trimmed = piece.replace(/\s+/g,' ').trim();
             if(!trimmed) continue;
             results.push(trimmed);
           }
@@ -230,8 +230,16 @@
       if(ABSENCE_KEYWORDS.has(normValue)) return true;
       const separators = [' ', '-', '/', '.', ',', ';', ':'];
       for(const keyword of ABSENCE_KEYWORDS){
+        if(normValue === keyword) return true;
+        if(normValue.includes(keyword + '-')) return true;
         for(const sep of separators){
           if(normValue.startsWith(keyword + sep)){
+            return true;
+          }
+          if(normValue.includes(sep + keyword + sep)){
+            return true;
+          }
+          if(normValue.endsWith(sep + keyword)){
             return true;
           }
         }
@@ -370,16 +378,18 @@
       if(col===-1){
         return; // Message already handled in findColumnIndex
       }
-      const chantiers = new Set();
+      const chantierMap = new Map();
       for(let r=7;r<equipeData.length;r++){
         const assignments = collectAssignments(equipeData[r][col]);
         for(const val of assignments){
           const norm = normalize(val).toLowerCase();
-          if(isAbsenceEntry(norm)) continue;
-          chantiers.add(val);
+          if(!norm || isAbsenceEntry(norm)) continue;
+          if(!chantierMap.has(norm)){
+            chantierMap.set(norm, val.trim());
+          }
         }
       }
-      const sorted = Array.from(chantiers).sort((a,b)=>a.localeCompare(b,'fr'));
+      const sorted = Array.from(chantierMap.values()).sort((a,b)=>a.localeCompare(b,'fr'));
       sorted.forEach(ch => {
         const opt = document.createElement('option');
         opt.value = ch;
@@ -417,8 +427,9 @@
         if(!matches) continue;
         if(role==='CE') resps.push(name); else members.push(name);
       }
-      if(resps.length){
-        resps.forEach(n=>{
+      const uniqueResps = Array.from(new Set(resps.filter(Boolean)));
+      if(uniqueResps.length){
+        uniqueResps.forEach(n=>{
           const opt=document.createElement('option');
           opt.value=n; opt.textContent=n;
           responsableSelect.appendChild(opt);
@@ -432,8 +443,9 @@
       if(responsableManualInput.value.trim()){
         responsableSelect.disabled=true;
       }
-      members.sort((a,b)=>a.localeCompare(b,'fr'));
-      members.forEach(n=>{
+      const uniqueMembers = Array.from(new Set(members.filter(Boolean)));
+      uniqueMembers.sort((a,b)=>a.localeCompare(b,'fr'));
+      uniqueMembers.forEach(n=>{
         const lbl=document.createElement('label');
         lbl.className='inline-flex items-center gap-2';
         const cb=document.createElement('input');
