@@ -76,7 +76,10 @@
       </div>
       <div id="teamContainer" class="flex flex-col gap-1 mb-2"></div>
       <div>
-        <input id="manualInput" type="text" class="border rounded px-2 py-1 w-full" placeholder="Ajouter manuellement (séparés par des virgules)" list="manualSuggestions">
+        <div class="flex gap-2">
+          <input id="manualInput" type="text" class="border rounded px-2 py-1 flex-1" placeholder="Ajouter manuellement (séparés par des virgules)" list="manualSuggestions">
+          <button id="manualAddBtn" type="button" class="px-3 py-1 bg-blue-600 text-white rounded">Valider</button>
+        </div>
         <datalist id="manualSuggestions"></datalist>
         <div id="manualChips" class="flex flex-wrap gap-2 mt-2"></div>
         <p id="manualError" class="text-sm text-red-600 mt-1 hidden"></p>
@@ -133,6 +136,7 @@
     const toggleAllBtn = document.getElementById('toggleAll');
     const manualInput = document.getElementById('manualInput');
     const manualChips = document.getElementById('manualChips');
+    const manualAddBtn = document.getElementById('manualAddBtn');
     const manualSuggestions = document.getElementById('manualSuggestions');
     const manualError = document.getElementById('manualError');
     const thumbContainer = document.getElementById('thumbContainer');
@@ -527,12 +531,22 @@
     dateInput.addEventListener('change', updateAll);
 
     manualInput.addEventListener('keydown',e=>{
-      if(e.key==='Enter'){e.preventDefault();addManual();}
+      if(e.key==='Enter'){
+        e.preventDefault();
+        addManual();
+        manualInput.focus();
+      }
     });
     manualInput.addEventListener('blur',addManual);
     manualInput.addEventListener('input',()=>{
       setManualError('');
     });
+    if(manualAddBtn){
+      manualAddBtn.addEventListener('click',()=>{
+        addManual();
+        manualInput.focus();
+      });
+    }
 
     function setManualError(message){
       if(!manualError) return;
@@ -603,13 +617,13 @@
       const raw = manualInput.value;
       if(!raw.trim()){
         setManualError('');
-        return;
+        return false;
       }
       const names = raw.split(',').map(n=>n.trim()).filter(n=>n);
       if(!names.length){
         setManualError('');
         manualInput.value='';
-        return;
+        return false;
       }
       const invalid = [];
       let hasValid=false;
@@ -628,11 +642,13 @@
       if(invalid.length){
         manualInput.value = invalid.join(', ');
         setManualError('Ce nom ne correspond pas à la liste proposée.');
+        return false;
       }else{
         manualInput.value='';
         if(hasValid){
           setManualError('');
         }
+        return hasValid;
       }
     }
 
