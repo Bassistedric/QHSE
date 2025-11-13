@@ -76,8 +76,10 @@
       </div>
       <div id="teamContainer" class="flex flex-col gap-1 mb-2"></div>
       <div>
-        <input id="manualInput" type="text" class="border rounded px-2 py-1 w-full" placeholder="Ajouter manuellement (séparés par des virgules)">
+        <input id="manualInput" type="text" class="border rounded px-2 py-1 w-full" placeholder="Ajouter manuellement (séparés par des virgules)" list="manualSuggestions">
+        <datalist id="manualSuggestions"></datalist>
         <div id="manualChips" class="flex flex-wrap gap-2 mt-2"></div>
+        <p id="manualError" class="text-sm text-red-600 mt-1 hidden"></p>
       </div>
     </section>
 
@@ -131,6 +133,8 @@
     const toggleAllBtn = document.getElementById('toggleAll');
     const manualInput = document.getElementById('manualInput');
     const manualChips = document.getElementById('manualChips');
+    const manualSuggestions = document.getElementById('manualSuggestions');
+    const manualError = document.getElementById('manualError');
     const thumbContainer = document.getElementById('thumbContainer');
     const qrcodeEl = document.getElementById('qrcode');
     const playBtn = document.getElementById('playBtn');
@@ -149,6 +153,7 @@
     let equipeSheets = {};
     let tbmData = null;
     let manualMembers = [];
+    const normalizedNameMap = new Map();
     let lastVideoUrl = '';
 
     function enqueue(item){
@@ -249,6 +254,7 @@
         }
         await Promise.all([...sheetPromises, tbmPromise]);
         equipeData = equipeSheets[metierInput.value] || null;
+        updateKnownNames();
         loadStatus.textContent = 'Feuilles chargées';
         updateAll();
       }catch(e){
@@ -489,6 +495,7 @@
         console.error(`Invalid GID for ${metier}`);
       }
       equipeData = equipeSheets[metier] || null;
+      updateKnownNames();
       updateAll();
     });
 
@@ -523,25 +530,110 @@
       if(e.key==='Enter'){e.preventDefault();addManual();}
     });
     manualInput.addEventListener('blur',addManual);
+    manualInput.addEventListener('input',()=>{
+      setManualError('');
+    });
+
+    function setManualError(message){
+      if(!manualError) return;
+      if(message){
+        manualError.textContent = message;
+        manualError.classList.remove('hidden');
+      }else{
+        manualError.textContent = '';
+        manualError.classList.add('hidden');
+      }
+    }
+
+    function updateKnownNames(){
+      normalizedNameMap.clear();
+      if(manualSuggestions){
+        manualSuggestions.innerHTML='';
+      }
+      if(!equipeData){
+        return;
+      }
+      const seen = new Set();
+      const names = [];
+      for(let r=7;r<equipeData.length;r++){
+        const name = (equipeData[r][1]||'').trim();
+        if(!name || seen.has(name)) continue;
+        seen.add(name);
+        names.push(name);
+        const normalized = normalize(name).toLowerCase();
+        if(!normalizedNameMap.has(normalized)){
+          normalizedNameMap.set(normalized, []);
+        }
+        normalizedNameMap.get(normalized).push(name);
+      }
+      names.sort((a,b)=>a.localeCompare(b,'fr'));
+      if(manualSuggestions){
+        names.forEach(name=>{
+          const opt=document.createElement('option');
+          opt.value=name;
+          manualSuggestions.appendChild(opt);
+        });
+      }
+    }
+
+    function resolveName(input){
+      const normalized = normalize(input).toLowerCase();
+      const matches = normalizedNameMap.get(normalized);
+      if(!matches || !matches.length) return null;
+      const exact = matches.find(n=>n===input);
+      return exact || matches[0];
+    }
+
+    function createManualChip(name){
+      const chip=document.createElement('span');
+      chip.className='bg-blue-100 px-2 py-1 rounded-full flex items-center gap-1';
+      chip.textContent=name;
+      const x=document.createElement('button');
+      x.textContent='×';
+      x.className='text-red-600';
+      x.addEventListener('click',()=>{
+        manualMembers=manualMembers.filter(m=>m!==name);
+        chip.remove();
+      });
+      chip.appendChild(x);
+      manualChips.appendChild(chip);
+    }
 
     function addManual(){
-      const names = manualInput.value.split(',').map(n=>n.trim()).filter(n=>n);
+      const raw = manualInput.value;
+      if(!raw.trim()){
+        setManualError('');
+        return;
+      }
+      const names = raw.split(',').map(n=>n.trim()).filter(n=>n);
+      if(!names.length){
+        setManualError('');
+        manualInput.value='';
+        return;
+      }
+      const invalid = [];
+      let hasValid=false;
       names.forEach(n=>{
-        manualMembers.push(n);
-        const chip=document.createElement('span');
-        chip.className='bg-blue-100 px-2 py-1 rounded-full flex items-center gap-1';
-        chip.textContent=n;
-        const x=document.createElement('button');
-        x.textContent='×';
-        x.className='text-red-600';
-        x.addEventListener('click',()=>{
-          manualMembers=manualMembers.filter(m=>m!==n);
-          chip.remove();
-        });
-        chip.appendChild(x);
-        manualChips.appendChild(chip);
+        const resolved = resolveName(n);
+        if(!resolved){
+          invalid.push(n);
+          return;
+        }
+        hasValid=true;
+        if(!manualMembers.includes(resolved)){
+          manualMembers.push(resolved);
+          createManualChip(resolved);
+        }
       });
-      manualInput.value='';
+      if(invalid.length){
+        manualInput.value = invalid.join(', ');
+        setManualError('Ce nom ne correspond pas à la liste propose.');
+      }else{
+        manualInput.value='';
+        if(hasValid){
+          setManualError('');
+        }
+      }
     }
 
     playBtn.addEventListener('click',()=>{
@@ -603,6 +695,7 @@
         showConfirmation('Votre envoi a bien été pris en compte.');
         teamContainer.querySelectorAll('input[type="checkbox"]').forEach(b=>b.checked=false);
         manualMembers=[];manualChips.innerHTML='';
+        setManualError('');
       }catch(e){
         sendStatus.textContent="Erreur d'envoi, enregistré localement.";
         enqueue(payload);
