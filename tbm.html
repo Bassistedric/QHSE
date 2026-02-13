@@ -6,6 +6,7 @@
   <title>TBM</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
+
 <body class="min-h-screen bg-gray-50">
   <header class="sticky top-0 z-10 bg-white/90 backdrop-blur border-b">
     <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between gap-3">
@@ -26,14 +27,17 @@
       </div>
     </div>
   </header>
-    <main class="space-y-4 max-w-md mx-auto px-4 py-4">
-      <h1 class="text-2xl font-bold mb-4 px-4 py-2 rounded-xl bg-[#104861] text-[#D9D9D9] text-center">TBM</h1>
-      <p id="loadStatus" class="text-sm text-gray-500"></p>
-      <button id="retryBtn" class="text-sm text-blue-600 underline">Réessayer</button>
 
-      <section class="bg-white rounded shadow p-4">
+  <main class="space-y-4 max-w-md mx-auto px-4 py-4">
+    <h1 class="text-2xl font-bold mb-4 px-4 py-2 rounded-xl bg-[#104861] text-[#D9D9D9] text-center">TBM</h1>
+
+    <p id="loadStatus" class="text-sm text-gray-500"></p>
+    <button id="retryBtn" class="text-sm text-blue-600 underline">Réessayer</button>
+
+    <section class="bg-white rounded shadow p-4">
       <label for="dateInput" class="block text-sm font-medium mb-1">Date / heure</label>
       <input id="dateInput" type="datetime-local" class="border rounded px-2 py-1 w-full">
+      <p id="weekHint" class="text-xs text-gray-500 mt-1"></p>
     </section>
 
     <section class="bg-white rounded shadow p-4">
@@ -75,6 +79,7 @@
         <button id="toggleAll" class="text-sm text-blue-600 underline">Tout cocher</button>
       </div>
       <div id="teamContainer" class="flex flex-col gap-1 mb-2"></div>
+
       <div>
         <div class="flex gap-2">
           <input id="manualInput" type="text" class="border rounded px-2 py-1 flex-1" placeholder="Ajouter manuellement (séparés par des virgules)" list="manualSuggestions">
@@ -90,7 +95,7 @@
       <button id="sendBtn" class="px-3 py-1 bg-black text-white rounded w-full">Envoyer</button>
       <p id="sendStatus" class="text-sm mt-1"></p>
     </section>
-  
+
     <section class="bg-white rounded shadow p-4">
       <h2 class="text-lg font-medium mb-2">Historique</h2>
       <div class="flex gap-2 mb-2">
@@ -116,22 +121,28 @@
       document.documentElement.lang = l;
     }
   </script>
+
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script type="module">
-      import { SHEET_BASE_URL, METIER_TO_GID, TBM_GID } from './sheetConfig.js';
-      // URL de l'application Apps Script (modifier si changement de Sheet)
-      const COLLECT_URL = "https://script.google.com/macros/s/AKfycbw53EiERifnozNg9ybNfbn_Ofm9NrFquashw_mbYoWyqtQROS6xXXzwVT2UQ4XxcJYK/exec";
-      const OUTBOX_KEY = 'tbm_outbox_v1';
 
-      const loadStatus = document.getElementById('loadStatus');
-      const retryBtn = document.getElementById('retryBtn');
-      const dateInput = document.getElementById('dateInput');
+  <script type="module">
+    import { SHEET_BASE_URL, METIER_TO_GID, TBM_GID } from './sheetConfig.js';
+
+    // URL Apps Script (collect TBM)
+    const COLLECT_URL = "https://script.google.com/macros/s/AKfycbw53EiERifnozNg9ybNfbn_Ofm9NrFquashw_mbYoWyqtQROS6xXXzwVT2UQ4XxcJYK/exec";
+    const OUTBOX_KEY = 'tbm_outbox_v1';
+
+    const loadStatus = document.getElementById('loadStatus');
+    const retryBtn = document.getElementById('retryBtn');
+    const dateInput = document.getElementById('dateInput');
+    const weekHint = document.getElementById('weekHint');
+
     const chantierSelect = document.getElementById('chantierSelect');
     const responsableSelect = document.getElementById('responsableSelect');
     const chantierManualInput = document.getElementById('chantierManual');
     const responsableManualInput = document.getElementById('responsableManual');
     const responsableHelper = document.getElementById('responsableHelper');
+
     const teamContainer = document.getElementById('teamContainer');
     const toggleAllBtn = document.getElementById('toggleAll');
     const manualInput = document.getElementById('manualInput');
@@ -139,23 +150,29 @@
     const manualAddBtn = document.getElementById('manualAddBtn');
     const manualSuggestions = document.getElementById('manualSuggestions');
     const manualError = document.getElementById('manualError');
+
     const thumbContainer = document.getElementById('thumbContainer');
     const qrcodeEl = document.getElementById('qrcode');
     const playBtn = document.getElementById('playBtn');
     const copyLinkBtn = document.getElementById('copyLink');
+
     const metierInput = document.getElementById('metier');
     const sendBtn = document.getElementById('sendBtn');
     const sendStatus = document.getElementById('sendStatus');
+
     const exportBtn = document.getElementById('exportBtn');
     const clearBtn = document.getElementById('clearBtn');
     const historyTable = document.getElementById('historyTable');
+
     const confirmationModal = document.getElementById('confirmationModal');
     const closeConfirmationBtn = document.getElementById('closeConfirmation');
     const confirmationMessage = confirmationModal.querySelector('[data-modal-message]');
 
-    let equipeData = null;
-    let equipeSheets = {};
+    // AFFECTATIONS_SEMAINE rows (objects)
+    let affectRows = [];
+    // TBM video sheet raw
     let tbmData = null;
+
     let manualMembers = [];
     const normalizedNameMap = new Map();
     let lastVideoUrl = '';
@@ -182,19 +199,24 @@
     window.addEventListener('online', flushQueue);
 
     function normalize(str){
-      return str.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      return String(str ?? '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g,'')
+        .trim();
+    }
+
+    function normUpper(str){
+      return normalize(str).toUpperCase().replace(/\s+/g,' ');
     }
 
     function csvUrl(base, gid){
-      if (typeof gid !== 'string' || gid.trim() === '') {
-        return null;
-      }
+      if (typeof gid !== 'string' || gid.trim() === '') return null;
       try {
         const u = new URL(base);
         u.searchParams.set('output','csv');
         u.searchParams.set('gid', gid);
         return u.toString();
-      } catch (e) {
+      } catch {
         return null;
       }
     }
@@ -209,218 +231,160 @@
       });
     }
 
-    function extractAssignments(value){
-      if(!value) return [];
-      const normalized = value.replace(/\r\n?/g,'\n');
-      const segments = normalized.split(/\n|;/);
-      const assignments = [];
-      for(const segment of segments){
-        const pieces = segment.split(/\s+\/\s+/);
-        for(const piece of pieces){
-          const trimmed = piece.trim();
-          if(trimmed) assignments.push(trimmed);
-        }
-      }
-      return assignments;
+    function sheetToMetier(sheetName) {
+      const s = String(sheetName || "").trim().toLowerCase();
+      if (s === "equipe_elec") return "Elec";
+      if (s === "equipe_hvac_ref") return "HVAC_REF";
+      return "";
     }
 
-    async function loadSheets(){
-      loadStatus.textContent = 'Chargement...';
-      try{
-        const base = SHEET_BASE_URL;
-        const sheetPromises = Object.entries(METIER_TO_GID).map(([metier, gid]) => {
-          const url = csvUrl(base, gid);
-          if (!url) {
-            console.error(`Invalid GID for ${metier}`);
-            return Promise.resolve();
-          }
-          return parseCsv(url)
-            .then(data => {
-              equipeSheets[metier] = data;
-            })
-            .catch(err => {
-              console.error(`Failed to load sheet ${metier}`, err);
-            });
-        });
-        let tbmPromise;
-        const tbmUrl = csvUrl(base, TBM_GID);
-        if (tbmUrl) {
-          tbmPromise = parseCsv(tbmUrl)
-            .then(data => {
-              tbmData = data;
-            })
-            .catch(err => {
-              console.error('Failed to load TBM sheet', err);
-            });
-        } else {
-          console.error('Invalid TBM GID');
-          tbmPromise = Promise.resolve();
-        }
-        await Promise.all([...sheetPromises, tbmPromise]);
-        equipeData = equipeSheets[metierInput.value] || null;
-        updateKnownNames();
-        loadStatus.textContent = 'Feuilles chargées';
-        updateAll();
-      }catch(e){
-        loadStatus.textContent = 'Impossible de charger les données';
-        console.error(e);
-      }
+    // ISO week (EU) from Date
+    function isoWeek(dateObj){
+      const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
     }
 
-    function updateAll(){
-      populateChantiers();
-      populateVideo();
+    function getSelectedWeek(){
+      const d = new Date(dateInput.value);
+      if (!(d instanceof Date) || isNaN(d.getTime())) return null;
+      return isoWeek(d);
     }
 
-    function findColumnIndex(data, date){
-      if(!data || !data.length){
-        loadStatus.textContent = 'Données de feuille indisponibles';
-        return -1;
-      }
+    function updateWeekHint(){
+      const w = getSelectedWeek();
+      weekHint.textContent = w ? `Semaine ISO détectée : ${w}` : '';
+    }
 
-      const monthName = normalize(date.toLocaleString('fr-FR',{month:'long'})).toLowerCase();
-      const m = date.getMonth()+1;
-      const monthNum = String(m);
-      const monthNumPadded = monthNum.padStart(2,'0');
-      const year = String(date.getFullYear());
-      const monthVariants = [
-        monthName,
-        monthNum,
-        monthNumPadded,
-        `${monthNum}/${year}`,
-        `${monthNumPadded}/${year}`
-      ];
-      const day = String(date.getDate());
-      const dayPadded = day.padStart(2,'0');
-      const dayVariants = [day, dayPadded];
+    function uniqSorted(arr){
+      return Array.from(new Set(arr.filter(Boolean))).sort((a,b)=>a.localeCompare(b,'fr'));
+    }
 
-      function tryRows(monthRowIndex, dayRowIndex){
-        const monthsRow = (data[monthRowIndex] || []).map(c => normalize((c||'').toString()).toLowerCase());
-        const daysRow = (data[dayRowIndex] || []).map(c => normalize((c||'').toString()).toLowerCase());
-        const len = Math.max(monthsRow.length, daysRow.length);
-        for(let i=0;i<len;i++){
-          if(monthVariants.includes(monthsRow[i]) && dayVariants.includes(daysRow[i])){
-            return i;
-          }
-        }
-        return -1;
-      }
+    function clearSelect(sel){
+      sel.innerHTML = '';
+    }
 
-      // Try rows 4-5 first (1-based indices)
-      let col = tryRows(3,4);
-      if(col !== -1) return col;
+    function setSelectOptions(sel, values){
+      clearSelect(sel);
+      values.forEach((v,i)=>{
+        const opt = document.createElement('option');
+        opt.value = v;
+        opt.textContent = v;
+        sel.appendChild(opt);
+      });
+    }
 
-      // Fallback to rows 1-2
-      col = tryRows(0,1);
-      if(col !== -1) return col;
+    function getFilteredRowsBase(){
+      const metier = metierInput.value;
+      const week = getSelectedWeek();
+      if (!metier || !week) return [];
+      return affectRows.filter(r => r.metier === metier && r.semaine === week);
+    }
 
-      // Auto-detect rows containing months and days
-      let monthRowIdx=-1, dayRowIdx=-1;
-      for(let r=0;r<Math.min(10,data.length);r++){
-        const row = (data[r] || []).map(c => normalize((c||'').toString()).toLowerCase());
-        if(monthRowIdx===-1 && row.some(c=>monthVariants.includes(c))) monthRowIdx=r;
-        if(dayRowIdx===-1 && row.some(c=>dayVariants.includes(c))) dayRowIdx=r;
-        if(monthRowIdx!==-1 && dayRowIdx!==-1) break;
-      }
-      if(monthRowIdx!==-1 && dayRowIdx!==-1){
-        col = tryRows(monthRowIdx, dayRowIdx);
-        if(col !== -1) return col;
-      }
+    function updateKnownNamesFromRows(rows){
+      normalizedNameMap.clear();
+      manualSuggestions.innerHTML = '';
+      const names = uniqSorted(rows.map(r=>r.ouvrier));
+      names.forEach(name=>{
+        const opt=document.createElement('option');
+        opt.value=name;
+        manualSuggestions.appendChild(opt);
 
-      loadStatus.textContent = 'Impossible de trouver une colonne pour cette date';
-      return -1;
+        const key = normUpper(name);
+        if(!normalizedNameMap.has(key)) normalizedNameMap.set(key, []);
+        normalizedNameMap.get(key).push(name);
+      });
     }
 
     function populateChantiers(){
+      // manual chantier override
       if(chantierManualInput.value.trim()){
-        chantierSelect.innerHTML='';
-        responsableSelect.innerHTML='';
+        clearSelect(chantierSelect);
+        clearSelect(responsableSelect);
         teamContainer.innerHTML='';
         chantierSelect.disabled=true;
         responsableSelect.disabled=true;
         return;
       }
-      chantierSelect.innerHTML = '';
-      responsableSelect.innerHTML = '';
-      teamContainer.innerHTML = '';
-      const date = new Date(dateInput.value);
-      if(!equipeData){
-        loadStatus.textContent = 'Sélectionnez un métier';
-        chantierSelect.disabled = true;
-        responsableSelect.disabled = true;
+
+      const base = getFilteredRowsBase();
+      if(!base.length){
+        loadStatus.textContent = 'Sélectionnez un métier + une date (semaine)';
+        chantierSelect.disabled=true;
+        responsableSelect.disabled=true;
+        teamContainer.innerHTML='';
         return;
       }
-      chantierSelect.disabled = false;
-      responsableSelect.disabled = true;
-      const col = findColumnIndex(equipeData,date);
-      if(col===-1){
-        return; // Message already handled in findColumnIndex
-      }
-      const chantiers = new Set();
-      for(let r=7;r<equipeData.length;r++){
-        const cell = equipeData[r][col] || '';
-        const assignments = extractAssignments(cell);
-        for(const val of assignments){
-          const norm = normalize(val).toLowerCase();
-          if(norm==='conge' || norm==='malade') continue;
-          chantiers.add(val);
-        }
-      }
-      const sorted = Array.from(chantiers).sort((a,b)=>a.localeCompare(b,'fr'));
-      sorted.forEach(ch => {
-        const opt = document.createElement('option');
-        opt.value = ch;
-        opt.textContent = ch;
-        chantierSelect.appendChild(opt);
-      });
-      if(sorted.length){
-        chantierSelect.value = sorted[0];
+
+      chantierSelect.disabled=false;
+      responsableSelect.disabled=true;
+      responsableHelper.textContent='';
+      teamContainer.innerHTML='';
+
+      const chantiers = uniqSorted(base
+        .map(r=>r.chantier)
+        .filter(ch => {
+          const n = normUpper(ch);
+          return n !== 'CONGE' && n !== 'MALADE';
+        })
+      );
+
+      setSelectOptions(chantierSelect, chantiers);
+
+      if(chantiers.length){
+        chantierSelect.value = chantiers[0];
         populateResponsableAndTeam();
       }
     }
 
     function populateResponsableAndTeam(){
       if(chantierManualInput.value.trim()){
-        responsableSelect.innerHTML='';
+        clearSelect(responsableSelect);
         teamContainer.innerHTML='';
         responsableSelect.disabled=true;
         return;
       }
-      responsableSelect.innerHTML = '';
-      teamContainer.innerHTML = '';
+
+      teamContainer.innerHTML='';
+      clearSelect(responsableSelect);
+      responsableHelper.textContent='';
+
       const chantier = chantierSelect.value;
-      if(!chantier || !equipeData) return;
-      const date = new Date(dateInput.value);
-      const col = findColumnIndex(equipeData,date);
-      if(col===-1) return;
-      const resps = [];
-      const members = [];
-      const targetNormalized = normalize(chantier).toLowerCase();
-      for(let r=7;r<equipeData.length;r++){
-        const role = (equipeData[r][0]||'').trim().toUpperCase();
-        const name = (equipeData[r][1]||'').trim();
-        const cell = equipeData[r][col] || '';
-        const assignments = extractAssignments(cell);
-        const matches = assignments.some(val => normalize(val).toLowerCase() === targetNormalized);
-        if(!matches) continue;
-        if(role==='CE') resps.push(name); else members.push(name);
-      }
-      if(resps.length){
-        resps.forEach(n=>{
-          const opt=document.createElement('option');
-          opt.value=n; opt.textContent=n;
-          responsableSelect.appendChild(opt);
-        });
+      if(!chantier) return;
+
+      const base = getFilteredRowsBase();
+      const target = normUpper(chantier);
+
+      const chantierRows = base.filter(r => normUpper(r.chantier) === target);
+
+      const ces = uniqSorted(chantierRows.map(r=>r.ce));
+      if(ces.length){
+        setSelectOptions(responsableSelect, ces);
         responsableSelect.disabled=false;
-        responsableHelper.textContent='';
       }else{
         responsableSelect.disabled=true;
         responsableHelper.textContent='Aucun CE trouvé';
       }
+
       if(responsableManualInput.value.trim()){
         responsableSelect.disabled=true;
       }
-      members.sort((a,b)=>a.localeCompare(b,'fr'));
+
+      // default selected CE to first
+      const selectedCE = responsableManualInput.value.trim() || (responsableSelect.disabled ? '' : responsableSelect.value);
+      if(!selectedCE){
+        // still render all ouvriers for chantier even without CE selection? -> no, keep consistent
+        return;
+      }
+
+      const ceTarget = normUpper(selectedCE);
+      const members = uniqSorted(chantierRows
+        .filter(r => normUpper(r.ce) === ceTarget)
+        .map(r=>r.ouvrier)
+      );
+
       members.forEach(n=>{
         const lbl=document.createElement('label');
         lbl.className='inline-flex items-center gap-2';
@@ -438,6 +402,7 @@
       copyLinkBtn.disabled=true;
       lastVideoUrl='';
       if(!tbmData) return;
+
       const monthName = new Date(dateInput.value).toLocaleString('fr-FR',{month:'long'}).toLowerCase();
       for(const row of tbmData){
         if((row[0]||'').toString().toLowerCase() === monthName){
@@ -467,89 +432,89 @@
     }
 
     function extractYoutubeId(url){
-      const m = url.match(/(?:v=|\.be\/)([\w-]{11})/);
+      const m = String(url||'').match(/(?:v=|\.be\/)([\w-]{11})/);
       return m?m[1]:'';
     }
 
-    retryBtn.addEventListener('click', loadSheets);
-    toggleAllBtn.addEventListener('click',()=>{
-      const boxes = teamContainer.querySelectorAll('input[type="checkbox"]');
-      const allChecked = Array.from(boxes).every(b=>b.checked);
-      boxes.forEach(b=>b.checked=!allChecked);
-    });
-
-    metierInput.addEventListener('change',async()=>{
-      const metier = metierInput.value;
-      const gid = METIER_TO_GID[metier];
-      if (!equipeSheets[metier] && typeof gid === 'string' && gid.trim() !== '') {
-        try {
-          const url = csvUrl(SHEET_BASE_URL, gid);
-          if (url) {
-            const data = await parseCsv(url);
-            equipeSheets[metier] = data;
-          } else {
-            console.error(`Invalid GID for ${metier}`);
-            loadStatus.textContent = "Impossible de charger les données pour ce métier";
-          }
-        } catch (e) {
-          console.error(e);
-          loadStatus.textContent = "Impossible de charger les données pour ce métier";
-        }
-      } else if (!gid) {
-        console.error(`Invalid GID for ${metier}`);
-      }
-      equipeData = equipeSheets[metier] || null;
-      updateKnownNames();
-      updateAll();
-    });
-
-    chantierSelect.addEventListener('change', populateResponsableAndTeam);
-    chantierManualInput.addEventListener('input',()=>{
-      if(chantierManualInput.value.trim()){
-        chantierSelect.disabled=true;
-        chantierSelect.value='';
-        responsableSelect.innerHTML='';
-        responsableSelect.disabled=true;
-        responsableHelper.textContent='';
-        teamContainer.innerHTML='';
-      }else{
-        chantierSelect.disabled=false;
-        populateChantiers();
-      }
-    });
-    responsableManualInput.addEventListener('input',()=>{
-      if(responsableManualInput.value.trim()){
-        responsableSelect.disabled=true;
-        responsableSelect.value='';
-        responsableHelper.textContent='';
-      }else{
-        if(!chantierManualInput.value.trim()){
-          populateResponsableAndTeam();
-        }
-      }
-    });
-    dateInput.addEventListener('change', updateAll);
-
-    manualInput.addEventListener('keydown',e=>{
-      if(e.key==='Enter'){
-        e.preventDefault();
-        addManual();
-        manualInput.focus();
-      }
-    });
-    manualInput.addEventListener('blur',addManual);
-    manualInput.addEventListener('input',()=>{
-      setManualError('');
-    });
-    if(manualAddBtn){
-      manualAddBtn.addEventListener('click',()=>{
-        addManual();
-        manualInput.focus();
-      });
+    function updateAll(){
+      updateWeekHint();
+      const base = getFilteredRowsBase();
+      updateKnownNamesFromRows(base);
+      populateChantiers();
+      populateVideo();
     }
 
+    async function loadSheets(){
+      loadStatus.textContent = 'Chargement...';
+
+      try{
+        // 1) Affectations (AFFECTATIONS_SEMAINE) : on charge UNE feuille selon metier->gid
+        // (les 2 métiers pointent sur le même gid, mais on garde la logique)
+        const metier = metierInput.value || 'Elec';
+        const gid = METIER_TO_GID[metier] || METIER_TO_GID.Elec;
+        const url = csvUrl(SHEET_BASE_URL, gid);
+        if(!url) throw new Error('GID invalide pour les affectations.');
+
+        const raw = await parseCsv(url);
+        const headers = (raw[0] || []).map(h => String(h||'').trim());
+
+        // mapping attendu
+        const idx = {
+          annee: headers.indexOf('Annee'),
+          semaine: headers.indexOf('Semaine'),
+          pm: headers.indexOf('PM'),
+          sisu: headers.indexOf('SiSU'),
+          ce: headers.indexOf('CE'),
+          ouvrier: headers.indexOf('Ouvrier'),
+          chantier: headers.indexOf('Chantier'),
+          sheet: headers.indexOf('Sheet')
+        };
+
+        if(idx.semaine < 0 || idx.ouvrier < 0 || idx.chantier < 0 || idx.ce < 0 || idx.sheet < 0){
+          console.error('Headers affectations:', headers);
+          throw new Error("En-têtes AFFECTATIONS_SEMAINE inattendus.");
+        }
+
+        affectRows = raw.slice(1)
+          .filter(r => r && r.length)
+          .map(r => {
+            const sheet = (r[idx.sheet] || '').toString().trim();
+            return {
+              annee: parseInt(r[idx.annee],10) || null,
+              semaine: parseInt(r[idx.semaine],10) || null,
+              pm: (r[idx.pm] || '').toString().trim(),
+              sisu: (r[idx.sisu] || '').toString().trim(),
+              ce: (r[idx.ce] || '').toString().trim(),
+              ouvrier: (r[idx.ouvrier] || '').toString().trim(),
+              chantier: (r[idx.chantier] || '').toString().trim(),
+              sheet,
+              metier: sheetToMetier(sheet) || '' // <-- clé !
+            };
+          })
+          .filter(r => r.semaine && r.ouvrier && r.chantier && r.metier);
+
+        // 2) TBM videos
+        const tbmUrl = csvUrl(SHEET_BASE_URL, TBM_GID);
+        if(tbmUrl){
+          try{
+            tbmData = await parseCsv(tbmUrl);
+          }catch(e){
+            console.error('Failed to load TBM sheet', e);
+            tbmData = null;
+          }
+        }
+
+        loadStatus.textContent = 'Feuilles chargées';
+        updateAll();
+
+      }catch(e){
+        loadStatus.textContent = 'Impossible de charger les données';
+        console.error(e);
+      }
+    }
+
+    // ---- manual chips helpers
     function setManualError(message){
-      if(!manualError) return;
       if(message){
         manualError.textContent = message;
         manualError.classList.remove('hidden');
@@ -559,40 +524,9 @@
       }
     }
 
-    function updateKnownNames(){
-      normalizedNameMap.clear();
-      if(manualSuggestions){
-        manualSuggestions.innerHTML='';
-      }
-      if(!equipeData){
-        return;
-      }
-      const seen = new Set();
-      const names = [];
-      for(let r=7;r<equipeData.length;r++){
-        const name = (equipeData[r][1]||'').trim();
-        if(!name || seen.has(name)) continue;
-        seen.add(name);
-        names.push(name);
-        const normalized = normalize(name).toLowerCase();
-        if(!normalizedNameMap.has(normalized)){
-          normalizedNameMap.set(normalized, []);
-        }
-        normalizedNameMap.get(normalized).push(name);
-      }
-      names.sort((a,b)=>a.localeCompare(b,'fr'));
-      if(manualSuggestions){
-        names.forEach(name=>{
-          const opt=document.createElement('option');
-          opt.value=name;
-          manualSuggestions.appendChild(opt);
-        });
-      }
-    }
-
     function resolveName(input){
-      const normalized = normalize(input).toLowerCase();
-      const matches = normalizedNameMap.get(normalized);
+      const key = normUpper(input);
+      const matches = normalizedNameMap.get(key);
       if(!matches || !matches.length) return null;
       const exact = matches.find(n=>n===input);
       return exact || matches[0];
@@ -645,12 +579,69 @@
         return false;
       }else{
         manualInput.value='';
-        if(hasValid){
-          setManualError('');
-        }
+        if(hasValid) setManualError('');
         return hasValid;
       }
     }
+
+    // ---- UI hooks
+    retryBtn.addEventListener('click', loadSheets);
+
+    toggleAllBtn.addEventListener('click',()=>{
+      const boxes = teamContainer.querySelectorAll('input[type="checkbox"]');
+      const allChecked = Array.from(boxes).every(b=>b.checked);
+      boxes.forEach(b=>b.checked=!allChecked);
+    });
+
+    metierInput.addEventListener('change', ()=>{
+      // quand on change métier, on recharge (car affectRows dépend de sheetToMetier)
+      loadSheets();
+    });
+
+    chantierSelect.addEventListener('change', populateResponsableAndTeam);
+
+    chantierManualInput.addEventListener('input',()=>{
+      if(chantierManualInput.value.trim()){
+        chantierSelect.disabled=true;
+        chantierSelect.value='';
+        clearSelect(responsableSelect);
+        responsableSelect.disabled=true;
+        responsableHelper.textContent='';
+        teamContainer.innerHTML='';
+      }else{
+        chantierSelect.disabled=false;
+        populateChantiers();
+      }
+    });
+
+    responsableManualInput.addEventListener('input',()=>{
+      if(responsableManualInput.value.trim()){
+        responsableSelect.disabled=true;
+        responsableSelect.value='';
+        responsableHelper.textContent='';
+        populateResponsableAndTeam();
+      }else{
+        populateResponsableAndTeam();
+      }
+    });
+
+    dateInput.addEventListener('change', ()=>{
+      updateAll();
+    });
+
+    manualInput.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){
+        e.preventDefault();
+        addManual();
+        manualInput.focus();
+      }
+    });
+    manualInput.addEventListener('blur',addManual);
+    manualInput.addEventListener('input',()=> setManualError(''));
+    manualAddBtn.addEventListener('click',()=>{
+      addManual();
+      manualInput.focus();
+    });
 
     playBtn.addEventListener('click',()=>{
       if(!lastVideoUrl) return;
@@ -668,7 +659,6 @@
       confirmationModal.setAttribute('aria-hidden','false');
       closeConfirmationBtn.focus();
     }
-
     function hideConfirmation(){
       confirmationModal.classList.add('hidden');
       confirmationModal.setAttribute('aria-hidden','true');
@@ -677,14 +667,10 @@
 
     closeConfirmationBtn.addEventListener('click', hideConfirmation);
     confirmationModal.addEventListener('click', event => {
-      if(event.target === confirmationModal){
-        hideConfirmation();
-      }
+      if(event.target === confirmationModal) hideConfirmation();
     });
     document.addEventListener('keydown', event => {
-      if(event.key === 'Escape' && !confirmationModal.classList.contains('hidden')){
-        hideConfirmation();
-      }
+      if(event.key === 'Escape' && !confirmationModal.classList.contains('hidden')) hideConfirmation();
     });
 
     sendBtn.addEventListener('click',async()=>{
@@ -693,18 +679,22 @@
       const chantier=chantierManualInput.value.trim()||chantierSelect.value;
       const responsable=responsableManualInput.value.trim()||(responsableSelect.disabled?'':responsableSelect.value);
       const members=[...teamContainer.querySelectorAll('input[type="checkbox"]:checked')].map(b=>b.value).concat(manualMembers);
+
       if(!dateVal||!metier||!chantier||!responsable||!members.length||!lastVideoUrl){
         sendStatus.textContent='Veuillez remplir tous les champs.';
         return;
       }
+
       sendBtn.disabled = true;
       const originalLabel = sendBtn.textContent;
       sendBtn.textContent = 'Envoi...';
+
       const payload={
         type:'tbm',
         meta:{userAgent:navigator.userAgent},
         data:{datetime:dateVal,metier,chantier,responsable,equipe:members,youtubeUrl:lastVideoUrl}
       };
+
       try{
         await fetch(COLLECT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
         sendStatus.textContent='Envoyé';
@@ -717,6 +707,7 @@
         enqueue(payload);
         showConfirmation("Une erreur réseau est survenue. L'envoi sera retenté automatiquement.");
       }
+
       const entries=JSON.parse(localStorage.getItem('tbmEntries')||'[]');
       entries.push({
         savedAt:new Date().toISOString(),
@@ -725,6 +716,7 @@
       });
       localStorage.setItem('tbmEntries',JSON.stringify(entries));
       loadHistory();
+
       sendBtn.disabled = false;
       sendBtn.textContent = originalLabel;
     });
@@ -762,6 +754,7 @@
       const now=new Date();
       now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
       dateInput.value=now.toISOString().slice(0,16);
+      updateWeekHint();
       flushQueue();
       loadHistory();
       loadSheets();
