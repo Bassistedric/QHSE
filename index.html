@@ -21,13 +21,16 @@
   <div id="root"></div>
 
   <!-- PWA / Service Worker (bump ?v=... pour forcer la MAJ) -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () =>
-        navigator.serviceWorker.register('./sw.js?v=v7').catch(console.error)
-      );
-    }
-  </script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () =>
+      navigator.serviceWorker
+        .register('./sw.js?v=v7')
+        .catch(console.error)
+    );
+  }
+</script>
+
   <!-- Third-party libraries -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <!-- Bundled React app -->
