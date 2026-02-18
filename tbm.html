@@ -221,14 +221,14 @@
       }
     }
 
-    function parseCsv(url){
-      return new Promise((resolve,reject)=>{
-        Papa.parse(url,{
-          download:true,
-          complete: res => resolve(res.data),
-          error: err => reject(err)
-        });
-      });
+    // ✅ FIX: fetch() + Papa.parse(text) (plus robuste que download:true)
+    async function parseCsvUrl(url){
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`CSV HTTP ${res.status} (${url})`);
+      const text = await res.text();
+      const parsed = Papa.parse(text, { skipEmptyLines: true });
+      if (parsed.errors?.length) console.warn('PapaParse errors', parsed.errors);
+      return parsed.data;
     }
 
     function sheetToMetier(sheetName) {
@@ -268,7 +268,7 @@
 
     function setSelectOptions(sel, values){
       clearSelect(sel);
-      values.forEach((v,i)=>{
+      values.forEach((v)=>{
         const opt = document.createElement('option');
         opt.value = v;
         opt.textContent = v;
@@ -375,7 +375,6 @@
       // default selected CE to first
       const selectedCE = responsableManualInput.value.trim() || (responsableSelect.disabled ? '' : responsableSelect.value);
       if(!selectedCE){
-        // still render all ouvriers for chantier even without CE selection? -> no, keep consistent
         return;
       }
 
@@ -448,17 +447,15 @@
       loadStatus.textContent = 'Chargement...';
 
       try{
-        // 1) Affectations (AFFECTATIONS_SEMAINE) : on charge UNE feuille selon metier->gid
-        // (les 2 métiers pointent sur le même gid, mais on garde la logique)
+        // 1) Affectations (AFFECTATIONS_SEMAINE)
         const metier = metierInput.value || 'Elec';
         const gid = METIER_TO_GID[metier] || METIER_TO_GID.Elec;
         const url = csvUrl(SHEET_BASE_URL, gid);
         if(!url) throw new Error('GID invalide pour les affectations.');
 
-        const raw = await parseCsv(url);
+        const raw = await parseCsvUrl(url);
         const headers = (raw[0] || []).map(h => String(h||'').trim());
 
-        // mapping attendu
         const idx = {
           annee: headers.indexOf('Annee'),
           semaine: headers.indexOf('Semaine'),
@@ -488,7 +485,7 @@
               ouvrier: (r[idx.ouvrier] || '').toString().trim(),
               chantier: (r[idx.chantier] || '').toString().trim(),
               sheet,
-              metier: sheetToMetier(sheet) || '' // <-- clé !
+              metier: sheetToMetier(sheet) || ''
             };
           })
           .filter(r => r.semaine && r.ouvrier && r.chantier && r.metier);
@@ -497,7 +494,7 @@
         const tbmUrl = csvUrl(SHEET_BASE_URL, TBM_GID);
         if(tbmUrl){
           try{
-            tbmData = await parseCsv(tbmUrl);
+            tbmData = await parseCsvUrl(tbmUrl);
           }catch(e){
             console.error('Failed to load TBM sheet', e);
             tbmData = null;
@@ -594,7 +591,6 @@
     });
 
     metierInput.addEventListener('change', ()=>{
-      // quand on change métier, on recharge (car affectRows dépend de sheetToMetier)
       loadSheets();
     });
 
@@ -755,6 +751,10 @@
       now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
       dateInput.value=now.toISOString().slice(0,16);
       updateWeekHint();
+
+      // ✅ métier par défaut (évite un démarrage vide)
+      if (!metierInput.value) metierInput.value = 'Elec';
+
       flushQueue();
       loadHistory();
       loadSheets();
