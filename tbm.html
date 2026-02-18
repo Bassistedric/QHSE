@@ -126,9 +126,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <script type="module">
-    import { SHEET_BASE_URL, METIER_TO_GID, TBM_GID } from './sheetConfig.js';
+    import { SHEET_BASE_URL, TBM_GID, AFFECTATIONS_GID } from './sheetConfig.js';
 
-    // URL Apps Script (collect TBM)
     const COLLECT_URL = "https://script.google.com/macros/s/AKfycbw53EiERifnozNg9ybNfbn_Ofm9NrFquashw_mbYoWyqtQROS6xXXzwVT2UQ4XxcJYK/exec";
     const OUTBOX_KEY = 'tbm_outbox_v1';
 
@@ -168,9 +167,7 @@
     const closeConfirmationBtn = document.getElementById('closeConfirmation');
     const confirmationMessage = confirmationModal.querySelector('[data-modal-message]');
 
-    // AFFECTATIONS_SEMAINE rows (objects)
     let affectRows = [];
-    // TBM video sheet raw
     let tbmData = null;
 
     let manualMembers = [];
@@ -199,36 +196,28 @@
     window.addEventListener('online', flushQueue);
 
     function normalize(str){
-      return String(str ?? '')
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g,'')
-        .trim();
+      return String(str ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
     }
-
     function normUpper(str){
       return normalize(str).toUpperCase().replace(/\s+/g,' ');
     }
 
     function csvUrl(base, gid){
       if (typeof gid !== 'string' || gid.trim() === '') return null;
-      try {
-        const u = new URL(base);
-        u.searchParams.set('output','csv');
-        u.searchParams.set('gid', gid);
-        return u.toString();
-      } catch {
-        return null;
-      }
+      const u = new URL(base);
+      u.searchParams.set('output','csv');
+      u.searchParams.set('gid', gid);
+      return u.toString();
     }
 
-    // ✅ FIX: fetch() + Papa.parse(text) (plus robuste que download:true)
-    async function parseCsvUrl(url){
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error(`CSV HTTP ${res.status} (${url})`);
-      const text = await res.text();
-      const parsed = Papa.parse(text, { skipEmptyLines: true });
-      if (parsed.errors?.length) console.warn('PapaParse errors', parsed.errors);
-      return parsed.data;
+    function parseCsv(url){
+      return new Promise((resolve,reject)=>{
+        Papa.parse(url,{
+          download:true,
+          complete: res => resolve(res.data),
+          error: err => reject(err)
+        });
+      });
     }
 
     function sheetToMetier(sheetName) {
@@ -238,7 +227,6 @@
       return "";
     }
 
-    // ISO week (EU) from Date
     function isoWeek(dateObj){
       const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
       const dayNum = d.getUTCDay() || 7;
@@ -249,7 +237,7 @@
 
     function getSelectedWeek(){
       const d = new Date(dateInput.value);
-      if (!(d instanceof Date) || isNaN(d.getTime())) return null;
+      if (isNaN(d.getTime())) return null;
       return isoWeek(d);
     }
 
@@ -262,13 +250,10 @@
       return Array.from(new Set(arr.filter(Boolean))).sort((a,b)=>a.localeCompare(b,'fr'));
     }
 
-    function clearSelect(sel){
-      sel.innerHTML = '';
-    }
-
+    function clearSelect(sel){ sel.innerHTML = ''; }
     function setSelectOptions(sel, values){
       clearSelect(sel);
-      values.forEach((v)=>{
+      values.forEach(v=>{
         const opt = document.createElement('option');
         opt.value = v;
         opt.textContent = v;
@@ -299,7 +284,6 @@
     }
 
     function populateChantiers(){
-      // manual chantier override
       if(chantierManualInput.value.trim()){
         clearSelect(chantierSelect);
         clearSelect(responsableSelect);
@@ -356,7 +340,6 @@
 
       const base = getFilteredRowsBase();
       const target = normUpper(chantier);
-
       const chantierRows = base.filter(r => normUpper(r.chantier) === target);
 
       const ces = uniqSorted(chantierRows.map(r=>r.ce));
@@ -372,11 +355,8 @@
         responsableSelect.disabled=true;
       }
 
-      // default selected CE to first
       const selectedCE = responsableManualInput.value.trim() || (responsableSelect.disabled ? '' : responsableSelect.value);
-      if(!selectedCE){
-        return;
-      }
+      if(!selectedCE) return;
 
       const ceTarget = normUpper(selectedCE);
       const members = uniqSorted(chantierRows
@@ -447,13 +427,11 @@
       loadStatus.textContent = 'Chargement...';
 
       try{
-        // 1) Affectations (AFFECTATIONS_SEMAINE)
-        const metier = metierInput.value || 'Elec';
-        const gid = METIER_TO_GID[metier] || METIER_TO_GID.Elec;
-        const url = csvUrl(SHEET_BASE_URL, gid);
-        if(!url) throw new Error('GID invalide pour les affectations.');
+        // ✅ 1) AFFECTATIONS_SEMAINE (toujours via AFFECTATIONS_GID)
+        const affUrl = csvUrl(SHEET_BASE_URL, AFFECTATIONS_GID);
+        if(!affUrl) throw new Error('AFFECTATIONS_GID manquant/invalide.');
 
-        const raw = await parseCsvUrl(url);
+        const raw = await parseCsv(affUrl);
         const headers = (raw[0] || []).map(h => String(h||'').trim());
 
         const idx = {
@@ -468,7 +446,7 @@
         };
 
         if(idx.semaine < 0 || idx.ouvrier < 0 || idx.chantier < 0 || idx.ce < 0 || idx.sheet < 0){
-          console.error('Headers affectations:', headers);
+          console.error('Headers AFFECTATIONS_SEMAINE:', headers);
           throw new Error("En-têtes AFFECTATIONS_SEMAINE inattendus.");
         }
 
@@ -490,27 +468,22 @@
           })
           .filter(r => r.semaine && r.ouvrier && r.chantier && r.metier);
 
-        // 2) TBM videos
+        // ✅ 2) TBM videos
         const tbmUrl = csvUrl(SHEET_BASE_URL, TBM_GID);
         if(tbmUrl){
-          try{
-            tbmData = await parseCsvUrl(tbmUrl);
-          }catch(e){
-            console.error('Failed to load TBM sheet', e);
-            tbmData = null;
-          }
+          try{ tbmData = await parseCsv(tbmUrl); }
+          catch(e){ console.error('Failed to load TBM sheet', e); tbmData = null; }
         }
 
         loadStatus.textContent = 'Feuilles chargées';
         updateAll();
 
       }catch(e){
-        loadStatus.textContent = 'Impossible de charger les données';
+        loadStatus.textContent = 'Impossible de charger les données (' + (e?.message || e) + ')';
         console.error(e);
       }
     }
 
-    // ---- manual chips helpers
     function setManualError(message){
       if(message){
         manualError.textContent = message;
@@ -546,30 +519,22 @@
 
     function addManual(){
       const raw = manualInput.value;
-      if(!raw.trim()){
-        setManualError('');
-        return false;
-      }
+      if(!raw.trim()){ setManualError(''); return false; }
       const names = raw.split(',').map(n=>n.trim()).filter(n=>n);
-      if(!names.length){
-        setManualError('');
-        manualInput.value='';
-        return false;
-      }
+      if(!names.length){ setManualError(''); manualInput.value=''; return false; }
+
       const invalid = [];
       let hasValid=false;
       names.forEach(n=>{
         const resolved = resolveName(n);
-        if(!resolved){
-          invalid.push(n);
-          return;
-        }
+        if(!resolved){ invalid.push(n); return; }
         hasValid=true;
         if(!manualMembers.includes(resolved)){
           manualMembers.push(resolved);
           createManualChip(resolved);
         }
       });
+
       if(invalid.length){
         manualInput.value = invalid.join(', ');
         setManualError('Ce nom ne correspond pas à la liste proposée.');
@@ -581,7 +546,6 @@
       }
     }
 
-    // ---- UI hooks
     retryBtn.addEventListener('click', loadSheets);
 
     toggleAllBtn.addEventListener('click',()=>{
@@ -590,10 +554,7 @@
       boxes.forEach(b=>b.checked=!allChecked);
     });
 
-    metierInput.addEventListener('change', ()=>{
-      loadSheets();
-    });
-
+    metierInput.addEventListener('change', updateAll);
     chantierSelect.addEventListener('change', populateResponsableAndTeam);
 
     chantierManualInput.addEventListener('input',()=>{
@@ -611,43 +572,20 @@
     });
 
     responsableManualInput.addEventListener('input',()=>{
-      if(responsableManualInput.value.trim()){
-        responsableSelect.disabled=true;
-        responsableSelect.value='';
-        responsableHelper.textContent='';
-        populateResponsableAndTeam();
-      }else{
-        populateResponsableAndTeam();
-      }
+      populateResponsableAndTeam();
     });
 
-    dateInput.addEventListener('change', ()=>{
-      updateAll();
-    });
+    dateInput.addEventListener('change', updateAll);
 
     manualInput.addEventListener('keydown',e=>{
-      if(e.key==='Enter'){
-        e.preventDefault();
-        addManual();
-        manualInput.focus();
-      }
+      if(e.key==='Enter'){ e.preventDefault(); addManual(); manualInput.focus(); }
     });
     manualInput.addEventListener('blur',addManual);
     manualInput.addEventListener('input',()=> setManualError(''));
-    manualAddBtn.addEventListener('click',()=>{
-      addManual();
-      manualInput.focus();
-    });
+    manualAddBtn.addEventListener('click',()=>{ addManual(); manualInput.focus(); });
 
-    playBtn.addEventListener('click',()=>{
-      if(!lastVideoUrl) return;
-      window.open(lastVideoUrl, '_blank');
-    });
-
-    copyLinkBtn.addEventListener('click',async()=>{
-      if(!lastVideoUrl) return;
-      try{await navigator.clipboard.writeText(lastVideoUrl);}catch(e){}
-    });
+    playBtn.addEventListener('click',()=>{ if(lastVideoUrl) window.open(lastVideoUrl, '_blank'); });
+    copyLinkBtn.addEventListener('click',async()=>{ if(!lastVideoUrl) return; try{await navigator.clipboard.writeText(lastVideoUrl);}catch{} });
 
     function showConfirmation(message){
       confirmationMessage.textContent = message;
@@ -660,14 +598,9 @@
       confirmationModal.setAttribute('aria-hidden','true');
       sendBtn.focus();
     }
-
     closeConfirmationBtn.addEventListener('click', hideConfirmation);
-    confirmationModal.addEventListener('click', event => {
-      if(event.target === confirmationModal) hideConfirmation();
-    });
-    document.addEventListener('keydown', event => {
-      if(event.key === 'Escape' && !confirmationModal.classList.contains('hidden')) hideConfirmation();
-    });
+    confirmationModal.addEventListener('click', event => { if(event.target === confirmationModal) hideConfirmation(); });
+    document.addEventListener('keydown', event => { if(event.key === 'Escape' && !confirmationModal.classList.contains('hidden')) hideConfirmation(); });
 
     sendBtn.addEventListener('click',async()=>{
       const dateVal=dateInput.value;
@@ -741,20 +674,13 @@
       a.click();
     });
 
-    clearBtn.addEventListener('click',()=>{
-      localStorage.removeItem('tbmEntries');
-      loadHistory();
-    });
+    clearBtn.addEventListener('click',()=>{ localStorage.removeItem('tbmEntries'); loadHistory(); });
 
     function init(){
       const now=new Date();
       now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
       dateInput.value=now.toISOString().slice(0,16);
       updateWeekHint();
-
-      // ✅ métier par défaut (évite un démarrage vide)
-      if (!metierInput.value) metierInput.value = 'Elec';
-
       flushQueue();
       loadHistory();
       loadSheets();
