@@ -1,321 +1,436 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>QHSE – STOP</title>
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="icon-192.png">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111827" />
+  <title>STOP</title>
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- React via CDN (même approche que tbm.html) -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-
   <style>
-    /* petit confort mobile */
-    body { -webkit-tap-highlight-color: transparent; }
+    @media print{header,footer,.no-print{display:none!important}main{max-width:100%!important}section{page-break-inside:avoid}}
   </style>
 </head>
 
-<body class="bg-slate-50 text-slate-900">
-  <div id="root"></div>
+<body class="min-h-screen bg-gray-50">
+  <header class="sticky top-0 z-10 bg-white/90 backdrop-blur border-b">
+    <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <a href="index.html#home" class="flex items-center gap-2" aria-label="QHSE">
+        <img src="qhse-logo.svg" alt="" class="w-8 h-8 rounded-lg border"
+             onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'inline-flex items-center justify-center w-8 h-8 rounded-lg border font-bold',innerText:'QHSE'}))" />
+      </a>
+      <div class="flex items-center gap-1.5">
+        <button onclick="setLang('fr')" class="w-9 h-9 flex items-center justify-center rounded-lg border bg-white" aria-label="FR" title="FR">
+          <img src="flag-fr.svg" alt="FR" class="w-6 h-4 rounded-sm pointer-events-none select-none" />
+        </button>
+        <button onclick="setLang('en')" class="w-9 h-9 flex items-center justify-center rounded-lg border bg-white" aria-label="EN" title="EN">
+          <img src="flag-gb.svg" alt="EN" class="w-6 h-4 rounded-sm pointer-events-none select-none" />
+        </button>
+        <button onclick="setLang('nl')" class="w-9 h-9 flex items-center justify-center rounded-lg border bg-white" aria-label="NL" title="NL">
+          <img src="flag-nl.svg" alt="NL" class="w-6 h-4 rounded-sm pointer-events-none select-none" />
+        </button>
+      </div>
+    </div>
+  </header>
 
-  <!-- Si tu as déjà un sheetConfig.js qui expose l'URL, laisse-le -->
-  <script src="sheetConfig.js"></script>
+  <main class="space-y-4 max-w-md mx-auto px-4 py-4">
+    <h1 class="text-2xl font-bold mb-4 px-4 py-2 rounded-xl bg-[#104861] text-[#D9D9D9] text-center">STOP</h1>
+
+    <section class="bg-white rounded shadow p-4">
+      <label for="dateInput" class="block text-sm font-medium mb-1">Date / heure</label>
+      <input id="dateInput" type="datetime-local" class="border rounded px-2 py-1 w-full">
+    </section>
+
+    <section class="bg-white rounded shadow p-4">
+      <label for="chantier" class="block text-sm font-medium mb-1">Chantier</label>
+      <input id="chantier" type="text" class="border rounded px-2 py-1 w-full" placeholder="Ex: DIV ORO">
+      <p class="text-xs text-gray-500 mt-1">Conseil: copie/colle le chantier tel qu’il est dans vos listes.</p>
+    </section>
+
+    <section class="bg-white rounded shadow p-4">
+      <label for="responsable" class="block text-sm font-medium mb-1">Responsable</label>
+      <input id="responsable" type="text" class="border rounded px-2 py-1 w-full" placeholder="Nom du responsable">
+    </section>
+
+    <section class="bg-white rounded shadow p-4">
+      <label for="situation" class="block text-sm font-medium mb-1">Situation STOP</label>
+      <textarea id="situation" class="border rounded px-2 py-1 w-full min-h-[110px]" placeholder="Décris la situation / le danger observé"></textarea>
+    </section>
+
+    <section class="bg-white rounded shadow p-4">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label for="callNom" class="block text-sm font-medium mb-1">Personne contactée</label>
+          <input id="callNom" type="text" class="border rounded px-2 py-1 w-full" placeholder="Nom">
+        </div>
+        <div>
+          <label for="callFonction" class="block text-sm font-medium mb-1">Fonction</label>
+          <select id="callFonction" class="border rounded px-2 py-1 w-full">
+            <option value="">Sélectionner...</option>
+            <option value="chef">Chef d'équipe</option>
+            <option value="site">Site sup.</option>
+            <option value="pm">PM</option>
+            <option value="opm">OPM</option>
+            <option value="cp">CP</option>
+            <option value="coord">Coordinateur</option>
+            <option value="client">Client</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-white rounded shadow p-4">
+      <label for="solution" class="block text-sm font-medium mb-1">Solution / Mesures prises</label>
+      <textarea id="solution" class="border rounded px-2 py-1 w-full min-h-[90px]" placeholder="Qu’est-ce qui a été fait ?"></textarea>
+
+      <div class="mt-3 flex items-center gap-2">
+        <input id="noGo" type="checkbox" class="rounded">
+        <label for="noGo" class="text-sm font-medium">NO-GO (situation en attente / arrêt)</label>
+      </div>
+      <p class="text-xs text-gray-500 mt-1">Si NO-GO: un mail part au QHSE. Si tu ajoutes une photo, elle sera jointe au mail.</p>
+    </section>
+
+    <section class="bg-white rounded shadow p-4">
+      <div class="flex items-center justify-between">
+        <div class="text-sm font-medium">Photo (optionnelle)</div>
+        <button id="clearPhoto" type="button" class="text-sm text-red-600 underline hidden">Supprimer</button>
+      </div>
+
+      <div class="mt-2 grid gap-2">
+        <input id="photoInput" type="file" accept="image/*" capture="environment" class="block w-full text-sm">
+        <div id="photoStatus" class="text-xs text-gray-500"></div>
+        <img id="photoPreview" class="hidden w-full rounded-lg border object-cover" alt="Aperçu photo">
+      </div>
+    </section>
+
+    <section class="bg-white rounded shadow p-4">
+      <button id="sendBtn" class="px-3 py-2 bg-black text-white rounded w-full">Envoyer</button>
+      <p id="sendStatus" class="text-sm mt-2"></p>
+    </section>
+
+    <section class="bg-white rounded shadow p-4">
+      <h2 class="text-lg font-medium mb-2">Historique (local)</h2>
+      <div class="flex gap-2 mb-2">
+        <button id="exportBtn" class="px-3 py-1 bg-blue-600 text-white rounded">Exporter CSV</button>
+        <button id="clearBtn" class="px-3 py-1 bg-red-600 text-white rounded">Vider</button>
+      </div>
+      <table id="historyTable" class="w-full text-sm"></table>
+    </section>
+  </main>
+
+  <div id="confirmationModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-labelledby="confirmationTitle" aria-hidden="true">
+    <div class="bg-white rounded-lg shadow-xl max-w-sm w-full p-6 text-center space-y-4">
+      <h2 id="confirmationTitle" class="text-lg font-semibold">Confirmation</h2>
+      <p data-modal-message class="text-sm text-gray-700">Votre envoi a bien été pris en compte.</p>
+      <button id="closeConfirmation" class="px-4 py-2 bg-blue-600 text-white rounded">OK</button>
+    </div>
+  </div>
 
   <script>
-    const { useEffect, useMemo, useState } = React;
+    const LANG_KEY = "qhse_lang_v1";
+    function setLang(l){
+      try{ localStorage.setItem(LANG_KEY, JSON.stringify(l)); }catch{}
+      document.documentElement.lang = l;
+    }
+  </script>
 
-    // ✅ A REMPLACER si tu n'as pas d'URL dans sheetConfig.js
-    // Exemple: const API_URL = "https://script.google.com/macros/s/XXXX/exec";
-    const API_URL = (window.SHEET_CONFIG && window.SHEET_CONFIG.API_URL) ? window.SHEET_CONFIG.API_URL : "PUT_YOUR_EXEC_URL_HERE";
+  <script type="module">
+    // ✅ Remplace par TON endpoint Apps Script (même que TBM si même projet)
+    const COLLECT_URL = "https://script.google.com/macros/s/AKfycbyVjoTjAttwzjdQqUp2a1Upvvl9A1WEvp0dse47Cp_gt6mVOYDc1P_2u372poEZiu_H/exec";
 
-    function nowIso() { return new Date().toISOString(); }
+    const OUTBOX_KEY  = "stop_outbox_v1";
+    const ENTRIES_KEY = "stopEntries_v1";
 
-    function compressToDataUrl(file, opts = {}) {
-      const maxW = opts.maxW ?? 1280;
-      const quality = opts.quality ?? 0.72;
-      const mimeOut = 'image/jpeg';
+    const dateInput   = document.getElementById("dateInput");
+    const chantierEl  = document.getElementById("chantier");
+    const respEl      = document.getElementById("responsable");
+    const situationEl = document.getElementById("situation");
+    const callNomEl   = document.getElementById("callNom");
+    const callFonctEl = document.getElementById("callFonction");
+    const solutionEl  = document.getElementById("solution");
+    const noGoEl      = document.getElementById("noGo");
 
-      return new Promise((resolve, reject) => {
-        if (!file) return resolve("");
+    const photoInput  = document.getElementById("photoInput");
+    const photoPreview= document.getElementById("photoPreview");
+    const photoStatus = document.getElementById("photoStatus");
+    const clearPhoto  = document.getElementById("clearPhoto");
 
-        const reader = new FileReader();
-        reader.onerror = () => reject(new Error("FILE_READ_ERROR"));
-        reader.onload = () => {
-          const img = new Image();
-          img.onload = () => {
-            const w = img.width;
-            const h = img.height;
+    const sendBtn     = document.getElementById("sendBtn");
+    const sendStatus  = document.getElementById("sendStatus");
 
-            const scale = Math.min(1, maxW / w);
-            const outW = Math.round(w * scale);
-            const outH = Math.round(h * scale);
+    const exportBtn   = document.getElementById("exportBtn");
+    const clearBtn    = document.getElementById("clearBtn");
+    const historyTable= document.getElementById("historyTable");
 
-            const canvas = document.createElement("canvas");
-            canvas.width = outW;
-            canvas.height = outH;
+    const confirmationModal = document.getElementById('confirmationModal');
+    const closeConfirmationBtn = document.getElementById('closeConfirmation');
+    const confirmationMessage = confirmationModal.querySelector('[data-modal-message]');
 
-            const ctx = canvas.getContext("2d", { alpha: false });
-            ctx.drawImage(img, 0, 0, outW, outH);
+    let photoDataUrl = ""; // final dataURL compressé
 
-            const dataUrl = canvas.toDataURL(mimeOut, quality);
-            resolve(dataUrl);
-          };
-          img.onerror = () => reject(new Error("IMAGE_DECODE_ERROR"));
-          img.src = reader.result;
-        };
-        reader.readAsDataURL(file);
-      });
+    function enqueue(item){
+      const queue = JSON.parse(localStorage.getItem(OUTBOX_KEY) || "[]");
+      queue.push(item);
+      localStorage.setItem(OUTBOX_KEY, JSON.stringify(queue));
     }
 
-    async function postJson(url, payload) {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const txt = await res.text();
-      let json = null;
-      try { json = JSON.parse(txt); } catch (e) {}
-      if (!res.ok) throw new Error("HTTP_" + res.status);
-      if (json && json.ok === false) throw new Error(json.error || "API_ERROR");
-      return json || { ok: true, raw: txt };
-    }
-
-    function App() {
-      const [datetime, setDatetime] = useState(() => {
-        // pré-remplir "dd/mm/yyyy hh:mm" si tu préfères : ici ISO local simplifié
-        const d = new Date();
-        const pad = (n)=> String(n).padStart(2,'0');
-        return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-      });
-
-      const [chantier, setChantier] = useState("");
-      const [responsable, setResponsable] = useState("");
-
-      const [situation, setSituation] = useState("");
-      const [callNom, setCallNom] = useState("");
-      const [callFonction, setCallFonction] = useState("chef"); // chef/site/pm/opm/cp/coord/client
-      const [solution, setSolution] = useState("");
-      const [noGo, setNoGo] = useState(false);
-
-      const [photoFile, setPhotoFile] = useState(null);
-      const [photoPreview, setPhotoPreview] = useState("");
-      const [photoDataUrl, setPhotoDataUrl] = useState("");
-
-      const [sending, setSending] = useState(false);
-      const [msg, setMsg] = useState("");
-      const [lastPhotoUrl, setLastPhotoUrl] = useState("");
-
-      const canSend = useMemo(() => {
-        if (!API_URL || API_URL.includes("PUT_YOUR_EXEC_URL_HERE")) return false;
-        if (!datetime.trim()) return false;
-        if (!chantier.trim()) return false;
-        if (!responsable.trim()) return false;
-        if (!situation.trim()) return false;
-        return true;
-      }, [datetime, chantier, responsable, situation]);
-
-      async function onPickPhoto(e) {
-        const f = e.target.files && e.target.files[0];
-        setPhotoFile(f || null);
-        setMsg("");
-        setLastPhotoUrl("");
-
-        if (!f) {
-          setPhotoPreview("");
-          setPhotoDataUrl("");
-          return;
-        }
-
-        // preview rapide (non compressée)
-        const url = URL.createObjectURL(f);
-        setPhotoPreview(url);
-
-        // compression + dataUrl pour envoi
-        try {
-          const durl = await compressToDataUrl(f, { maxW: 1280, quality: 0.72 });
-          setPhotoDataUrl(durl);
-        } catch (err) {
-          setPhotoDataUrl("");
-          setMsg("Photo : erreur de conversion/compression.");
+    async function flushQueue(){
+      const queue = JSON.parse(localStorage.getItem(OUTBOX_KEY) || "[]");
+      const remaining = [];
+      for(const item of queue){
+        try{
+          // no-cors => on ne lit pas la réponse, mais ça passe en PWA/GH pages
+          await fetch(COLLECT_URL, {
+            method:"POST",
+            mode:"no-cors",
+            headers:{ "Content-Type":"text/plain" },
+            body: JSON.stringify(item)
+          });
+        }catch{
+          remaining.push(item);
         }
       }
+      localStorage.setItem(OUTBOX_KEY, JSON.stringify(remaining));
+    }
+    window.addEventListener("online", flushQueue);
 
-      async function onSubmit() {
-        setSending(true);
-        setMsg("");
-        setLastPhotoUrl("");
-        try {
-          const payload = {
-            meta: {
-              formType: "stop",
-              sentAt: nowIso(),
-              userAgent: navigator.userAgent || ""
-            },
-            data: {
-              datetime,
-              chantier,
-              responsable,
-              situation,
-              callNom,
-              callFonction,
-              solution,
-              noGo: !!noGo,
-              photoDataUrl: photoDataUrl || "" // optionnel
-            }
-          };
+    function showConfirmation(message){
+      confirmationMessage.textContent = message;
+      confirmationModal.classList.remove('hidden');
+      confirmationModal.setAttribute('aria-hidden','false');
+      closeConfirmationBtn.focus();
+    }
+    function hideConfirmation(){
+      confirmationModal.classList.add('hidden');
+      confirmationModal.setAttribute('aria-hidden','true');
+      sendBtn.focus();
+    }
+    closeConfirmationBtn.addEventListener('click', hideConfirmation);
+    confirmationModal.addEventListener('click', (ev)=>{ if(ev.target === confirmationModal) hideConfirmation(); });
+    document.addEventListener('keydown', (ev)=>{ if(ev.key==='Escape' && !confirmationModal.classList.contains('hidden')) hideConfirmation(); });
 
-          const out = await postJson(API_URL, payload);
+    function setPhotoUI(has){
+      if(has){
+        photoPreview.classList.remove("hidden");
+        clearPhoto.classList.remove("hidden");
+      }else{
+        photoPreview.classList.add("hidden");
+        clearPhoto.classList.add("hidden");
+      }
+    }
 
-          if (out && out.photoUrl) setLastPhotoUrl(out.photoUrl);
-          setMsg(noGo ? "STOP NO-GO envoyé (mail QHSE + Drive si photo)." : "STOP envoyé. Photo stockée sur Drive (si ajoutée).");
+    clearPhoto.addEventListener("click", ()=>{
+      photoDataUrl = "";
+      photoPreview.src = "";
+      photoStatus.textContent = "";
+      photoInput.value = "";
+      setPhotoUI(false);
+    });
 
-          // reset minimal
-          setSituation("");
-          setCallNom("");
-          setSolution("");
-          setNoGo(false);
-          setPhotoFile(null);
-          setPhotoPreview("");
-          setPhotoDataUrl("");
-          // note: on garde chantier/responsable/datetime pour enchaîner plus vite
-        } catch (err) {
-          setMsg("Erreur envoi : " + (err && err.message ? err.message : String(err)));
-        } finally {
-          setSending(false);
-        }
+    // --- Compression: resize max 1280px + JPEG quality 0.72 (bon compromis)
+    async function fileToCompressedDataUrl(file, maxDim=1280, quality=0.72){
+      const img = await loadImage(file);
+      const {width, height} = img;
+      let tw = width, th = height;
+
+      const maxSide = Math.max(width, height);
+      if(maxSide > maxDim){
+        const scale = maxDim / maxSide;
+        tw = Math.round(width * scale);
+        th = Math.round(height * scale);
       }
 
-      return React.createElement("div", { className: "min-h-screen p-4" },
-        React.createElement("div", { className: "max-w-xl mx-auto" },
+      const canvas = document.createElement("canvas");
+      canvas.width = tw; canvas.height = th;
+      const ctx = canvas.getContext("2d", {alpha:false});
+      ctx.drawImage(img, 0, 0, tw, th);
 
-          React.createElement("div", { className: "flex items-center gap-3 mb-4" },
-            React.createElement("img", { src: "qhse-logo.svg", className: "h-10 w-auto", alt: "QHSE" }),
-            React.createElement("div", null,
-              React.createElement("h1", { className: "text-xl font-semibold" }, "STOP"),
-              React.createElement("p", { className: "text-sm text-slate-600" }, "Saisir une situation, une action et (optionnel) une photo.")
-            )
-          ),
-
-          (!canSend && (API_URL.includes("PUT_YOUR_EXEC_URL_HERE") || !API_URL)) ?
-            React.createElement("div", { className: "mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-sm" },
-              "⚠️ API_URL non configurée. Mets l’URL /exec dans sheetConfig.js (SHEET_CONFIG.API_URL) ou dans stop.html."
-            ) : null,
-
-          React.createElement("div", { className: "bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-3" },
-
-            field("Date/Heure", datetime, setDatetime, "ex: 18/02/2026 14:30"),
-            field("Chantier", chantier, setChantier, "ex: DIV ORO"),
-            field("Responsable", responsable, setResponsable, "ex: Nom Prénom"),
-
-            textArea("Situation (STOP)", situation, setSituation, "Décrire la situation à risque / l’écart observé…"),
-
-            field("CALL – Nom", callNom, setCallNom, "Qui as-tu contacté ?"),
-            selectField("CALL – Fonction", callFonction, setCallFonction, [
-              ["chef", "Chef d'équipe"],
-              ["site", "Site sup."],
-              ["pm", "PM"],
-              ["opm", "OPM"],
-              ["cp", "CP"],
-              ["coord", "Coordinateur"],
-              ["client", "Client"],
-            ]),
-
-            textArea("ACT – Solution / actions", solution, setSolution, "Actions correctives, mesures mises en place…"),
-
-            React.createElement("label", { className: "flex items-center gap-2 text-sm" },
-              React.createElement("input", {
-                type: "checkbox",
-                className: "h-4 w-4",
-                checked: noGo,
-                onChange: e => setNoGo(e.target.checked)
-              }),
-              React.createElement("span", { className: "font-medium" }, "NO-GO (en attente)"),
-              React.createElement("span", { className: "text-slate-500" }, "→ envoi email QHSE")
-            ),
-
-            React.createElement("div", { className: "pt-2" },
-              React.createElement("div", { className: "text-sm font-medium mb-1" }, "Photo (optionnel)"),
-              React.createElement("input", {
-                type: "file",
-                accept: "image/*",
-                capture: "environment",
-                onChange: onPickPhoto,
-                className: "block w-full text-sm"
-              }),
-              photoPreview ? React.createElement("div", { className: "mt-2" },
-                React.createElement("img", { src: photoPreview, className: "w-full rounded-xl border border-slate-200", alt: "Preview" }),
-                React.createElement("p", { className: "text-xs text-slate-500 mt-1" },
-                  photoDataUrl ? "Photo compressée prête à l’envoi." : "Compression en cours / erreur."
-                )
-              ) : null
-            ),
-
-            React.createElement("div", { className: "pt-2 flex gap-2" },
-              React.createElement("button", {
-                onClick: onSubmit,
-                disabled: sending || !canSend,
-                className: "flex-1 rounded-xl px-4 py-2 font-semibold text-white bg-slate-900 disabled:opacity-50"
-              }, sending ? "Envoi..." : "Envoyer STOP"),
-              React.createElement("a", {
-                href: "index.html",
-                className: "rounded-xl px-4 py-2 font-semibold border border-slate-300 text-slate-700"
-              }, "Retour")
-            ),
-
-            msg ? React.createElement("div", { className: "mt-2 p-3 rounded-xl bg-slate-50 border border-slate-200 text-sm" }, msg) : null,
-
-            lastPhotoUrl ? React.createElement("div", { className: "text-sm" },
-              React.createElement("span", { className: "font-medium" }, "Photo Drive : "),
-              React.createElement("a", { href: lastPhotoUrl, target: "_blank", rel: "noreferrer", className: "underline" }, "ouvrir")
-            ) : null
-          )
-        )
-      );
+      // On force jpeg pour réduire le poids (sauf si tu veux png)
+      return canvas.toDataURL("image/jpeg", quality);
     }
 
-    function field(label, value, setValue, placeholder) {
-      return React.createElement("div", null,
-        React.createElement("div", { className: "text-sm font-medium mb-1" }, label),
-        React.createElement("input", {
-          value,
-          onChange: e => setValue(e.target.value),
-          placeholder: placeholder || "",
-          className: "w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
-        })
-      );
+    function loadImage(file){
+      return new Promise((resolve,reject)=>{
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = ()=>{ URL.revokeObjectURL(url); resolve(img); };
+        img.onerror = (e)=>{ URL.revokeObjectURL(url); reject(e); };
+        img.src = url;
+      });
     }
 
-    function textArea(label, value, setValue, placeholder) {
-      return React.createElement("div", null,
-        React.createElement("div", { className: "text-sm font-medium mb-1" }, label),
-        React.createElement("textarea", {
-          value,
-          onChange: e => setValue(e.target.value),
-          placeholder: placeholder || "",
-          rows: 4,
-          className: "w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
-        })
-      );
+    function approxSizeKbFromDataUrl(dataUrl){
+      // base64 size approximation
+      const b64 = (dataUrl.split(",")[1] || "");
+      const bytes = Math.floor(b64.length * 0.75);
+      return Math.round(bytes / 1024);
     }
 
-    function selectField(label, value, setValue, options) {
-      return React.createElement("div", null,
-        React.createElement("div", { className: "text-sm font-medium mb-1" }, label),
-        React.createElement("select", {
-          value,
-          onChange: e => setValue(e.target.value),
-          className: "w-full rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-300"
-        },
-          options.map(([v, t]) => React.createElement("option", { key: v, value: v }, t))
-        )
-      );
+    photoInput.addEventListener("change", async ()=>{
+      const file = photoInput.files && photoInput.files[0];
+      if(!file){
+        photoDataUrl = "";
+        setPhotoUI(false);
+        return;
+      }
+      try{
+        photoStatus.textContent = "Compression photo…";
+        photoDataUrl = await fileToCompressedDataUrl(file, 1280, 0.72);
+        const kb = approxSizeKbFromDataUrl(photoDataUrl);
+        photoPreview.src = photoDataUrl;
+        setPhotoUI(true);
+        photoStatus.textContent = `OK (${kb} KB environ)`;
+      }catch(e){
+        console.error(e);
+        photoDataUrl = "";
+        setPhotoUI(false);
+        photoStatus.textContent = "Erreur traitement photo";
+      }
+    });
+
+    function loadHistory(){
+      const entries = JSON.parse(localStorage.getItem(ENTRIES_KEY) || "[]");
+      historyTable.innerHTML = "";
+      entries.slice().reverse().forEach(e=>{
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="border px-1 py-1">${e.datetime}</td>
+          <td class="border px-1 py-1">${e.chantier}</td>
+          <td class="border px-1 py-1">${e.responsable}</td>
+          <td class="border px-1 py-1">${e.noGo ? "NO-GO" : ""}</td>
+        `;
+        historyTable.appendChild(tr);
+      });
     }
 
-    ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
+    exportBtn.addEventListener("click", ()=>{
+      const entries = JSON.parse(localStorage.getItem(ENTRIES_KEY) || "[]");
+      if(!entries.length) return;
+
+      const header = ["savedAt","datetime","chantier","responsable","situation","callNom","callFonction","solution","noGo","hasPhoto"];
+      const rows = entries.map(e=>[
+        e.savedAt,
+        e.datetime,
+        e.chantier,
+        e.responsable,
+        (e.situation||"").replace(/\n/g," "),
+        e.callNom,
+        e.callFonction,
+        (e.solution||"").replace(/\n/g," "),
+        e.noGo ? "OUI" : "NON",
+        e.hasPhoto ? "OUI" : "NON"
+      ]);
+
+      let csv = header.join(",") + "\n";
+      rows.forEach(r=>{ csv += r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",") + "\n"; });
+
+      const blob = new Blob([csv], {type:"text/csv"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "stop_local.csv";
+      a.click();
+    });
+
+    clearBtn.addEventListener("click", ()=>{
+      localStorage.removeItem(ENTRIES_KEY);
+      loadHistory();
+    });
+
+    sendBtn.addEventListener("click", async ()=>{
+      const datetime   = dateInput.value;
+      const chantier   = chantierEl.value.trim();
+      const responsable= respEl.value.trim();
+      const situation  = situationEl.value.trim();
+      const callNom    = callNomEl.value.trim();
+      const callFonction = callFonctEl.value;
+      const solution   = solutionEl.value.trim();
+      const noGo       = !!noGoEl.checked;
+
+      if(!datetime || !chantier || !responsable || !situation){
+        sendStatus.textContent = "Veuillez remplir au minimum: date/heure, chantier, responsable, situation.";
+        return;
+      }
+
+      sendBtn.disabled = true;
+      const originalLabel = sendBtn.textContent;
+      sendBtn.textContent = "Envoi…";
+
+      const payload = {
+        type: "stop",
+        meta: { userAgent: navigator.userAgent },
+        data: {
+          datetime,
+          chantier,
+          responsable,
+          situation,
+          callNom,
+          callFonction,
+          solution,
+          noGo,
+          // ✅ si vide => pas de photo côté Apps Script
+          photoDataUrl: photoDataUrl || ""
+        }
+      };
+
+      try{
+        await fetch(COLLECT_URL, {
+          method:"POST",
+          mode:"no-cors",
+          headers:{ "Content-Type":"text/plain" },
+          body: JSON.stringify(payload)
+        });
+        sendStatus.textContent = "Envoyé";
+        showConfirmation("Votre envoi STOP a bien été pris en compte.");
+
+        // reset
+        situationEl.value = "";
+        solutionEl.value = "";
+        callNomEl.value = "";
+        callFonctEl.value = "";
+        noGoEl.checked = false;
+
+        photoDataUrl = "";
+        photoPreview.src = "";
+        photoInput.value = "";
+        photoStatus.textContent = "";
+        setPhotoUI(false);
+
+      }catch(e){
+        console.error(e);
+        sendStatus.textContent = "Erreur réseau, enregistré localement (envoi auto dès que possible).";
+        enqueue(payload);
+        showConfirmation("Une erreur réseau est survenue. L'envoi sera retenté automatiquement.");
+      }
+
+      // Historique local (sans stocker la photo !)
+      const entries = JSON.parse(localStorage.getItem(ENTRIES_KEY) || "[]");
+      entries.push({
+        savedAt: new Date().toISOString(),
+        datetime,
+        chantier,
+        responsable,
+        situation,
+        callNom,
+        callFonction,
+        solution,
+        noGo,
+        hasPhoto: !!photoDataUrl
+      });
+      localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
+      loadHistory();
+
+      sendBtn.disabled = false;
+      sendBtn.textContent = originalLabel;
+    });
+
+    function init(){
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      dateInput.value = now.toISOString().slice(0,16);
+      setPhotoUI(false);
+      flushQueue();
+      loadHistory();
+    }
+    init();
   </script>
 </body>
 </html>
