@@ -13,6 +13,10 @@ export const SUIVI_PMS_CSV_URL =
 export const ATTESTATION_COLLECT_URL =
   "https://script.google.com/macros/s/AKfycbyVjoTjAttwzjdQqUp2a1Upvvl9A1WEvp0dse47Cp_gt6mVOYDc1P_2u372poEZiu_H/exec";
 
+// ✅ NOUVEAU : endpoint QHSE API (doPost) pour LMRA / STOP / FirstAid / TBM
+export const QHSE_API_URL =
+  "PUT_YOUR_QHSE_API_EXEC_URL_HERE";
+
 if (typeof window !== "undefined") {
   Object.assign(window, {
     SHEET_BASE_URL,
@@ -20,6 +24,7 @@ if (typeof window !== "undefined") {
     TBM_GID,
     AFFECTATIONS_GID,
     SUIVI_PMS_CSV_URL,
-    ATTESTATION_COLLECT_URL
+    ATTESTATION_COLLECT_URL,
+    QHSE_API_URL
   });
 }
