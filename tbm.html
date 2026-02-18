@@ -126,8 +126,12 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <script type="module">
-    import { SHEET_BASE_URL, METIER_TO_GID, TBM_GID } from './sheetConfig.js';
+    import { SHEET_BASE_URL, TBM_GID } from './sheetConfig.js';
 
+    // ✅ ON FORCE LE GID DE AFFECTATIONS_SEMAINE (pas les onglets Equipe_*)
+    const AFFECTATIONS_GID = "496527492";
+
+    // URL Apps Script (collect TBM)
     const COLLECT_URL = "https://script.google.com/macros/s/AKfycbw53EiERifnozNg9ybNfbn_Ofm9NrFquashw_mbYoWyqtQROS6xXXzwVT2UQ4XxcJYK/exec";
     const OUTBOX_KEY = 'tbm_outbox_v1';
 
@@ -192,27 +196,27 @@
       }
       localStorage.setItem(OUTBOX_KEY, JSON.stringify(remaining));
     }
-
     window.addEventListener('online', flushQueue);
 
     function normalize(str){
       return String(str ?? '')
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g,'')
-        .replace(/^\uFEFF/, '') // BOM
         .trim();
     }
-
     function normUpper(str){
       return normalize(str).toUpperCase().replace(/\s+/g,' ');
     }
 
     function csvUrl(base, gid){
-      if (typeof gid !== 'string' || gid.trim() === '') return null;
-      const u = new URL(base);
-      u.searchParams.set('output','csv');
-      u.searchParams.set('gid', gid);
-      return u.toString();
+      try {
+        const u = new URL(base);
+        u.searchParams.set('output','csv');
+        u.searchParams.set('gid', gid);
+        return u.toString();
+      } catch {
+        return null;
+      }
     }
 
     function parseCsv(url){
@@ -226,13 +230,12 @@
     }
 
     function sheetToMetier(sheetName) {
-      const s = normalize(sheetName).toLowerCase();
+      const s = String(sheetName || "").trim().toLowerCase();
       if (s === "equipe_elec") return "Elec";
       if (s === "equipe_hvac_ref") return "HVAC_REF";
       return "";
     }
 
-    // ISO week (EU) from Date
     function isoWeek(dateObj){
       const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
       const dayNum = d.getUTCDay() || 7;
@@ -243,7 +246,7 @@
 
     function getSelectedWeek(){
       const d = new Date(dateInput.value);
-      if (isNaN(d.getTime())) return null;
+      if (!(d instanceof Date) || isNaN(d.getTime())) return null;
       return isoWeek(d);
     }
 
@@ -256,14 +259,12 @@
       return Array.from(new Set(arr.filter(Boolean))).sort((a,b)=>a.localeCompare(b,'fr'));
     }
 
-    function clearSelect(sel){ sel.innerHTML = ''; }
-
+    function clearSelect(sel){ sel.innerHTML=''; }
     function setSelectOptions(sel, values){
       clearSelect(sel);
-      values.forEach((v)=>{
-        const opt = document.createElement('option');
-        opt.value = v;
-        opt.textContent = v;
+      values.forEach(v=>{
+        const opt=document.createElement('option');
+        opt.value=v; opt.textContent=v;
         sel.appendChild(opt);
       });
     }
@@ -277,7 +278,7 @@
 
     function updateKnownNamesFromRows(rows){
       normalizedNameMap.clear();
-      manualSuggestions.innerHTML = '';
+      manualSuggestions.innerHTML='';
       const names = uniqSorted(rows.map(r=>r.ouvrier));
       names.forEach(name=>{
         const opt=document.createElement('option');
@@ -347,7 +348,6 @@
 
       const base = getFilteredRowsBase();
       const target = normUpper(chantier);
-
       const chantierRows = base.filter(r => normUpper(r.chantier) === target);
 
       const ces = uniqSorted(chantierRows.map(r=>r.ce));
@@ -392,7 +392,7 @@
 
       const monthName = new Date(dateInput.value).toLocaleString('fr-FR',{month:'long'}).toLowerCase();
       for(const row of tbmData){
-        if(normalize(row[0]).toLowerCase() === monthName){
+        if((row[0]||'').toString().toLowerCase() === monthName){
           const url = row[1];
           if(url){
             lastVideoUrl = url;
@@ -431,91 +431,79 @@
       populateVideo();
     }
 
-    // ---- NEW: header mapping tolerant
-    function cleanHeader(h){
-      return normalize(h).toLowerCase().replace(/\s+/g,'');
-    }
-    function findHeader(headersRaw, candidates){
-      const headers = headersRaw.map(cleanHeader);
-      for(const cand of candidates){
-        const key = cleanHeader(cand);
-        const idx = headers.indexOf(key);
-        if(idx >= 0) return idx;
-      }
-      return -1;
+    function cleanHeaderCell(s){
+      return String(s ?? '')
+        .replace(/^\uFEFF/, '')     // BOM
+        .replace(/\t/g,' ')
+        .trim()
+        .toLowerCase();
     }
 
     async function loadSheets(){
       loadStatus.textContent = 'Chargement...';
-
       try{
-        // IMPORTANT: ici on charge AFFECTATIONS_SEMAINE (gid=496527492)
-        // ton METIER_TO_GID sert aux onglets Equipe_* mais ici on vise la feuille AFFECTATIONS directement.
-        // => on va prendre le gid "496527492" en dur si tu veux éviter toute confusion.
-        // Comme tu as confirmé que l'URL gid=496527492 fonctionne: on l’utilise.
-        const AFFECTATIONS_GID = "496527492";
+        // 1) AFFECTATIONS_SEMAINE (gid fixe)
         const url = csvUrl(SHEET_BASE_URL, AFFECTATIONS_GID);
+        if(!url) throw new Error('URL CSV AFFECTATIONS invalide.');
 
         const raw = await parseCsv(url);
-        const headersRaw = (raw[0] || []).map(h => String(h ?? ''));
-        const headersClean = headersRaw.map(cleanHeader);
+        if(!raw || !raw.length) throw new Error('CSV AFFECTATIONS vide.');
 
-        // tolérance: variantes possibles
+        const headersRaw = raw[0] || [];
+        const headers = headersRaw.map(cleanHeaderCell);
+
         const idx = {
-          annee:   findHeader(headersRaw, ['Annee','Année','Year']),
-          semaine: findHeader(headersRaw, ['Semaine','Week']),
-          pm:      findHeader(headersRaw, ['PM','Pm']),
-          sisu:    findHeader(headersRaw, ['SiSU','SISU','SiSu','SiteSupervisor']),
-          ce:      findHeader(headersRaw, ['CE','ChefEquipe','ChefÉquipe','Chef d’équipe','ChefEquipeNom']),
-          ouvrier: findHeader(headersRaw, ['Ouvrier','OuvrierNom','Worker']),
-          chantier:findHeader(headersRaw, ['Chantier','Site','Project']),
-          sheet:   findHeader(headersRaw, ['Sheet','Feuille','Onglet'])
+          annee: headers.indexOf('annee'),
+          semaine: headers.indexOf('semaine'),
+          pm: headers.indexOf('pm'),
+          sisu: headers.indexOf('sisu'),
+          ce: headers.indexOf('ce'),
+          ouvrier: headers.indexOf('ouvrier'),
+          chantier: headers.indexOf('chantier'),
+          sheet: headers.indexOf('sheet')
         };
 
-        // debug lisible
-        console.log('Headers affectations raw:', headersRaw);
-        console.log('Headers affectations clean:', headersClean);
-        console.log('Idx map:', idx);
-
-        if(idx.semaine < 0 || idx.ouvrier < 0 || idx.chantier < 0 || idx.ce < 0 || idx.sheet < 0){
-          throw new Error("En-têtes AFFECTATIONS_SEMAINE inattendus.");
+        const missing = Object.entries(idx).filter(([k,v])=>v < 0).map(([k])=>k);
+        if(missing.length){
+          console.error('Headers raw:', headersRaw);
+          console.error('Headers clean:', headers);
+          throw new Error(`En-têtes AFFECTATIONS manquants: ${missing.join(', ')}`);
         }
 
         affectRows = raw.slice(1)
           .filter(r => r && r.length)
           .map(r => {
-            const sheet = normalize(r[idx.sheet]);
+            const sheet = (r[idx.sheet] || '').toString().trim();
             return {
               annee: parseInt(r[idx.annee],10) || null,
               semaine: parseInt(r[idx.semaine],10) || null,
-              pm: normalize(r[idx.pm]),
-              sisu: normalize(r[idx.sisu]),
-              ce: normalize(r[idx.ce]),
-              ouvrier: normalize(r[idx.ouvrier]),
-              chantier: normalize(r[idx.chantier]),
+              pm: (r[idx.pm] || '').toString().trim(),
+              sisu: (r[idx.sisu] || '').toString().trim(),
+              ce: (r[idx.ce] || '').toString().trim(),
+              ouvrier: (r[idx.ouvrier] || '').toString().trim(),
+              chantier: (r[idx.chantier] || '').toString().trim(),
               sheet,
-              metier: sheetToMetier(sheet) || ''
+              metier: sheetToMetier(sheet)
             };
           })
           .filter(r => r.semaine && r.ouvrier && r.chantier && r.metier);
 
-        // TBM videos
+        // 2) TBM videos
         const tbmUrl = csvUrl(SHEET_BASE_URL, TBM_GID);
         if(tbmUrl){
           try{ tbmData = await parseCsv(tbmUrl); }
-          catch(e){ console.error('Failed to load TBM sheet', e); tbmData = null; }
+          catch(e){ console.error('TBM video csv load error', e); tbmData=null; }
         }
 
-        loadStatus.textContent = 'Feuilles chargées';
+        loadStatus.textContent = `Feuilles chargées (${affectRows.length} lignes affectations)`;
         updateAll();
 
       }catch(e){
-        loadStatus.textContent = 'Impossible de charger les données';
         console.error(e);
+        loadStatus.textContent = `Erreur chargement: ${e && e.message ? e.message : e}`;
       }
     }
 
-    // ---- manual helpers
     function setManualError(message){
       if(message){
         manualError.textContent = message;
@@ -551,30 +539,22 @@
 
     function addManual(){
       const raw = manualInput.value;
-      if(!raw.trim()){
-        setManualError('');
-        return false;
-      }
-      const names = raw.split(',').map(n=>n.trim()).filter(n=>n);
-      if(!names.length){
-        setManualError('');
-        manualInput.value='';
-        return false;
-      }
+      if(!raw.trim()){ setManualError(''); return false; }
+      const names = raw.split(',').map(n=>n.trim()).filter(Boolean);
+      if(!names.length){ setManualError(''); manualInput.value=''; return false; }
+
       const invalid = [];
       let hasValid=false;
       names.forEach(n=>{
         const resolved = resolveName(n);
-        if(!resolved){
-          invalid.push(n);
-          return;
-        }
+        if(!resolved){ invalid.push(n); return; }
         hasValid=true;
         if(!manualMembers.includes(resolved)){
           manualMembers.push(resolved);
           createManualChip(resolved);
         }
       });
+
       if(invalid.length){
         manualInput.value = invalid.join(', ');
         setManualError('Ce nom ne correspond pas à la liste proposée.');
@@ -586,7 +566,6 @@
       }
     }
 
-    // ---- UI hooks
     retryBtn.addEventListener('click', loadSheets);
 
     toggleAllBtn.addEventListener('click',()=>{
@@ -595,7 +574,7 @@
       boxes.forEach(b=>b.checked=!allChecked);
     });
 
-    metierInput.addEventListener('change', ()=> updateAll());
+    metierInput.addEventListener('change', updateAll);
     chantierSelect.addEventListener('change', populateResponsableAndTeam);
 
     chantierManualInput.addEventListener('input',()=>{
@@ -617,35 +596,23 @@
         responsableSelect.disabled=true;
         responsableSelect.value='';
         responsableHelper.textContent='';
+        populateResponsableAndTeam();
+      }else{
+        populateResponsableAndTeam();
       }
-      populateResponsableAndTeam();
     });
 
     dateInput.addEventListener('change', updateAll);
 
     manualInput.addEventListener('keydown',e=>{
-      if(e.key==='Enter'){
-        e.preventDefault();
-        addManual();
-        manualInput.focus();
-      }
+      if(e.key==='Enter'){ e.preventDefault(); addManual(); manualInput.focus(); }
     });
     manualInput.addEventListener('blur',addManual);
     manualInput.addEventListener('input',()=> setManualError(''));
-    manualAddBtn.addEventListener('click',()=>{
-      addManual();
-      manualInput.focus();
-    });
+    manualAddBtn.addEventListener('click',()=>{ addManual(); manualInput.focus(); });
 
-    playBtn.addEventListener('click',()=>{
-      if(!lastVideoUrl) return;
-      window.open(lastVideoUrl, '_blank');
-    });
-
-    copyLinkBtn.addEventListener('click',async()=>{
-      if(!lastVideoUrl) return;
-      try{await navigator.clipboard.writeText(lastVideoUrl);}catch(e){}
-    });
+    playBtn.addEventListener('click',()=>{ if(lastVideoUrl) window.open(lastVideoUrl, '_blank'); });
+    copyLinkBtn.addEventListener('click',async()=>{ if(!lastVideoUrl) return; try{await navigator.clipboard.writeText(lastVideoUrl);}catch{} });
 
     function showConfirmation(message){
       confirmationMessage.textContent = message;
@@ -660,8 +627,8 @@
     }
 
     closeConfirmationBtn.addEventListener('click', hideConfirmation);
-    confirmationModal.addEventListener('click', event => { if(event.target === confirmationModal) hideConfirmation(); });
-    document.addEventListener('keydown', event => { if(event.key === 'Escape' && !confirmationModal.classList.contains('hidden')) hideConfirmation(); });
+    confirmationModal.addEventListener('click', (ev)=>{ if(ev.target === confirmationModal) hideConfirmation(); });
+    document.addEventListener('keydown', (ev)=>{ if(ev.key==='Escape' && !confirmationModal.classList.contains('hidden')) hideConfirmation(); });
 
     sendBtn.addEventListener('click',async()=>{
       const dateVal=dateInput.value;
@@ -735,10 +702,7 @@
       a.click();
     });
 
-    clearBtn.addEventListener('click',()=>{
-      localStorage.removeItem('tbmEntries');
-      loadHistory();
-    });
+    clearBtn.addEventListener('click',()=>{ localStorage.removeItem('tbmEntries'); loadHistory(); });
 
     function init(){
       const now=new Date();
