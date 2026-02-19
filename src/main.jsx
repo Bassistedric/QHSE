@@ -637,17 +637,25 @@ async function sendNow(payload){
   try{
     const res = await fetch(COLLECT_URL, {
       method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(payload), // ✅ no headers => no preflight
     });
-    // opaque en no-cors : si fetch ne throw pas, on considère OK
+
+    if (!res.ok) return false;
+
+    const txt = await res.text().catch(()=> "");
+    if (txt) {
+      try {
+        const j = JSON.parse(txt);
+        if (j && j.ok === false) return false;
+      } catch {}
+    }
     return true;
   } catch (e) {
     console.warn(e);
     return false;
   }
 }
+
 
 
 function enqueueOutbox(item){
