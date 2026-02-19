@@ -1186,7 +1186,7 @@ function FirstAidScreen(){
         </div>
       </Section>
 
-      <Section title={t('action_title')}>
+      <Section title={t('action_title')} tone="amber">
         <div className="grid grid-cols-2 gap-2">
           {[
             ['coupant','a_cut'],['disquant','a_grind'],['soudant','a_weld'],
@@ -1211,7 +1211,7 @@ function FirstAidScreen(){
         </div>
       </Section>
 
-      <Section title={t('injury_title')}>
+      <Section title={t('injury_title')} tone="red">
         <div className="grid grid-cols-2 gap-2">
           {[
             ['coupure','i_cut'],['egratignure','i_scratch'],['contusion','i_bruise'],
@@ -1236,7 +1236,7 @@ function FirstAidScreen(){
         </div>
       </Section>
 
-      <Section title={t('location_title')}>
+      <Section title={t('location_title')} tone="blue">
         <div className="grid grid-cols-2 gap-2">
           {[
             ['main','loc_hand'],['bras','loc_arm'],['torse','loc_torso'],
@@ -1261,7 +1261,7 @@ function FirstAidScreen(){
         </div>
       </Section>
 
-      <Section title={t('kit_title')}>
+      <Section title={t('kit_title')} tone="green">
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-3">
             <span className="text-sm">{t('kit_need')}</span>
@@ -1418,12 +1418,6 @@ function StopScreen(){
         </div>
       </Section>
 
-      <Section title={t('act_box')} tone="green">
-        <label className="text-sm">{t('solution')}
-          <textarea value={data.solution} onChange={(e)=>setField("solution", e.target.value)} rows={3} className="mt-1 w-full px-3 py-2 rounded-xl border" />
-        </label>
-      </Section>
-
       {/* ✅ PHOTO */}
       <Section title={t('photo_box')} tone="blue">
         <div className="flex flex-col gap-2">
@@ -1456,6 +1450,12 @@ function StopScreen(){
             </>
           )}
         </div>
+      </Section>
+
+      <Section title={t('act_box')} tone="green">
+        <label className="text-sm">{t('solution')}
+          <textarea value={data.solution} onChange={(e)=>setField("solution", e.target.value)} rows={3} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+        </label>
       </Section>
 
       <Section tone="dark" title={<><span className="text-red-600">{t('no_go')}</span> — {(t('nogo_wait').split('—')[1] || t('nogo_wait')).trim()}</>}>
