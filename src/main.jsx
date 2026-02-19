@@ -637,7 +637,7 @@ async function sendNow(payload){
   try{
     const res = await fetch(COLLECT_URL, {
       method: "POST",
-      body: JSON.stringify(payload), // ✅ no headers => no preflight
+      body: JSON.stringify(payload), // ✅ PAS de headers => pas de preflight
     });
 
     if (!res.ok) return false;
@@ -655,6 +655,7 @@ async function sendNow(payload){
     return false;
   }
 }
+
 
 
 
@@ -1311,7 +1312,10 @@ function FirstAidScreen(){
   );
 }
 
-/* ======================= STOP ======================= */
+
+
+/* ======================= STOP (BACK TO WORKING) ======================= */
+
 
 function StopScreen(){
   const { t } = useI18n();
@@ -1335,8 +1339,8 @@ function StopScreen(){
   React.useEffect(()=>{ saveLS(STATE_KEY, data); }, [data]);
   const [errors, setErrors] = React.useState({});
 
-  // ✅ photo
-  const [photoDataUrl, setPhotoDataUrl] = React.useState(""); // base64 data URL
+  // Photo (pas dans LS pour éviter d’exploser le storage)
+  const [photoDataUrl, setPhotoDataUrl] = React.useState("");
   const [photoStatus, setPhotoStatus] = React.useState("");
 
   const setField = (k,v)=>setData({...data,[k]:v});
@@ -1374,8 +1378,8 @@ function StopScreen(){
       return;
     }
 
+    // ✅ payload compatible doPost()
     const payload = {
-      type: "stop",
       meta: {
         sentAt: new Date().toISOString(),
         page: location.href,
@@ -1384,8 +1388,7 @@ function StopScreen(){
       },
       data: {
         ...data,
-        // ✅ photo incluse
-        photoDataUrl: photoDataUrl || ""
+        photoDataUrl: photoDataUrl || "" // ✅ photo incluse ICI
       }
     };
 
@@ -1499,7 +1502,6 @@ function StopScreen(){
         </div>
       </Section>
 
-      {/* ✅ PHOTO */}
       <Section title={t('photo_box')} tone="blue">
         <div className="flex flex-col gap-2">
           <div className="text-xs text-gray-500">{t('photo_optional')}</div>
@@ -1516,11 +1518,7 @@ function StopScreen(){
 
           {!!photoDataUrl && (
             <>
-              <img
-                src={photoDataUrl}
-                alt="preview"
-                className="w-full rounded-xl border object-cover"
-              />
+              <img src={photoDataUrl} alt="preview" className="w-full rounded-xl border object-cover" />
               <button
                 type="button"
                 className="text-sm text-red-600 underline self-start"
@@ -1544,11 +1542,7 @@ function StopScreen(){
         </label>
       </Section>
 
-      {/* ✅ NO-GO : bool + commentaire */}
-      <Section
-        tone="dark"
-        title={<><span className="text-red-600">{t('no_go')}</span> — {(t('nogo_wait').split('—')[1] || t('nogo_wait')).trim()}</>}
-      >
+      <Section tone="dark" title={<><span className="text-red-600">{t('no_go')}</span> — {(t('nogo_wait').split('—')[1] || t('nogo_wait')).trim()}</>}>
         <label className="flex items-center gap-2 text-sm mb-2">
           <input
             type="checkbox"
@@ -1576,6 +1570,7 @@ function StopScreen(){
     </main>
   );
 }
+
 
 
 // Logo seul (pas de texte redondant)
