@@ -635,19 +635,23 @@ function Toggle({ checked, onChange, label }){
 // Envoi + file d’attente locale (offline)
 async function sendNow(payload){
   try{
+    // ✅ DEBUG STOP PHOTO
+    if ((payload?.meta?.formType || payload?.type) === "stop") {
+      const p = payload?.data?.photoDataUrl || "";
+      console.log("[STOP] hasPhoto:", !!p, "len:", p.length, "head:", p.slice(0, 30));
+    }
+
     const res = await fetch(COLLECT_URL, {
       method: "POST",
-      body: JSON.stringify(payload), // ✅ PAS de headers => pas de preflight
+      body: JSON.stringify(payload), // no headers
     });
 
-    if (!res.ok) return false;
-
     const txt = await res.text().catch(()=> "");
+    console.log("[API] status:", res.status, "body:", txt.slice(0, 200));
+
+    if (!res.ok) return false;
     if (txt) {
-      try {
-        const j = JSON.parse(txt);
-        if (j && j.ok === false) return false;
-      } catch {}
+      try { const j = JSON.parse(txt); if (j && j.ok === false) return false; } catch {}
     }
     return true;
   } catch (e) {
