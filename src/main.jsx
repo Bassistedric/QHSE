@@ -1,17 +1,16 @@
 // src/main.jsx
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { nowLocalDateTime } from './utils/date.js';
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { nowLocalDateTime } from "./utils/date.js";
 
 // ========================= CONFIG =========================
 // ⬇⬇ Remplacer l' URL Apps Script /exec si modification du GSheet
-const COLLECT_URL = (globalThis.QHSE_CONFIG && globalThis.QHSE_CONFIG.COLLECT_URL) || "";
+const COLLECT_URL =
+  (globalThis.QHSE_CONFIG && globalThis.QHSE_CONFIG.COLLECT_URL) || "";
 
-
-const STORAGE_KEY     = "qhse_current_v1";
-const OUTBOX_KEY      = "qhse_outbox_v1";
-const PREFS_KEY       = "qhse_prefs_v1"; // conserve Responsable & Équipe
-const LANG_KEY        = "qhse_lang_v1";  // fr/en/nl
+const OUTBOX_KEY = "qhse_outbox_v1";
+const PREFS_KEY = "qhse_prefs_v1"; // conserve Responsable & Équipe
+const LANG_KEY = "qhse_lang_v1"; // fr/en/nl
 
 const RESPONSABLES_PAR_CHANTIER = {
   "Chantier A": ["Alice", "Albert"],
@@ -29,8 +28,7 @@ if (!globalThis.QHSE_I18N) {
       home_install: "Installer sur mobile",
       home_scan: "Scannez avec l’appareil photo pour ouvrir l’app.",
       install_howto_title: "Installer sur le téléphone",
-      install_howto_body:
-`Ouvre l’URL sur le mobile (en ligne, 1ʳᵉ fois) →
+      install_howto_body: `Ouvre l’URL sur le mobile (en ligne, 1ʳᵉ fois) →
  iPhone (Safari) : Partager → Sur l’écran d’accueil.
  Android (Chrome) : ⋮ → Ajouter à l’écran d’accueil.
 Ensuite, l’app peut fonctionner hors-ligne.`,
@@ -41,13 +39,13 @@ Ensuite, l’app peut fonctionner hors-ligne.`,
       tile_fa_sub: "Utilisation trousse",
       tile_stop_title: "STOP chantier",
       tile_stop_sub: "Imprévu / arrêt",
-
       tile_tbm_title: "TBM",
       tile_tbm_sub: "Toolbox meeting",
 
       print: "Imprimer",
       reset_all: "Réinitialiser le formulaire (tout remettre à zéro)",
-      reset_hint_team: "Remet tout à zéro, excepté le nom du responsable et l'équipe.",
+      reset_hint_team:
+        "Remet tout à zéro, excepté le nom du responsable et l'équipe.",
       send: "Envoyer",
       sending: "Envoi en cours…",
       queue_label: "File",
@@ -56,7 +54,8 @@ Ensuite, l’app peut fonctionner hors-ligne.`,
 
       // Alerts
       alert_sent: "Envoyé ✅",
-      alert_offline_queued: "Pas de réseau : enregistré localement. Envoi auto dès connexion.",
+      alert_offline_queued:
+        "Pas de réseau : enregistré localement. Envoi auto dès connexion.",
       required_field: "Champ obligatoire",
       required_fields: "Merci de remplir les champs obligatoires.",
 
@@ -195,7 +194,9 @@ Ensuite, l’app peut fonctionner hors-ligne.`,
       role_client: "Client",
       act_box: "ACT",
       solution: "Solution mise en place",
-      nogo_wait: "NO-GO — Situation en attente de solution",
+
+      nogo_title: "NO-GO",
+      nogo_sub: "Situation en attente de solution",
 
       // ✅ PHOTO (STOP)
       photo_box: "PHOTO",
@@ -205,6 +206,8 @@ Ensuite, l’app peut fonctionner hors-ligne.`,
       photo_status_ready: "OK",
       photo_status_processing: "Compression photo…",
       photo_status_error: "Erreur traitement photo",
+      nogo_activate: "Activer NO-GO",
+      nogo_placeholder: "Explique pourquoi c’est NO-GO…",
     },
 
     en: {
@@ -214,8 +217,7 @@ Ensuite, l’app peut fonctionner hors-ligne.`,
       home_install: "Install on mobile",
       home_scan: "Scan with the camera to open the app.",
       install_howto_title: "Install on the phone",
-      install_howto_body:
-`Open the URL on the phone (online, first time) →
+      install_howto_body: `Open the URL on the phone (online, first time) →
  iPhone (Safari): Share → Add to Home Screen.
  Android (Chrome): ⋮ → Add to Home screen.
 Then, the app can work offline.`,
@@ -226,7 +228,6 @@ Then, the app can work offline.`,
       tile_fa_sub: "First-aid kit use",
       tile_stop_title: "STOP",
       tile_stop_sub: "Unplanned / stop",
-
       tile_tbm_title: "TBM",
       tile_tbm_sub: "Toolbox meeting",
 
@@ -240,7 +241,8 @@ Then, the app can work offline.`,
       next: "Next",
 
       alert_sent: "Sent ✅",
-      alert_offline_queued: "No network: saved locally. Will auto-send when online.",
+      alert_offline_queued:
+        "No network: saved locally. Will auto-send when online.",
       required_field: "Required field",
       required_fields: "Please fill in required fields.",
 
@@ -379,7 +381,9 @@ Then, the app can work offline.`,
       role_client: "Client",
       act_box: "ACT",
       solution: "Solution implemented",
-      nogo_wait: "NO-GO — Situation pending a solution",
+
+      nogo_title: "NO-GO",
+      nogo_sub: "Situation pending a solution",
 
       // ✅ PHOTO (STOP)
       photo_box: "PHOTO",
@@ -389,6 +393,8 @@ Then, the app can work offline.`,
       photo_status_ready: "OK",
       photo_status_processing: "Compressing photo…",
       photo_status_error: "Photo processing error",
+      nogo_activate: "Enable NO-GO",
+      nogo_placeholder: "Explain why it’s NO-GO…",
     },
 
     nl: {
@@ -398,8 +404,7 @@ Then, the app can work offline.`,
       home_install: "Installeren op mobiel",
       home_scan: "Scan met de camera om de app te openen.",
       install_howto_title: "Op de telefoon installeren",
-      install_howto_body:
-`Open de URL op de telefoon (online, eerste keer) →
+      install_howto_body: `Open de URL op de telefoon (online, eerste keer) →
  iPhone (Safari): Delen → Zet op beginscherm.
  Android (Chrome): ⋮ → Toevoegen aan startscherm.
 Daarna kan de app offline werken.`,
@@ -410,13 +415,13 @@ Daarna kan de app offline werken.`,
       tile_fa_sub: "Gebruik EHBO-koffer",
       tile_stop_title: "STOP",
       tile_stop_sub: "Onvoorziene stop",
-
       tile_tbm_title: "TBM",
       tile_tbm_sub: "Toolbox meeting",
 
       print: "Afdrukken",
       reset_all: "Formulier resetten (alles wissen)",
-      reset_hint_team: "Zet alles terug behalve de naam van de verantwoordelijke en het team.",
+      reset_hint_team:
+        "Zet alles terug behalve de naam van de verantwoordelijke en het team.",
       send: "Verzenden",
       sending: "Verzenden…",
       queue_label: "Wachtrij",
@@ -424,7 +429,8 @@ Daarna kan de app offline werken.`,
       next: "Volgende",
 
       alert_sent: "Verzonden ✅",
-      alert_offline_queued: "Geen netwerk: lokaal opgeslagen. Wordt automatisch verzonden zodra online.",
+      alert_offline_queued:
+        "Geen netwerk: lokaal opgeslagen. Wordt automatisch verzonden zodra online.",
       required_field: "Verplicht veld",
       required_fields: "Vul de verplichte velden in.",
 
@@ -563,7 +569,9 @@ Daarna kan de app offline werken.`,
       role_client: "Klant",
       act_box: "ACT",
       solution: "Ingevoerde oplossing",
-      nogo_wait: "NO-GO — Situatie in afwachting van oplossing",
+
+      nogo_title: "NO-GO",
+      nogo_sub: "Situatie in afwachting van oplossing",
 
       // ✅ PHOTO (STOP)
       photo_box: "FOTO",
@@ -573,52 +581,114 @@ Daarna kan de app offline werken.`,
       photo_status_ready: "OK",
       photo_status_processing: "Foto comprimeren…",
       photo_status_error: "Fout bij fotoverwerking",
+      nogo_activate: "NO-GO activeren",
+      nogo_placeholder: "Leg uit waarom het NO-GO is…",
     },
   };
 }
 const I18N = globalThis.QHSE_I18N; // alias unique
 
 // ========================= HELPERS =========================
-const parseRoute = () => (location.hash.replace(/^#\/?/, '') || 'home');
-const saveLS = (k,v)=>{ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{} };
-const loadLS = (k,def)=>{ try{ const raw=localStorage.getItem(k); return raw? JSON.parse(raw): def; }catch{return def;} };
+const parseRoute = () => location.hash.replace(/^#\/?/, "") || "home";
+const saveLS = (k, v) => {
+  try {
+    localStorage.setItem(k, JSON.stringify(v));
+  } catch {}
+};
+const loadLS = (k, def) => {
+  try {
+    const raw = localStorage.getItem(k);
+    return raw ? JSON.parse(raw) : def;
+  } catch {
+    return def;
+  }
+};
 
 // i18n hook & provider simples
-const I18nContext = React.createContext({ lang:'fr', t:(k)=>k, setLang:()=>{} });
-function I18nProvider({children}){
-  const [lang, setLangState] = React.useState(loadLS(LANG_KEY, 'fr'));
-  const setLang = (l)=>{ setLangState(l); saveLS(LANG_KEY,l); };
-  const t = (key)=> (I18N[lang] && I18N[lang][key]) || (I18N.fr && I18N.fr[key]) || key;
-  return <I18nContext.Provider value={{lang,t,setLang}}>{children}</I18nContext.Provider>;
+const I18nContext = React.createContext({
+  lang: "fr",
+  t: (k) => k,
+  setLang: () => {},
+});
+function I18nProvider({ children }) {
+  const [lang, setLangState] = React.useState(loadLS(LANG_KEY, "fr"));
+  const setLang = (l) => {
+    setLangState(l);
+    saveLS(LANG_KEY, l);
+  };
+  const t = (key) =>
+    (I18N[lang] && I18N[lang][key]) || (I18N.fr && I18N.fr[key]) || key;
+  return (
+    <I18nContext.Provider value={{ lang, t, setLang }}>
+      {children}
+    </I18nContext.Provider>
+  );
 }
-const useI18n = ()=>React.useContext(I18nContext);
+const useI18n = () => React.useContext(I18nContext);
 
 // Petits composants génériques
 function Section({ title, tone = "default", children }) {
   const TONES = {
-    default: { border: "border-gray-200", bar: "bg-gray-50", title: "text-gray-800", bg: "bg-white" },
-    slate:   { border: "border-slate-300", bar: "bg-slate-50", title: "text-slate-900", bg: "bg-white" },
-    blue:    { border: "border-blue-300",  bar: "bg-blue-50",  title: "text-blue-900",  bg: "bg-white" },
-    green:   { border: "border-green-300", bar: "bg-green-50", title: "text-green-900", bg: "bg-white" },
-    red:     { border: "border-red-300",   bar: "bg-red-50",   title: "text-red-900",   bg: "bg-white" },
-    amber:   { border: "border-amber-300", bar: "bg-amber-50", title: "text-amber-900", bg: "bg-white" },
-    dark:    { border: "border-gray-700",  bar: "bg-gray-700", title: "text-white",     bg: "bg-gray-700" },
+    default: {
+      border: "border-gray-200",
+      bar: "bg-gray-50",
+      title: "text-gray-800",
+      bg: "bg-white",
+    },
+    slate: {
+      border: "border-slate-300",
+      bar: "bg-slate-50",
+      title: "text-slate-900",
+      bg: "bg-white",
+    },
+    blue: {
+      border: "border-blue-300",
+      bar: "bg-blue-50",
+      title: "text-blue-900",
+      bg: "bg-white",
+    },
+    green: {
+      border: "border-green-300",
+      bar: "bg-green-50",
+      title: "text-green-900",
+      bg: "bg-white",
+    },
+    red: {
+      border: "border-red-300",
+      bar: "bg-red-50",
+      title: "text-red-900",
+      bg: "bg-white",
+    },
+    amber: {
+      border: "border-amber-300",
+      bar: "bg-amber-50",
+      title: "text-amber-900",
+      bg: "bg-white",
+    },
+    dark: {
+      border: "border-gray-700",
+      bar: "bg-gray-700",
+      title: "text-white",
+      bg: "bg-gray-700",
+    },
   };
   const c = TONES[tone] || TONES.default;
 
   return (
-    <section className={`rounded-2xl border ${c.border} ${c.bg} shadow-sm overflow-hidden mb-4`}>
-      <div className={`px-4 py-2 border-b ${c.border} ${c.bar} text-base font-medium ${c.title}`}>
+    <section
+      className={`rounded-2xl border ${c.border} ${c.bg} shadow-sm overflow-hidden mb-4`}
+    >
+      <div
+        className={`px-4 py-2 border-b ${c.border} ${c.bar} text-base font-medium ${c.title}`}
+      >
         {title}
       </div>
-      <div className="p-4">
-        {children}
-      </div>
+      <div className="p-4">{children}</div>
     </section>
   );
 }
 
-function Toggle({ checked, onChange, label }){
+function Toggle({ checked, onChange, label }) {
   return (
     <label className="flex items-center justify-between gap-3 py-2">
       <span className="text-sm">{label}</span>
@@ -626,32 +696,48 @@ function Toggle({ checked, onChange, label }){
         type="checkbox"
         className="w-5 h-5 accent-black"
         checked={checked}
-        onChange={(e)=>onChange(e.target.checked)}
+        onChange={(e) => onChange(e.target.checked)}
       />
     </label>
   );
 }
 
-// Envoi + file d’attente locale (offline)
-async function sendNow(payload){
-  try{
+// ========================= ENVOI + OFFLINE QUEUE =========================
+async function sendNow(payload) {
+  console.log("[CONFIG] COLLECT_URL =", COLLECT_URL);
+  if (!COLLECT_URL) {
+    console.error("[CONFIG] COLLECT_URL is empty => impossible d'envoyer");
+    return false;
+  }
+
+  try {
     // ✅ DEBUG STOP PHOTO
     if ((payload?.meta?.formType || payload?.type) === "stop") {
       const p = payload?.data?.photoDataUrl || "";
-      console.log("[STOP] hasPhoto:", !!p, "len:", p.length, "head:", p.slice(0, 30));
+      console.log(
+        "[STOP] hasPhoto:",
+        !!p,
+        "len:",
+        p.length,
+        "head:",
+        p.slice(0, 30)
+      );
     }
 
     const res = await fetch(COLLECT_URL, {
       method: "POST",
-      body: JSON.stringify(payload), // no headers
+      body: JSON.stringify(payload), // no headers (Apps Script ok)
     });
 
-    const txt = await res.text().catch(()=> "");
+    const txt = await res.text().catch(() => "");
     console.log("[API] status:", res.status, "body:", txt.slice(0, 200));
 
     if (!res.ok) return false;
     if (txt) {
-      try { const j = JSON.parse(txt); if (j && j.ok === false) return false; } catch {}
+      try {
+        const j = JSON.parse(txt);
+        if (j && j.ok === false) return false;
+      } catch {}
     }
     return true;
   } catch (e) {
@@ -660,76 +746,91 @@ async function sendNow(payload){
   }
 }
 
-
-
-
-function enqueueOutbox(item){
+function enqueueOutbox(item) {
   const box = loadLS(OUTBOX_KEY, []);
   box.unshift(item);
-  saveLS(OUTBOX_KEY, box.slice(0,500));
+  saveLS(OUTBOX_KEY, box.slice(0, 500));
 }
-async function flushOutbox(){
-  let box = loadLS(OUTBOX_KEY, []);
-  if(!box.length) return {sent:0,left:0};
-  let sent=0, left=[];
-  for(const it of box){
+async function flushOutbox() {
+  const box = loadLS(OUTBOX_KEY, []);
+  if (!box.length) return { sent: 0, left: 0 };
+
+  let sent = 0;
+  const left = [];
+  for (const it of box) {
     const ok = await sendNow(it);
-    if(ok) sent++; else left.push(it);
+    if (ok) sent++;
+    else left.push(it);
   }
   saveLS(OUTBOX_KEY, left);
-  return {sent,left:left.length};
+  return { sent, left: left.length };
 }
-globalThis.addEventListener('online', ()=>{ flushOutbox(); });
+globalThis.addEventListener("online", () => {
+  flushOutbox();
+});
 
 // ========================= PHOTO HELPERS (STOP) =========================
-function approxSizeKbFromDataUrl_(dataUrl){
-  const b64 = (String(dataUrl||"").split(",")[1] || "");
+function approxSizeKbFromDataUrl_(dataUrl) {
+  const b64 = String(dataUrl || "").split(",")[1] || "";
   const bytes = Math.floor(b64.length * 0.75);
   return Math.round(bytes / 1024);
 }
-function loadImage_(file){
-  return new Promise((resolve,reject)=>{
+function loadImage_(file) {
+  return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
-    img.onload = ()=>{ URL.revokeObjectURL(url); resolve(img); };
-    img.onerror = (e)=>{ URL.revokeObjectURL(url); reject(e); };
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = (e) => {
+      URL.revokeObjectURL(url);
+      reject(e);
+    };
     img.src = url;
   });
 }
-async function fileToCompressedDataUrl_(file, maxDim=1280, quality=0.72){
+async function fileToCompressedDataUrl_(file, maxDim = 1280, quality = 0.72) {
   const img = await loadImage_(file);
-  const w = img.width, h = img.height;
+  const w = img.width,
+    h = img.height;
 
-  let tw=w, th=h;
-  const maxSide = Math.max(w,h);
-  if(maxSide > maxDim){
+  let tw = w,
+    th = h;
+  const maxSide = Math.max(w, h);
+  if (maxSide > maxDim) {
     const s = maxDim / maxSide;
-    tw = Math.round(w*s);
-    th = Math.round(h*s);
+    tw = Math.round(w * s);
+    th = Math.round(h * s);
   }
 
   const canvas = document.createElement("canvas");
-  canvas.width = tw; canvas.height = th;
-  const ctx = canvas.getContext("2d", {alpha:false});
+  canvas.width = tw;
+  canvas.height = th;
+  const ctx = canvas.getContext("2d", { alpha: false });
   ctx.drawImage(img, 0, 0, tw, th);
 
   return canvas.toDataURL("image/jpeg", quality);
 }
 
-// Préférences (Responsable & Équipe conservés)
-const defaultPrefs = { responsable:"", team:[] };
-
+// ========================= HOME TILES =========================
 if (!globalThis.QHSE_Tile) {
-  globalThis.QHSE_Tile = function Tile({href, icon, img, title, sub, muted}) {
+  globalThis.QHSE_Tile = function Tile({ href, icon, img, title, sub, muted }) {
     const base = "rounded-2xl p-4 text-center transition border";
     const active = "hover:bg-gray-50";
     const off = "border-dashed text-gray-300 pointer-events-none select-none";
     return (
-      <a href={href||"#"} className={[base, muted?off:active].join(" ")}>
+      <a href={href || "#"} className={[base, muted ? off : active].join(" ")}>
         {img ? (
-          <img src={img} alt="" className={"w-10 h-10 mx-auto rounded " + (muted?"opacity-40":"")} />
+          <img
+            src={img}
+            alt=""
+            className={"w-10 h-10 mx-auto rounded " + (muted ? "opacity-40" : "")}
+          />
         ) : (
-          <div className={"text-3xl font-bold " + (muted?"opacity-40":"")}>{icon || "＋"}</div>
+          <div className={"text-3xl font-bold " + (muted ? "opacity-40" : "")}>
+            {icon || "＋"}
+          </div>
         )}
         {title && <div className="font-semibold mt-2">{title}</div>}
         {sub && <div className="text-xs text-gray-500 mt-0.5">{sub}</div>}
@@ -738,88 +839,93 @@ if (!globalThis.QHSE_Tile) {
   };
 }
 
-function HomeScreen(){
+function HomeScreen() {
   const { t } = useI18n();
+  const TileC = globalThis.QHSE_Tile;
 
-  // Fallback : si le composant global n’existe pas, on en crée un local
-  const TileC = globalThis.QHSE_Tile || function Tile({href, icon, img, title, sub, muted}) {
-    const base = "rounded-2xl p-4 text-center transition border";
-    const active = "hover:bg-gray-50";
-    const off = "border-dashed text-gray-300 pointer-events-none select-none";
-    return (
-      <a href={href||"#"} className={[base, muted?off:active].join(" ")}>
-        {img ? (
-          <img src={img} alt="" className={"w-10 h-10 mx-auto rounded " + (muted?"opacity-40":"")} />
-        ) : (
-          <div className={"text-3xl font-bold " + (muted?"opacity-40":"")}>{icon || "＋"}</div>
-        )}
-        {title && <div className="font-semibold mt-2">{title}</div>}
-        {sub && <div className="text-xs text-gray-500 mt-0.5">{sub}</div>}
-      </a>
-    );
-  };
-
-  const installUrl = (location.origin + location.pathname).replace(/#.*$/,'');
+  const installUrl = (location.origin + location.pathname).replace(/#.*$/, "");
 
   return (
     <main className="max-w-md mx-auto p-4">
-      <Section title={t('home_apps')}>
+      <Section title={t("home_apps")}>
         <div className="grid grid-cols-2 gap-4">
-          <TileC href="#lmra" icon="🦺" title={t('tile_lmra_title')} sub={t('tile_lmra_sub')} />
-          <TileC href="#firstaid" img="firstaid-icon.svg" title={t('tile_fa_title')} sub={t('tile_fa_sub')} />
-          <TileC href="#stop" icon="🚦" title={t('tile_stop_title')} sub={t('tile_stop_sub')} />
-          <TileC href="tbm.html" icon="🧰" title={t('tile_tbm_title')} sub={t('tile_tbm_sub')} />
+          <TileC href="#lmra" icon="🦺" title={t("tile_lmra_title")} sub={t("tile_lmra_sub")} />
+          <TileC
+            href="#firstaid"
+            img="firstaid-icon.svg"
+            title={t("tile_fa_title")}
+            sub={t("tile_fa_sub")}
+          />
+          <TileC href="#stop" icon="🚦" title={t("tile_stop_title")} sub={t("tile_stop_sub")} />
+          <TileC href="tbm.html" icon="🧰" title={t("tile_tbm_title")} sub={t("tile_tbm_sub")} />
         </div>
       </Section>
 
-      <Section title={t('home_install')}>
+      <Section title={t("home_install")}>
         <div className="flex flex-col items-center gap-3">
           <img
-            src={"https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=" + encodeURIComponent(installUrl)}
+            src={
+              "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=" +
+              encodeURIComponent(installUrl)
+            }
             alt="QR"
             className="w-44 h-44 rounded-lg border bg-white"
           />
-          <div className="text-xs text-gray-500">{t('home_scan')}</div>
+          <div className="text-xs text-gray-500">{t("home_scan")}</div>
         </div>
       </Section>
 
-      <Section title={t('install_howto_title')}>
+      <Section title={t("install_howto_title")}>
         <pre className="whitespace-pre-wrap text-xs bg-gray-50 rounded-xl p-3 border">
-          {t('install_howto_body')}
+          {t("install_howto_body")}
         </pre>
       </Section>
     </main>
   );
 }
 
-function LmraScreen(){
+// ========================= LMRA =========================
+function LmraScreen() {
   const { t } = useI18n();
 
-  // --- Storage keys dédiés LMRA
   const STATE_KEY = "qhse_lmra_state_v1";
-
-  // --- Préférences globales
-  const prefs = loadLS(PREFS_KEY, { responsable:"", team:[] });
+  const prefs = loadLS(PREFS_KEY, { responsable: "", team: [] });
 
   const initialState = () => ({
     version: "v3.2",
     datetime: nowLocalDateTime(),
     job: "",
-    site: "", task: "",
+    site: "",
+    task: "",
     responsable: prefs.responsable || "",
     team: Array.isArray(prefs.team) ? [...prefs.team] : [],
     teamInput: "",
-    conditions: { tacheClaires:false, coactivite:false, zonage:false, epi:false },
-    permits: { feu:false, electrique:false, confine:false, levage:false, autre:false, autreText:"", na:false },
+    conditions: { tacheClaires: false, coactivite: false, zonage: false, epi: false },
+    permits: { feu: false, electrique: false, confine: false, levage: false, autre: false, autreText: "", na: false },
     risks: {
-      energies: { electrique:false, mecanique:false, fluide:false, gravite:false, autre:false, autreText:"" },
-      environnement: { hauteur:false, meteo:false, bruit:false, poussiere:false, thermique:false, chimique:false },
-      operations: { trafic:false, levage:false, outillage:false, atex:false, confine:false, autres:false, autresText:"" },
+      energies: { electrique: false, mecanique: false, fluide: false, gravite: false, autre: false, autreText: "" },
+      environnement: { hauteur: false, meteo: false, bruit: false, poussiere: false, thermique: false, chimique: false },
+      operations: { trafic: false, levage: false, outillage: false, atex: false, confine: false, autres: false, autresText: "" },
     },
-    measures: { septRegles:false, ventilation:false, terre:false, balisage:false, surveillant:false, planLevage:false, ancrage:false, outilsOk:false, autre:false, autreText:"" },
-    top3: [ { risk:"", action:"", resp:"" }, { risk:"", action:"", resp:"" }, { risk:"", action:"", resp:"" } ],
+    measures: {
+      septRegles: false,
+      ventilation: false,
+      terre: false,
+      balisage: false,
+      surveillant: false,
+      planLevage: false,
+      ancrage: false,
+      outilsOk: false,
+      autre: false,
+      autreText: "",
+    },
+    top3: [
+      { risk: "", action: "", resp: "" },
+      { risk: "", action: "", resp: "" },
+      { risk: "", action: "", resp: "" },
+    ],
     decision: "GO",
-    noGo: { name:"", tel:"" },
+    noGo: { name: "", tel: "" },
     notes: "",
   });
 
@@ -827,267 +933,498 @@ function LmraScreen(){
   const [step, setStep] = React.useState(0);
   const totalSteps = 6;
   const [errors, setErrors] = React.useState({});
-  React.useEffect(()=>{ saveLS(STATE_KEY, data); }, [data]);
 
-  const setField = (k,v)=>setData({...data,[k]:v});
+  React.useEffect(() => {
+    saveLS(STATE_KEY, data);
+  }, [data]);
+
+  const setField = (k, v) => setData((prev) => ({ ...prev, [k]: v }));
+
   const resetAll = () => {
     setData({ ...initialState(), responsable: data.responsable, team: data.team });
     setStep(0);
   };
 
   const next = () => {
-    if(step === 0){
+    if (step === 0) {
       const name = data.teamInput.trim();
-      if(name){
-        if(data.team.includes(name)){
-          setData({...data, teamInput:""});
-        }else{
-          setData({...data, team:[...data.team, name], teamInput:""});
+      if (name) {
+        if (!data.team.includes(name)) {
+          setData((prev) => ({ ...prev, team: [...prev.team, name], teamInput: "" }));
+        } else {
+          setData((prev) => ({ ...prev, teamInput: "" }));
         }
       }
+
       const missing = { site: !data.site.trim(), responsable: !data.responsable.trim() };
       setErrors(missing);
-      if(missing.site || missing.responsable){
-        alert(t('required_fields'));
+      if (missing.site || missing.responsable) {
+        alert(t("required_fields"));
         return;
       }
     }
-    setStep(step+1);
+    setStep((s) => s + 1);
   };
 
   const envoyer = async () => {
     const payload = {
-      meta: { sentAt:new Date().toISOString(), page:location.href, userAgent:navigator.userAgent, formType:"lmra" },
-      data
+      meta: { sentAt: new Date().toISOString(), page: location.href, userAgent: navigator.userAgent, formType: "lmra" },
+      data,
     };
+
     const ok = await sendNow(payload);
-    if(ok){
-      alert(t('alert_sent'));
-      // Conserver Responsable & Équipe (prefs)
+    if (ok) {
+      alert(t("alert_sent"));
       saveLS(PREFS_KEY, { responsable: data.responsable, team: data.team });
-      // Réinitialiser en conservant Site, Responsable & Équipe
       setData({ ...initialState(), site: data.site, responsable: data.responsable, team: data.team });
       setStep(0);
       setErrors({});
-    }else{
+    } else {
       enqueueOutbox(payload);
-      alert(t('alert_offline_queued'));
+      alert(t("alert_offline_queued"));
     }
   };
 
   return (
     <main className="max-w-md mx-auto p-4">
-      <h1 className="mb-3 px-4 py-2 rounded-xl bg-[#104861] text-[#D9D9D9] text-center">{t('lmra_title')}</h1>
+      <h1 className="mb-3 px-4 py-2 rounded-xl bg-[#104861] text-[#D9D9D9] text-center">
+        {t("lmra_title")}
+      </h1>
+
       <div className="mb-3">
-        <button onClick={resetAll} className="px-3 py-2 rounded-xl border">{t('reset_all')}</button>
-        <div className="text-xs text-gray-500 mt-1">{t('reset_hint_team')}</div>
-      </div>
-      <div className="mb-4">
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div className="bg-black h-2 rounded-full" style={{width: `${((step+1)/totalSteps)*100}%`}}></div>
-        </div>
-        <div className="text-center text-xs mt-1">{step+1}/{totalSteps}</div>
+        <button onClick={resetAll} className="px-3 py-2 rounded-xl border">
+          {t("reset_all")}
+        </button>
+        <div className="text-xs text-gray-500 mt-1">{t("reset_hint_team")}</div>
       </div>
 
-      {step===0 && (
-        <Section title={t('general_info')}>
+      <div className="mb-4">
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="bg-black h-2 rounded-full" style={{ width: `${((step + 1) / totalSteps) * 100}%` }} />
+        </div>
+        <div className="text-center text-xs mt-1">
+          {step + 1}/{totalSteps}
+        </div>
+      </div>
+
+      {step === 0 && (
+        <Section title={t("general_info")}>
           <div className="flex flex-col gap-3">
-            <label className="text-sm">{t('datetime')}
-              <input type="datetime-local" value={data.datetime} onChange={(e)=>setField("datetime", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+            <label className="text-sm">
+              {t("datetime")}
+              <input
+                type="datetime-local"
+                value={data.datetime}
+                onChange={(e) => setField("datetime", e.target.value)}
+                className="mt-1 w-full px-3 py-2 rounded-xl border"
+              />
             </label>
-            <label className="text-sm">{t('job')}
-              <select value={data.job} onChange={(e)=>setField("job", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border">
-                <option value="" disabled>{t('job_ph')}</option>
+
+            <label className="text-sm">
+              {t("job")}
+              <select
+                value={data.job}
+                onChange={(e) => setField("job", e.target.value)}
+                className="mt-1 w-full px-3 py-2 rounded-xl border"
+              >
+                <option value="" disabled>
+                  {t("job_ph")}
+                </option>
                 <option value="Elec">Elec</option>
                 <option value="HVAC-Ref">HVAC-Ref</option>
               </select>
             </label>
-            <label className="text-sm">{t('site')}
+
+            <label className="text-sm">
+              {t("site")}
               <input
                 value={data.site}
-                onChange={(e)=>{ setField("site", e.target.value); if(errors.site) setErrors({...errors, site:false}); }}
-                placeholder={t('site_ph')}
-                className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.site? 'border-red-500':''}`}
+                onChange={(e) => {
+                  setField("site", e.target.value);
+                  if (errors.site) setErrors((prev) => ({ ...prev, site: false }));
+                }}
+                placeholder={t("site_ph")}
+                className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.site ? "border-red-500" : ""}`}
               />
-              {errors.site && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
+              {errors.site && <div className="text-red-600 text-xs mt-1">{t("required_field")}</div>}
             </label>
-            <label className="text-sm">{t('task')}
-              <input value={data.task} onChange={(e)=>setField("task", e.target.value)} placeholder={t('task_ph')} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+
+            <label className="text-sm">
+              {t("task")}
+              <input
+                value={data.task}
+                onChange={(e) => setField("task", e.target.value)}
+                placeholder={t("task_ph")}
+                className="mt-1 w-full px-3 py-2 rounded-xl border"
+              />
             </label>
-            <label className="text-sm">{t('manager')}
+
+            <label className="text-sm">
+              {t("manager")}
               <input
                 value={data.responsable}
-                onChange={(e)=>{ setField("responsable", e.target.value); if(errors.responsable) setErrors({...errors, responsable:false}); }}
-                placeholder={t('manager_ph')}
-                className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable? 'border-red-500':''}`}
+                onChange={(e) => {
+                  setField("responsable", e.target.value);
+                  if (errors.responsable) setErrors((prev) => ({ ...prev, responsable: false }));
+                }}
+                placeholder={t("manager_ph")}
+                className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable ? "border-red-500" : ""}`}
               />
-              {errors.responsable && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
+              {errors.responsable && <div className="text-red-600 text-xs mt-1">{t("required_field")}</div>}
             </label>
 
             {/* Équipe */}
             <div>
-              <label className="text-sm block mb-2">{t('team')}</label>
+              <label className="text-sm block mb-2">{t("team")}</label>
               <div className="flex gap-2 mb-2">
-                <input value={data.teamInput} onChange={(e)=>setData({...data, teamInput:e.target.value})} placeholder={t('team_member_ph')} className="flex-1 px-3 py-2 rounded-xl border" />
+                <input
+                  value={data.teamInput}
+                  onChange={(e) => setData((prev) => ({ ...prev, teamInput: e.target.value }))}
+                  placeholder={t("team_member_ph")}
+                  className="flex-1 px-3 py-2 rounded-xl border"
+                />
                 <button
-                  onClick={()=>{
-                    const name=data.teamInput.trim();
-                    if(!name) return;
-                    if(data.team.includes(name)) return setData({...data, teamInput:""});
-                    setData({...data, team:[...data.team, name], teamInput:""});
+                  onClick={() => {
+                    const name = data.teamInput.trim();
+                    if (!name) return;
+                    if (data.team.includes(name)) return setData((prev) => ({ ...prev, teamInput: "" }));
+                    setData((prev) => ({ ...prev, team: [...prev.team, name], teamInput: "" }));
                   }}
                   className="px-3 py-2 rounded-xl border"
                 >
-                  {data.team.length === 0 ? t('team_validate') : t('team_add')}
+                  {data.team.length === 0 ? t("team_validate") : t("team_add")}
                 </button>
               </div>
+
               <div className="flex flex-wrap gap-2">
-                {data.team.map((n)=>(
+                {data.team.map((n) => (
                   <span key={n} className="inline-flex items-center gap-2 text-sm px-3 py-1 rounded-full bg-gray-100">
                     {n}
-                    <button onClick={()=>setData({...data, team: data.team.filter(x=>x!==n)})} className="w-5 h-5 inline-flex items-center justify-center rounded-full border border-gray-300">×</button>
+                    <button
+                      onClick={() => setData((prev) => ({ ...prev, team: prev.team.filter((x) => x !== n) }))}
+                      className="w-5 h-5 inline-flex items-center justify-center rounded-full border border-gray-300"
+                    >
+                      ×
+                    </button>
                   </span>
                 ))}
-                {!data.team.length && <span className="text-sm text-gray-400">{t('team_empty')}</span>}
+                {!data.team.length && <span className="text-sm text-gray-400">{t("team_empty")}</span>}
               </div>
             </div>
           </div>
         </Section>
       )}
 
-      {step===1 && (
-        <Section title={t('cond_title')}>
+      {step === 1 && (
+        <Section title={t("cond_title")}>
           <div className="flex flex-col gap-3">
-            <Toggle checked={data.conditions.tacheClaires} onChange={(v)=>setData({...data, conditions:{...data.conditions, tacheClaires:v}})} label={t('cond_task_clear')} />
-            <Toggle checked={data.conditions.coactivite}  onChange={(v)=>setData({...data, conditions:{...data.conditions, coactivite:v}})}   label={t('cond_coactivity')} />
-            <Toggle checked={data.conditions.zonage}      onChange={(v)=>setData({...data, conditions:{...data.conditions, zonage:v}})}       label={t('cond_zone')} />
-            <Toggle checked={data.conditions.epi}         onChange={(v)=>setData({...data, conditions:{...data.conditions, epi:v}})}          label={t('cond_epi')} />
+            <Toggle
+              checked={data.conditions.tacheClaires}
+              onChange={(v) => setData((prev) => ({ ...prev, conditions: { ...prev.conditions, tacheClaires: v } }))}
+              label={t("cond_task_clear")}
+            />
+            <Toggle
+              checked={data.conditions.coactivite}
+              onChange={(v) => setData((prev) => ({ ...prev, conditions: { ...prev.conditions, coactivite: v } }))}
+              label={t("cond_coactivity")}
+            />
+            <Toggle
+              checked={data.conditions.zonage}
+              onChange={(v) => setData((prev) => ({ ...prev, conditions: { ...prev.conditions, zonage: v } }))}
+              label={t("cond_zone")}
+            />
+            <Toggle
+              checked={data.conditions.epi}
+              onChange={(v) => setData((prev) => ({ ...prev, conditions: { ...prev.conditions, epi: v } }))}
+              label={t("cond_epi")}
+            />
 
             <hr className="my-3 border-gray-200" />
 
             <div>
-              <div className="text-sm font-medium mb-2">{t('permits_title')}</div>
+              <div className="text-sm font-medium mb-2">{t("permits_title")}</div>
               <div className="grid grid-cols-2 gap-2">
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.permits.feu} onChange={(e)=>setData({...data, permits:{...data.permits, feu:e.target.checked}})} />{t('permit_fire')}</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.permits.electrique} onChange={(e)=>setData({...data, permits:{...data.permits, electrique:e.target.checked}})} />{t('permit_elec')}</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.permits.confine} onChange={(e)=>setData({...data, permits:{...data.permits, confine:e.target.checked}})} />{t('permit_confined')}</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.permits.levage} onChange={(e)=>setData({...data, permits:{...data.permits, levage:e.target.checked}})} />{t('permit_lift')}</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.permits.autre} onChange={(e)=>setData({...data, permits:{...data.permits, autre:e.target.checked}})} />{t('permit_other')}</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.permits.na} onChange={(e)=>setData({...data, permits:{...data.permits, na:e.target.checked}})} />{t('permit_na')}</label>
+                {[
+                  ["feu", "permit_fire"],
+                  ["electrique", "permit_elec"],
+                  ["confine", "permit_confined"],
+                  ["levage", "permit_lift"],
+                  ["autre", "permit_other"],
+                  ["na", "permit_na"],
+                ].map(([k, label]) => (
+                  <label key={k} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 accent-black"
+                      checked={!!data.permits[k]}
+                      onChange={(e) =>
+                        setData((prev) => ({ ...prev, permits: { ...prev.permits, [k]: e.target.checked } }))
+                      }
+                    />
+                    {t(label)}
+                  </label>
+                ))}
               </div>
+
               {data.permits.autre && (
-                <input value={data.permits.autreText} onChange={(e)=>setData({...data, permits:{...data.permits, autreText:e.target.value}})} placeholder={t('permit_other_ph')} className="mt-2 w-full px-3 py-2 rounded-xl border" />
+                <input
+                  value={data.permits.autreText}
+                  onChange={(e) => setData((prev) => ({ ...prev, permits: { ...prev.permits, autreText: e.target.value } }))}
+                  placeholder={t("permit_other_ph")}
+                  className="mt-2 w-full px-3 py-2 rounded-xl border"
+                />
               )}
             </div>
           </div>
         </Section>
       )}
 
-      {step===2 && (
-        <Section title={t('risks_title')}>
+      {step === 2 && (
+        <Section title={t("risks_title")}>
           <div className="flex flex-col gap-3">
             <div>
-              <div className="text-sm font-medium mb-2">{t('energies_title')}</div>
-              <div className="grid grid-cols-2 gap-2">
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.risks.energies.electrique} onChange={(e)=>setData({...data, risks:{...data.risks, energies:{...data.risks.energies, electrique:e.target.checked}}})} />{t('energy_electric')}</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.risks.energies.mecanique} onChange={(e)=>setData({...data, risks:{...data.risks, energies:{...data.risks.energies, mecanique:e.target.checked}}})} />{t('energy_mechanical')}</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.risks.energies.fluide} onChange={(e)=>setData({...data, risks:{...data.risks, energies:{...data.risks.energies, fluide:e.target.checked}}})} />{t('energy_fluid')}</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.risks.energies.gravite} onChange={(e)=>setData({...data, risks:{...data.risks, energies:{...data.risks.energies, gravite:e.target.checked}}})} />{t('energy_gravity')}</label>
-                <label className="flex items-center gap-2 text-sm col-span-2"><input type="checkbox" className="w-4 h-4 accent-black" checked={data.risks.energies.autre} onChange={(e)=>setData({...data, risks:{...data.risks, energies:{...data.risks.energies, autre:e.target.checked}}})} />{t('other')}</label>
-              </div>
-              {data.risks.energies.autre && (
-                <input value={data.risks.energies.autreText} onChange={(e)=>setData({...data, risks:{...data.risks, energies:{...data.risks.energies, autreText:e.target.value}}})} placeholder={t('other_specify')} className="mt-2 w-full px-3 py-2 rounded-xl border" />
-              )}
-            </div>
-
-            <hr className="my-3 border-gray-200" />
-
-            <div>
-              <div className="text-sm font-medium mb-2">{t('env_title')}</div>
+              <div className="text-sm font-medium mb-2">{t("energies_title")}</div>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  ['hauteur','env_height'],['meteo','env_weather'],['bruit','env_noise'],
-                  ['poussiere','env_dust'],['thermique','env_thermal'],['chimique','env_chemical']
-                ].map(([k,label])=>(
+                  ["electrique", "energy_electric"],
+                  ["mecanique", "energy_mechanical"],
+                  ["fluide", "energy_fluid"],
+                  ["gravite", "energy_gravity"],
+                ].map(([k, label]) => (
                   <label key={k} className="flex items-center gap-2 text-sm">
-                    <input type="checkbox" className="w-4 h-4 accent-black"
-                      checked={data.risks.environnement[k]}
-                      onChange={(e)=>setData({...data, risks:{...data.risks, environnement:{...data.risks.environnement, [k]:e.target.checked}}})} />
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 accent-black"
+                      checked={data.risks.energies[k]}
+                      onChange={(e) =>
+                        setData((prev) => ({
+                          ...prev,
+                          risks: { ...prev.risks, energies: { ...prev.risks.energies, [k]: e.target.checked } },
+                        }))
+                      }
+                    />
                     {t(label)}
                   </label>
                 ))}
-              </div>
-            </div>
 
-            <hr className="my-3 border-gray-200" />
-
-            <div>
-              <div className="text-sm font-medium mb-2">{t('ops_title')}</div>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  ['trafic','ops_traffic'],['levage','ops_lift'],['outillage','ops_tools'],
-                  ['atex','ops_atex'],['confine','ops_confined']
-                ].map(([k,label])=>(
-                  <label key={k} className="flex items-center gap-2 text-sm">
-                    <input type="checkbox" className="w-4 h-4 accent-black"
-                      checked={data.risks.operations[k]}
-                      onChange={(e)=>setData({...data, risks:{...data.risks, operations:{...data.risks.operations, [k]:e.target.checked}}})} />
-                    {t(label)}
-                  </label>
-                ))}
                 <label className="flex items-center gap-2 text-sm col-span-2">
-                  <input type="checkbox" className="w-4 h-4 accent-black"
-                    checked={data.risks.operations.autres}
-                    onChange={(e)=>setData({...data, risks:{...data.risks, operations:{...data.risks.operations, autres:e.target.checked}}})} />
-                  {t('ops_others')}
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 accent-black"
+                    checked={data.risks.energies.autre}
+                    onChange={(e) =>
+                      setData((prev) => ({
+                        ...prev,
+                        risks: { ...prev.risks, energies: { ...prev.risks.energies, autre: e.target.checked } },
+                      }))
+                    }
+                  />
+                  {t("other")}
                 </label>
               </div>
+
+              {data.risks.energies.autre && (
+                <input
+                  value={data.risks.energies.autreText}
+                  onChange={(e) =>
+                    setData((prev) => ({
+                      ...prev,
+                      risks: { ...prev.risks, energies: { ...prev.risks.energies, autreText: e.target.value } },
+                    }))
+                  }
+                  placeholder={t("other_specify")}
+                  className="mt-2 w-full px-3 py-2 rounded-xl border"
+                />
+              )}
+            </div>
+
+            <hr className="my-3 border-gray-200" />
+
+            <div>
+              <div className="text-sm font-medium mb-2">{t("env_title")}</div>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  ["hauteur", "env_height"],
+                  ["meteo", "env_weather"],
+                  ["bruit", "env_noise"],
+                  ["poussiere", "env_dust"],
+                  ["thermique", "env_thermal"],
+                  ["chimique", "env_chemical"],
+                ].map(([k, label]) => (
+                  <label key={k} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 accent-black"
+                      checked={data.risks.environnement[k]}
+                      onChange={(e) =>
+                        setData((prev) => ({
+                          ...prev,
+                          risks: {
+                            ...prev.risks,
+                            environnement: { ...prev.risks.environnement, [k]: e.target.checked },
+                          },
+                        }))
+                      }
+                    />
+                    {t(label)}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <hr className="my-3 border-gray-200" />
+
+            <div>
+              <div className="text-sm font-medium mb-2">{t("ops_title")}</div>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  ["trafic", "ops_traffic"],
+                  ["levage", "ops_lift"],
+                  ["outillage", "ops_tools"],
+                  ["atex", "ops_atex"],
+                  ["confine", "ops_confined"],
+                ].map(([k, label]) => (
+                  <label key={k} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 accent-black"
+                      checked={data.risks.operations[k]}
+                      onChange={(e) =>
+                        setData((prev) => ({
+                          ...prev,
+                          risks: { ...prev.risks, operations: { ...prev.risks.operations, [k]: e.target.checked } },
+                        }))
+                      }
+                    />
+                    {t(label)}
+                  </label>
+                ))}
+
+                <label className="flex items-center gap-2 text-sm col-span-2">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 accent-black"
+                    checked={data.risks.operations.autres}
+                    onChange={(e) =>
+                      setData((prev) => ({
+                        ...prev,
+                        risks: { ...prev.risks, operations: { ...prev.risks.operations, autres: e.target.checked } },
+                      }))
+                    }
+                  />
+                  {t("ops_others")}
+                </label>
+              </div>
+
               {data.risks.operations.autres && (
-                <input value={data.risks.operations.autresText} onChange={(e)=>setData({...data, risks:{...data.risks, operations:{...data.risks.operations, autresText:e.target.value}}})} placeholder={t('ops_others_ph')} className="mt-2 w-full px-3 py-2 rounded-xl border" />
+                <input
+                  value={data.risks.operations.autresText}
+                  onChange={(e) =>
+                    setData((prev) => ({
+                      ...prev,
+                      risks: {
+                        ...prev.risks,
+                        operations: { ...prev.risks.operations, autresText: e.target.value },
+                      },
+                    }))
+                  }
+                  placeholder={t("ops_others_ph")}
+                  className="mt-2 w-full px-3 py-2 rounded-xl border"
+                />
               )}
             </div>
           </div>
         </Section>
       )}
 
-      {step===3 && (
-        <Section title={t('measures_title')}>
+      {step === 3 && (
+        <Section title={t("measures_title")}>
           <div className="grid grid-cols-2 gap-2">
             {[
-              ['septRegles','measures_seven'],['ventilation','measures_ventilation'],
-              ['terre','measures_earth'],['balisage','measures_balisage'],
-              ['surveillant','measures_watch'],['planLevage','measures_liftplan'],
-              ['ancrage','measures_anchor'],['outilsOk','measures_toolsok']
-            ].map(([k,label])=>(
+              ["septRegles", "measures_seven"],
+              ["ventilation", "measures_ventilation"],
+              ["terre", "measures_earth"],
+              ["balisage", "measures_balisage"],
+              ["surveillant", "measures_watch"],
+              ["planLevage", "measures_liftplan"],
+              ["ancrage", "measures_anchor"],
+              ["outilsOk", "measures_toolsok"],
+            ].map(([k, label]) => (
               <label key={k} className="flex items-center gap-2 text-sm">
-                <input type="checkbox" className="w-4 h-4 accent-black"
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 accent-black"
                   checked={data.measures[k]}
-                  onChange={(e)=>setData({...data, measures:{...data.measures, [k]:e.target.checked}})} />
+                  onChange={(e) =>
+                    setData((prev) => ({ ...prev, measures: { ...prev.measures, [k]: e.target.checked } }))
+                  }
+                />
                 {t(label)}
               </label>
             ))}
+
             <label className="flex items-center gap-2 text-sm col-span-2">
-              <input type="checkbox" className="w-4 h-4 accent-black"
+              <input
+                type="checkbox"
+                className="w-4 h-4 accent-black"
                 checked={data.measures.autre}
-                onChange={(e)=>setData({...data, measures:{...data.measures, autre:e.target.checked}})} />
-              {t('other')}
+                onChange={(e) => setData((prev) => ({ ...prev, measures: { ...prev.measures, autre: e.target.checked } }))}
+              />
+              {t("other")}
             </label>
+
             {data.measures.autre && (
-              <input value={data.measures.autreText} onChange={(e)=>setData({...data, measures:{...data.measures, autreText:e.target.value}})} placeholder={t('other_specify')} className="mt-2 w-full px-3 py-2 rounded-xl border col-span-2" />
+              <input
+                value={data.measures.autreText}
+                onChange={(e) => setData((prev) => ({ ...prev, measures: { ...prev.measures, autreText: e.target.value } }))}
+                placeholder={t("other_specify")}
+                className="mt-2 w-full px-3 py-2 rounded-xl border col-span-2"
+              />
             )}
           </div>
         </Section>
       )}
 
-      {step===4 && (
-        <Section title={t('top3_title')}>
+      {step === 4 && (
+        <Section title={t("top3_title")}>
           <div className="flex flex-col gap-2">
-            {data.top3.map((it,i)=>(
+            {data.top3.map((it, i) => (
               <div key={i} className="grid grid-cols-1 gap-2">
-                <div className="text-sm font-medium">#{i+1}</div>
-                <input value={it.risk} onChange={(e)=>{ const top3=[...data.top3]; top3[i]={...top3[i], risk:e.target.value}; setField("top3", top3); }} placeholder={t('risk_ph')} className="px-3 py-2 rounded-xl border" />
-                <input value={it.action} onChange={(e)=>{ const top3=[...data.top3]; top3[i]={...top3[i], action:e.target.value}; setField("top3", top3); }} placeholder={t('action_ph')} className="px-3 py-2 rounded-xl border" />
-                <input value={it.resp} onChange={(e)=>{ const top3=[...data.top3]; top3[i]={...top3[i], resp:e.target.value}; setField("top3", top3); }} placeholder={t('resp_ph')} className="px-3 py-2 rounded-xl border" />
+                <div className="text-sm font-medium">#{i + 1}</div>
+
+                <input
+                  value={it.risk}
+                  onChange={(e) => {
+                    const top3 = [...data.top3];
+                    top3[i] = { ...top3[i], risk: e.target.value };
+                    setField("top3", top3);
+                  }}
+                  placeholder={t("risk_ph")}
+                  className="px-3 py-2 rounded-xl border"
+                />
+
+                <input
+                  value={it.action}
+                  onChange={(e) => {
+                    const top3 = [...data.top3];
+                    top3[i] = { ...top3[i], action: e.target.value };
+                    setField("top3", top3);
+                  }}
+                  placeholder={t("action_ph")}
+                  className="px-3 py-2 rounded-xl border"
+                />
+
+                <input
+                  value={it.resp}
+                  onChange={(e) => {
+                    const top3 = [...data.top3];
+                    top3[i] = { ...top3[i], resp: e.target.value };
+                    setField("top3", top3);
+                  }}
+                  placeholder={t("resp_ph")}
+                  className="px-3 py-2 rounded-xl border"
+                />
+
                 <hr className="my-2 border-gray-200" />
               </div>
             ))}
@@ -1095,235 +1432,422 @@ function LmraScreen(){
         </Section>
       )}
 
-      {step===5 && (
-        <Section title={t('decision_title')}>
+      {step === 5 && (
+        <Section title={t("decision_title")}>
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-3">
-              <button onClick={()=>setField("decision","GO")} className={"px-4 py-2 rounded-xl border "+(data.decision==="GO"?"bg-green-50 border-green-300":"")}>{t('go')}</button>
-              <button onClick={()=>setField("decision","NO-GO")} className={"px-4 py-2 rounded-xl border "+(data.decision==="NO-GO"?"bg-red-50 border-red-300":"")}>{t('no_go')}</button>
+              <button
+                onClick={() => setField("decision", "GO")}
+                className={"px-4 py-2 rounded-xl border " + (data.decision === "GO" ? "bg-green-50 border-green-300" : "")}
+              >
+                {t("go")}
+              </button>
+              <button
+                onClick={() => setField("decision", "NO-GO")}
+                className={"px-4 py-2 rounded-xl border " + (data.decision === "NO-GO" ? "bg-red-50 border-red-300" : "")}
+              >
+                {t("no_go")}
+              </button>
             </div>
-            {data.decision==="NO-GO" && (
+
+            {data.decision === "NO-GO" && (
               <div className="grid grid-cols-1 gap-2">
-                <input value={data.noGo.name} onChange={(e)=>setField("noGo",{...data.noGo, name:e.target.value})} placeholder={t('nogo_name_ph')} className="px-3 py-2 rounded-xl border" />
-                <input value={data.noGo.tel}  onChange={(e)=>setField("noGo",{...data.noGo, tel:e.target.value})}  placeholder={t('nogo_tel_ph')}  className="px-3 py-2 rounded-xl border" />
+                <input
+                  value={data.noGo.name}
+                  onChange={(e) => setField("noGo", { ...data.noGo, name: e.target.value })}
+                  placeholder={t("nogo_name_ph")}
+                  className="px-3 py-2 rounded-xl border"
+                />
+                <input
+                  value={data.noGo.tel}
+                  onChange={(e) => setField("noGo", { ...data.noGo, tel: e.target.value })}
+                  placeholder={t("nogo_tel_ph")}
+                  className="px-3 py-2 rounded-xl border"
+                />
               </div>
             )}
-            <label className="text-sm">{t('manager')}
-              <input value={data.responsable} onChange={(e)=>setField("responsable", e.target.value)} placeholder={t('manager_ph')} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+
+            <label className="text-sm">
+              {t("manager")}
+              <input
+                value={data.responsable}
+                onChange={(e) => setField("responsable", e.target.value)}
+                placeholder={t("manager_ph")}
+                className="mt-1 w-full px-3 py-2 rounded-xl border"
+              />
             </label>
-            <label className="text-sm">{t('notes')}
-              <textarea value={data.notes} onChange={(e)=>setField("notes", e.target.value)} rows={2} placeholder={t('notes_ph')} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+
+            <label className="text-sm">
+              {t("notes")}
+              <textarea
+                value={data.notes}
+                onChange={(e) => setField("notes", e.target.value)}
+                rows={2}
+                placeholder={t("notes_ph")}
+                className="mt-1 w-full px-3 py-2 rounded-xl border"
+              />
             </label>
           </div>
         </Section>
       )}
 
-      <div className={"flex mt-4 " + (step>0 ? "justify-between" : "justify-end")}>
-        {step>0 && (
-          <button onClick={()=>setStep(step-1)} className="px-3 py-2 rounded-xl border border-gray-300 bg-gray-200 text-gray-800 hover:bg-gray-300">{t('prev')}</button>
+      <div className={"flex mt-4 " + (step > 0 ? "justify-between" : "justify-end")}>
+        {step > 0 && (
+          <button
+            onClick={() => setStep((s) => s - 1)}
+            className="px-3 py-2 rounded-xl border border-gray-300 bg-gray-200 text-gray-800 hover:bg-gray-300"
+          >
+            {t("prev")}
+          </button>
         )}
-        {step<totalSteps-1 ? (
-          <button onClick={next} className="px-3 py-2 rounded-xl border border-blue-600 bg-blue-600 text-white hover:bg-blue-700">{t('next')}</button>
+
+        {step < totalSteps - 1 ? (
+          <button
+            onClick={next}
+            className="px-3 py-2 rounded-xl border border-blue-600 bg-blue-600 text-white hover:bg-blue-700"
+          >
+            {t("next")}
+          </button>
         ) : (
-          <button onClick={envoyer} className="px-4 py-3 rounded-xl border bg-black text-white">{t('send')}</button>
+          <button onClick={envoyer} className="px-4 py-3 rounded-xl border bg-black text-white">
+            {t("send")}
+          </button>
         )}
       </div>
     </main>
   );
 }
 
-/* ======================= PREMIERS SOINS ======================= */
-function FirstAidScreen(){
+// ========================= PREMIERS SOINS =========================
+function FirstAidScreen() {
   const { t } = useI18n();
 
   const STATE_KEY = "qhse_firstaid_state_v1";
-  const prefs = loadLS(PREFS_KEY, { responsable:"", team:[] });
+  const prefs = loadLS(PREFS_KEY, { responsable: "", team: [] });
 
   const initialState = () => ({
     datetime: nowLocalDateTime(),
     chantier: "",
     responsable: prefs.responsable || "",
     personne: "",
-    actions: { coupant:false, disquant:false, soudant:false, percant:false, tirant:false, soulevant:false, autre:false, autreText:"" },
-    blessures: { coupure:false, egratignure:false, contusion:false, projection:false, brulure:false, autre:false, autreText:"" },
-    localisation: { main:false, bras:false, torse:false, jambe:false, pied:false, tete:false, oeil:false, autre:false, autreText:"" },
+    actions: {
+      coupant: false,
+      disquant: false,
+      soudant: false,
+      percant: false,
+      tirant: false,
+      soulevant: false,
+      autre: false,
+      autreText: "",
+    },
+    blessures: {
+      coupure: false,
+      egratignure: false,
+      contusion: false,
+      projection: false,
+      brulure: false,
+      autre: false,
+      autreText: "",
+    },
+    localisation: {
+      main: false,
+      bras: false,
+      torse: false,
+      jambe: false,
+      pied: false,
+      tete: false,
+      oeil: false,
+      autre: false,
+      autreText: "",
+    },
     recharge: false,
     trousseNumero: "",
-    remarques: ""
+    remarques: "",
   });
 
   const [data, setData] = React.useState(loadLS(STATE_KEY, initialState()));
-  React.useEffect(()=>{ saveLS(STATE_KEY, data); }, [data]);
-  const [errors, setErrors] = React.useState({});
+  React.useEffect(() => {
+    saveLS(STATE_KEY, data);
+  }, [data]);
 
-  const setField = (k,v)=>setData({...data,[k]:v});
+  const [errors, setErrors] = React.useState({});
+  const setField = (k, v) => setData((prev) => ({ ...prev, [k]: v }));
   const resetAll = () => setData(initialState());
 
   const envoyer = async () => {
     const missing = { chantier: !data.chantier.trim(), responsable: !data.responsable.trim() };
     setErrors(missing);
-    if(missing.chantier || missing.responsable){
-      alert(t('required_fields'));
+    if (missing.chantier || missing.responsable) {
+      alert(t("required_fields"));
       return;
     }
+
     const payload = {
-      meta: { sentAt:new Date().toISOString(), page:location.href, userAgent:navigator.userAgent, formType:"firstaid" },
-      data
+      meta: { sentAt: new Date().toISOString(), page: location.href, userAgent: navigator.userAgent, formType: "firstaid" },
+      data,
     };
+
     const ok = await sendNow(payload);
-    if(ok){
-      alert(t('alert_sent'));
-      saveLS(PREFS_KEY, { ...loadLS(PREFS_KEY, {responsable:"", team:[]}), responsable:data.responsable });
+    if (ok) {
+      alert(t("alert_sent"));
+      saveLS(PREFS_KEY, { ...loadLS(PREFS_KEY, { responsable: "", team: [] }), responsable: data.responsable });
       setData(initialState());
       setErrors({});
-    }else{
+    } else {
       enqueueOutbox(payload);
-      alert(t('alert_offline_queued'));
+      alert(t("alert_offline_queued"));
     }
   };
 
   return (
     <main className="max-w-md mx-auto p-4">
-      <h1 className="mb-3 px-4 py-2 rounded-xl bg-[#104861] text-[#D9D9D9] text-center">{t('fa_title')}</h1>
+      <h1 className="mb-3 px-4 py-2 rounded-xl bg-[#104861] text-[#D9D9D9] text-center">
+        {t("fa_title")}
+      </h1>
+
       <div className="mb-3">
-        <button onClick={resetAll} className="px-3 py-2 rounded-xl border">{t('reset_all')}</button>
+        <button onClick={resetAll} className="px-3 py-2 rounded-xl border">
+          {t("reset_all")}
+        </button>
       </div>
 
-      <Section title={t('fa_info')}>
+      <Section title={t("fa_info")}>
         <div className="flex flex-col gap-3">
-          <label className="text-sm">{t('datetime')}
-            <input type="datetime-local" value={data.datetime} onChange={(e)=>setField("datetime", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+          <label className="text-sm">
+            {t("datetime")}
+            <input
+              type="datetime-local"
+              value={data.datetime}
+              onChange={(e) => setField("datetime", e.target.value)}
+              className="mt-1 w-full px-3 py-2 rounded-xl border"
+            />
           </label>
-          <label className="text-sm">{t('site')}
-            <input name="chantier" value={data.chantier} onChange={(e)=>{ const v=e.target.value; setData({...data, chantier:v, responsable:""}); if(errors.chantier) setErrors({...errors, chantier:false}); }} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.chantier? 'border-red-500':''}`} />
-            {errors.chantier && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
+
+          <label className="text-sm">
+            {t("site")}
+            <input
+              name="chantier"
+              value={data.chantier}
+              onChange={(e) => {
+                const v = e.target.value;
+                setData((prev) => ({ ...prev, chantier: v, responsable: "" }));
+                if (errors.chantier) setErrors((prev) => ({ ...prev, chantier: false }));
+              }}
+              className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.chantier ? "border-red-500" : ""}`}
+            />
+            {errors.chantier && <div className="text-red-600 text-xs mt-1">{t("required_field")}</div>}
           </label>
-          <label className="text-sm">{t('manager')}
-            <input list="responsables-fa" name="responsable" value={data.responsable} onChange={(e)=>{ setField("responsable", e.target.value); if(errors.responsable) setErrors({...errors, responsable:false}); }} placeholder={t('manager_ph')} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable? 'border-red-500':''}`} required />
+
+          <label className="text-sm">
+            {t("manager")}
+            <input
+              list="responsables-fa"
+              name="responsable"
+              value={data.responsable}
+              onChange={(e) => {
+                setField("responsable", e.target.value);
+                if (errors.responsable) setErrors((prev) => ({ ...prev, responsable: false }));
+              }}
+              placeholder={t("manager_ph")}
+              className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable ? "border-red-500" : ""}`}
+              required
+            />
             <datalist id="responsables-fa">
-              {(RESPONSABLES_PAR_CHANTIER[data.site || data.chantier] || []).map(n => <option key={n} value={n} />)}
+              {(RESPONSABLES_PAR_CHANTIER[data.chantier] || []).map((n) => (
+                <option key={n} value={n} />
+              ))}
             </datalist>
-            {errors.responsable && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
+            {errors.responsable && <div className="text-red-600 text-xs mt-1">{t("required_field")}</div>}
           </label>
-          <label className="text-sm">{t('person')}
-            <input value={data.personne} onChange={(e)=>setField("personne", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+
+          <label className="text-sm">
+            {t("person")}
+            <input
+              value={data.personne}
+              onChange={(e) => setField("personne", e.target.value)}
+              className="mt-1 w-full px-3 py-2 rounded-xl border"
+            />
           </label>
         </div>
       </Section>
 
-      <Section title={t('action_title')} tone="amber">
+      <Section title={t("action_title")} tone="amber">
         <div className="grid grid-cols-2 gap-2">
           {[
-            ['coupant','a_cut'],['disquant','a_grind'],['soudant','a_weld'],
-            ['percant','a_drill'],['tirant','a_pushpull'],['soulevant','a_lift']
-          ].map(([k,label])=>(
+            ["coupant", "a_cut"],
+            ["disquant", "a_grind"],
+            ["soudant", "a_weld"],
+            ["percant", "a_drill"],
+            ["tirant", "a_pushpull"],
+            ["soulevant", "a_lift"],
+          ].map(([k, label]) => (
             <label key={k} className="flex items-center gap-2 text-sm">
-              <input type="checkbox" className="w-4 h-4 accent-black"
+              <input
+                type="checkbox"
+                className="w-4 h-4 accent-black"
                 checked={data.actions[k]}
-                onChange={(e)=>setField("actions", {...data.actions, [k]:e.target.checked})} />
+                onChange={(e) => setField("actions", { ...data.actions, [k]: e.target.checked })}
+              />
               {t(label)}
             </label>
           ))}
+
           <label className="flex items-center gap-2 text-sm col-span-2">
-            <input type="checkbox" className="w-4 h-4 accent-black"
+            <input
+              type="checkbox"
+              className="w-4 h-4 accent-black"
               checked={data.actions.autre}
-              onChange={(e)=>setField("actions", {...data.actions, autre:e.target.checked})} />
-            {t('other')}
+              onChange={(e) => setField("actions", { ...data.actions, autre: e.target.checked })}
+            />
+            {t("other")}
           </label>
+
           {data.actions.autre && (
-            <input value={data.actions.autreText} onChange={(e)=>setField("actions", {...data.actions, autreText:e.target.value})} placeholder={t('other_specify')} className="mt-2 w-full px-3 py-2 rounded-xl border col-span-2" />
+            <input
+              value={data.actions.autreText}
+              onChange={(e) => setField("actions", { ...data.actions, autreText: e.target.value })}
+              placeholder={t("other_specify")}
+              className="mt-2 w-full px-3 py-2 rounded-xl border col-span-2"
+            />
           )}
         </div>
       </Section>
 
-      <Section title={t('injury_title')} tone="red">
+      <Section title={t("injury_title")} tone="red">
         <div className="grid grid-cols-2 gap-2">
           {[
-            ['coupure','i_cut'],['egratignure','i_scratch'],['contusion','i_bruise'],
-            ['projection','i_proj'],['brulure','i_burn']
-          ].map(([k,label])=>(
+            ["coupure", "i_cut"],
+            ["egratignure", "i_scratch"],
+            ["contusion", "i_bruise"],
+            ["projection", "i_proj"],
+            ["brulure", "i_burn"],
+          ].map(([k, label]) => (
             <label key={k} className="flex items-center gap-2 text-sm">
-              <input type="checkbox" className="w-4 h-4 accent-black"
+              <input
+                type="checkbox"
+                className="w-4 h-4 accent-black"
                 checked={data.blessures[k]}
-                onChange={(e)=>setField("blessures", {...data.blessures, [k]:e.target.checked})} />
+                onChange={(e) => setField("blessures", { ...data.blessures, [k]: e.target.checked })}
+              />
               {t(label)}
             </label>
           ))}
+
           <label className="flex items-center gap-2 text-sm col-span-2">
-            <input type="checkbox" className="w-4 h-4 accent-black"
+            <input
+              type="checkbox"
+              className="w-4 h-4 accent-black"
               checked={data.blessures.autre}
-              onChange={(e)=>setField("blessures", {...data.blessures, autre:e.target.checked})} />
-            {t('other')}
+              onChange={(e) => setField("blessures", { ...data.blessures, autre: e.target.checked })}
+            />
+            {t("other")}
           </label>
+
           {data.blessures.autre && (
-            <input value={data.blessures.autreText} onChange={(e)=>setField("blessures", {...data.blessures, autreText:e.target.value})} placeholder={t('other_specify')} className="mt-2 w-full px-3 py-2 rounded-xl border col-span-2" />
+            <input
+              value={data.blessures.autreText}
+              onChange={(e) => setField("blessures", { ...data.blessures, autreText: e.target.value })}
+              placeholder={t("other_specify")}
+              className="mt-2 w-full px-3 py-2 rounded-xl border col-span-2"
+            />
           )}
         </div>
       </Section>
 
-      <Section title={t('location_title')} tone="blue">
+      <Section title={t("location_title")} tone="blue">
         <div className="grid grid-cols-2 gap-2">
           {[
-            ['main','loc_hand'],['bras','loc_arm'],['torse','loc_torso'],
-            ['jambe','loc_leg'],['pied','loc_foot'],['tete','loc_head'],['oeil','loc_eye']
-          ].map(([k,label])=>(
+            ["main", "loc_hand"],
+            ["bras", "loc_arm"],
+            ["torse", "loc_torso"],
+            ["jambe", "loc_leg"],
+            ["pied", "loc_foot"],
+            ["tete", "loc_head"],
+            ["oeil", "loc_eye"],
+          ].map(([k, label]) => (
             <label key={k} className="flex items-center gap-2 text-sm">
-              <input type="checkbox" className="w-4 h-4 accent-black"
+              <input
+                type="checkbox"
+                className="w-4 h-4 accent-black"
                 checked={data.localisation[k]}
-                onChange={(e)=>setField("localisation", {...data.localisation, [k]:e.target.checked})} />
+                onChange={(e) => setField("localisation", { ...data.localisation, [k]: e.target.checked })}
+              />
               {t(label)}
             </label>
           ))}
+
           <label className="flex items-center gap-2 text-sm col-span-2">
-            <input type="checkbox" className="w-4 h-4 accent-black"
+            <input
+              type="checkbox"
+              className="w-4 h-4 accent-black"
               checked={data.localisation.autre}
-              onChange={(e)=>setField("localisation", {...data.localisation, autre:e.target.checked})} />
-            {t('other')}
+              onChange={(e) => setField("localisation", { ...data.localisation, autre: e.target.checked })}
+            />
+            {t("other")}
           </label>
+
           {data.localisation.autre && (
-            <input value={data.localisation.autreText} onChange={(e)=>setField("localisation", {...data.localisation, autreText:e.target.value})} placeholder={t('other_specify')} className="mt-2 w-full px-3 py-2 rounded-xl border col-span-2" />
+            <input
+              value={data.localisation.autreText}
+              onChange={(e) => setField("localisation", { ...data.localisation, autreText: e.target.value })}
+              placeholder={t("other_specify")}
+              className="mt-2 w-full px-3 py-2 rounded-xl border col-span-2"
+            />
           )}
         </div>
       </Section>
 
-      <Section title={t('kit_title')} tone="green">
+      <Section title={t("kit_title")} tone="green">
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-3">
-            <span className="text-sm">{t('kit_need')}</span>
+            <span className="text-sm">{t("kit_need")}</span>
             <label className="text-sm inline-flex items-center gap-1">
-              <input type="radio" name="recharge" checked={!data.recharge} onChange={()=>setField("recharge", false)} /> {t('no')}
+              <input type="radio" name="recharge" checked={!data.recharge} onChange={() => setField("recharge", false)} />{" "}
+              {t("no")}
             </label>
             <label className="text-sm inline-flex items-center gap-1">
-              <input type="radio" name="recharge" checked={data.recharge} onChange={()=>setField("recharge", true)} /> {t('yes')}
+              <input type="radio" name="recharge" checked={data.recharge} onChange={() => setField("recharge", true)} />{" "}
+              {t("yes")}
             </label>
           </div>
+
           {data.recharge && (
-            <label className="text-sm">{t('kit_number')}
-              <input value={data.trousseNumero} onChange={(e)=>setField("trousseNumero", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+            <label className="text-sm">
+              {t("kit_number")}
+              <input
+                value={data.trousseNumero}
+                onChange={(e) => setField("trousseNumero", e.target.value)}
+                className="mt-1 w-full px-3 py-2 rounded-xl border"
+              />
             </label>
           )}
         </div>
       </Section>
 
-      <Section title={t('remarks')}>
-        <textarea value={data.remarques} onChange={(e)=>setField("remarques", e.target.value)} rows={3} className="w-full px-3 py-2 rounded-xl border" />
+      <Section title={t("remarks")}>
+        <textarea
+          value={data.remarques}
+          onChange={(e) => setField("remarques", e.target.value)}
+          rows={3}
+          className="w-full px-3 py-2 rounded-xl border"
+        />
       </Section>
 
       <div className="grid grid-cols-1 gap-2 mt-4">
-        <button onClick={envoyer} className="px-4 py-3 rounded-xl border bg-black text-white">{t('send')}</button>
+        <button onClick={envoyer} className="px-4 py-3 rounded-xl border bg-black text-white">
+          {t("send")}
+        </button>
       </div>
     </main>
   );
 }
 
-
-
-/* ======================= STOP (BACK TO WORKING) ======================= */
-function StopScreen(){
+// ========================= STOP (PHOTO + NO-GO) =========================
+function StopScreen() {
   const { t } = useI18n();
 
   const STATE_KEY = "qhse_stop_state_v1";
-  const prefs = loadLS(PREFS_KEY, { responsable:"", team:[] });
+  const prefs = loadLS(PREFS_KEY, { responsable: "", team: [] });
 
   const initialState = () => ({
     datetime: nowLocalDateTime(),
@@ -1333,197 +1857,180 @@ function StopScreen(){
     callNom: "",
     callFonction: "chef", // chef/site/pm/opm/cp/coord/client
     solution: "",
-    noGo: false,          // ✅ bool
-    noGoComment: "",      // ✅ texte
-    photoDataUrl: ""      // ✅ photo dans data (sera envoyée)
+    noGo: false,
+    noGoComment: "",
+    photoDataUrl: "",
   });
 
-  // ✅ Charger l'état sans exploser le localStorage:
-  // - on recharge depuis LS uniquement les champs hors photo
-  // - la photo repart vide au rechargement (recommandé)
+  // Charger l'état depuis LS (photo vide au reload recommandé)
   const [data, setData] = React.useState(() => ({
     ...initialState(),
-    ...loadLS(STATE_KEY, {})
+    ...loadLS(STATE_KEY, {}),
   }));
 
-  // ✅ Sauver dans LS SANS la photo
-  React.useEffect(()=>{
+  // Sauver dans LS SANS la photo
+  React.useEffect(() => {
     const { photoDataUrl, ...rest } = data;
     saveLS(STATE_KEY, rest);
   }, [data]);
 
   const [errors, setErrors] = React.useState({});
-
-  // ✅ statut photo + reset input (pour permettre re-sélection même fichier)
   const [photoStatus, setPhotoStatus] = React.useState("");
   const [fileKey, setFileKey] = React.useState(0);
 
-  const setField = (k,v)=>setData(prev => ({...prev, [k]: v}));
+  const setField = (k, v) => setData((prev) => ({ ...prev, [k]: v }));
 
   const resetAll = () => {
     setData(initialState());
     setPhotoStatus("");
-    setFileKey(k=>k+1);
+    setFileKey((k) => k + 1);
   };
 
   const onPickPhoto = async (file) => {
-    if(!file){
+    if (!file) {
       setField("photoDataUrl", "");
       setPhotoStatus("");
       return;
     }
-    try{
-      setPhotoStatus(t('photo_status_processing'));
-      // ✅ réglage safe (tu peux remonter à 1280/0.72 si tu veux)
-      const dataUrl = await fileToCompressedDataUrl_(file, 1024, 0.60);
+    try {
+      setPhotoStatus(t("photo_status_processing"));
+      const dataUrl = await fileToCompressedDataUrl_(file, 1024, 0.6);
       const kb = approxSizeKbFromDataUrl_(dataUrl);
       setField("photoDataUrl", dataUrl);
-      setPhotoStatus(`${t('photo_status_ready')} (~${kb} KB)`);
-    }catch(e){
+      setPhotoStatus(`${t("photo_status_ready")} (~${kb} KB)`);
+    } catch (e) {
       console.error(e);
       setField("photoDataUrl", "");
-      setPhotoStatus(t('photo_status_error'));
+      setPhotoStatus(t("photo_status_error"));
     }
   };
 
   const envoyer = async () => {
     const missing = { chantier: !data.chantier.trim(), responsable: !data.responsable.trim() };
     setErrors(missing);
-    if(missing.chantier || missing.responsable){
-      alert(t('required_fields'));
+    if (missing.chantier || missing.responsable) {
+      alert(t("required_fields"));
       return;
     }
 
-    // ✅ payload compatible doPost() (meta.formType + data)
     const payload = {
-      meta: {
-        sentAt: new Date().toISOString(),
-        page: location.href,
-        userAgent: navigator.userAgent,
-        formType: "stop"
-      },
-      data
+      meta: { sentAt: new Date().toISOString(), page: location.href, userAgent: navigator.userAgent, formType: "stop" },
+      data,
     };
 
     const ok = await sendNow(payload);
-    if(ok){
-      alert(t('alert_sent'));
-      saveLS(
-        PREFS_KEY,
-        { ...loadLS(PREFS_KEY, {responsable:"", team:[]}), responsable:data.responsable }
-      );
+    if (ok) {
+      alert(t("alert_sent"));
+      saveLS(PREFS_KEY, { ...loadLS(PREFS_KEY, { responsable: "", team: [] }), responsable: data.responsable });
       setData(initialState());
       setErrors({});
       setPhotoStatus("");
-      setFileKey(k=>k+1);
-    }else{
+      setFileKey((k) => k + 1);
+    } else {
       enqueueOutbox(payload);
-      alert(t('alert_offline_queued'));
+      alert(t("alert_offline_queued"));
     }
   };
 
   return (
     <main className="max-w-md mx-auto p-4">
       <h1 className="mb-3 px-4 py-2 rounded-xl bg-[#104861] text-[#D9D9D9] text-center">
-        {t('stop_title')}
+        {t("stop_title")}
       </h1>
 
       <div className="mb-3">
         <button onClick={resetAll} className="px-3 py-2 rounded-xl border">
-          {t('reset_all')}
+          {t("reset_all")}
         </button>
       </div>
 
-      <Section title={t('coords')}>
+      <Section title={t("coords")}>
         <div className="flex flex-col gap-3">
-          <label className="text-sm">{t('datetime')}
+          <label className="text-sm">
+            {t("datetime")}
             <input
               type="datetime-local"
               value={data.datetime}
-              onChange={(e)=>setField("datetime", e.target.value)}
+              onChange={(e) => setField("datetime", e.target.value)}
               className="mt-1 w-full px-3 py-2 rounded-xl border"
             />
           </label>
 
-          <label className="text-sm">{t('site')}
+          <label className="text-sm">
+            {t("site")}
             <input
               name="chantier"
               value={data.chantier}
-              onChange={(e)=>{
+              onChange={(e) => {
                 const v = e.target.value;
-                setData(prev => ({...prev, chantier:v, responsable:""}));
-                if(errors.chantier) setErrors(prev => ({...prev, chantier:false}));
+                setData((prev) => ({ ...prev, chantier: v, responsable: "" }));
+                if (errors.chantier) setErrors((prev) => ({ ...prev, chantier: false }));
               }}
-              className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.chantier? 'border-red-500':''}`}
+              className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.chantier ? "border-red-500" : ""}`}
             />
-            {errors.chantier && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
+            {errors.chantier && <div className="text-red-600 text-xs mt-1">{t("required_field")}</div>}
           </label>
 
-          <label className="text-sm">{t('manager')}
+          <label className="text-sm">
+            {t("manager")}
             <input
               list="responsables-stop"
               name="responsable"
               value={data.responsable}
-              onChange={(e)=>{
+              onChange={(e) => {
                 setField("responsable", e.target.value);
-                if(errors.responsable) setErrors(prev => ({...prev, responsable:false}));
+                if (errors.responsable) setErrors((prev) => ({ ...prev, responsable: false }));
               }}
-              placeholder={t('manager_ph')}
-              className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable? 'border-red-500':''}`}
+              placeholder={t("manager_ph")}
+              className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable ? "border-red-500" : ""}`}
               required
             />
             <datalist id="responsables-stop">
-              {(RESPONSABLES_PAR_CHANTIER[data.site || data.chantier] || []).map(n => (
+              {(RESPONSABLES_PAR_CHANTIER[data.chantier] || []).map((n) => (
                 <option key={n} value={n} />
               ))}
             </datalist>
-            {errors.responsable && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
+            {errors.responsable && <div className="text-red-600 text-xs mt-1">{t("required_field")}</div>}
           </label>
         </div>
       </Section>
 
-      <Section title={t('stop_box')} tone="red">
+      <Section title={t("stop_box")} tone="red">
         <textarea
           value={data.situation}
-          onChange={(e)=>setField("situation", e.target.value)}
+          onChange={(e) => setField("situation", e.target.value)}
           rows={3}
-          placeholder={t('stop_desc')}
+          placeholder={t("stop_desc")}
           className="w-full px-3 py-2 rounded-xl border"
         />
       </Section>
 
-      <Section title={t('call_box')} tone="amber">
+      <Section title={t("call_box")} tone="amber">
         <div className="grid grid-cols-1 gap-3">
-          <label className="text-sm">{t('call_name')}
-            <input
-              value={data.callNom}
-              onChange={(e)=>setField("callNom", e.target.value)}
-              className="mt-1 w-full px-3 py-2 rounded-xl border"
-            />
+          <label className="text-sm">
+            {t("call_name")}
+            <input value={data.callNom} onChange={(e) => setField("callNom", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
           </label>
 
-          <label className="text-sm">{t('call_role')}
-            <select
-              value={data.callFonction}
-              onChange={(e)=>setField("callFonction", e.target.value)}
-              className="mt-1 w-full px-3 py-2 rounded-xl border"
-            >
-              <option value="chef">{t('role_chef')}</option>
-              <option value="site">{t('role_site')}</option>
-              <option value="pm">{t('role_pm')}</option>
-              <option value="opm">{t('role_opm')}</option>
-              <option value="cp">{t('role_cp')}</option>
-              <option value="coord">{t('role_coord')}</option>
-              <option value="client">{t('role_client')}</option>
+          <label className="text-sm">
+            {t("call_role")}
+            <select value={data.callFonction} onChange={(e) => setField("callFonction", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border">
+              <option value="chef">{t("role_chef")}</option>
+              <option value="site">{t("role_site")}</option>
+              <option value="pm">{t("role_pm")}</option>
+              <option value="opm">{t("role_opm")}</option>
+              <option value="cp">{t("role_cp")}</option>
+              <option value="coord">{t("role_coord")}</option>
+              <option value="client">{t("role_client")}</option>
             </select>
           </label>
         </div>
       </Section>
 
       {/* ✅ PHOTO */}
-      <Section title={t('photo_box')} tone="blue">
+      <Section title={t("photo_box")} tone="blue">
         <div className="flex flex-col gap-2">
-          <div className="text-xs text-gray-500">{t('photo_optional')}</div>
+          <div className="text-xs text-gray-500">{t("photo_optional")}</div>
 
           <input
             key={fileKey}
@@ -1531,11 +2038,10 @@ function StopScreen(){
             accept="image/*"
             capture="environment"
             className="block w-full text-sm"
-            onChange={async (e)=> {
+            onChange={async (e) => {
               const f = e.target.files && e.target.files[0];
               await onPickPhoto(f);
-              // ✅ force reset input file
-              setFileKey(k => k + 1);
+              setFileKey((k) => k + 1);
             }}
           />
 
@@ -1543,35 +2049,27 @@ function StopScreen(){
 
           {!!data.photoDataUrl && (
             <>
-              <img
-                src={data.photoDataUrl}
-                alt="preview"
-                className="w-full rounded-xl border object-cover"
-              />
+              <img src={data.photoDataUrl} alt="preview" className="w-full rounded-xl border object-cover" />
               <button
                 type="button"
                 className="text-sm text-red-600 underline self-start"
                 onClick={() => {
                   setField("photoDataUrl", "");
                   setPhotoStatus("");
-                  setFileKey(k => k + 1);
+                  setFileKey((k) => k + 1);
                 }}
               >
-                {t('photo_remove')}
+                {t("photo_remove")}
               </button>
             </>
           )}
         </div>
       </Section>
 
-      <Section title={t('act_box')} tone="green">
-        <label className="text-sm">{t('solution')}
-          <textarea
-            value={data.solution}
-            onChange={(e)=>setField("solution", e.target.value)}
-            rows={3}
-            className="mt-1 w-full px-3 py-2 rounded-xl border"
-          />
+      <Section title={t("act_box")} tone="green">
+        <label className="text-sm">
+          {t("solution")}
+          <textarea value={data.solution} onChange={(e) => setField("solution", e.target.value)} rows={3} className="mt-1 w-full px-3 py-2 rounded-xl border" />
         </label>
       </Section>
 
@@ -1579,38 +2077,143 @@ function StopScreen(){
         tone="dark"
         title={
           <>
-            <span className="text-red-600">{t('no_go')}</span>
-            {" — "}
-            {(t('nogo_wait').split('—')[1] || t('nogo_wait')).trim()}
+            <span className="text-red-600">{t("nogo_title")}</span> — {t("nogo_sub")}
           </>
         }
       >
         <label className="flex items-center gap-2 text-sm mb-2">
-          <input
-            type="checkbox"
-            className="w-4 h-4 accent-black"
-            checked={!!data.noGo}
-            onChange={(e)=>setField('noGo', e.target.checked)}
-          />
-          Activer NO-GO
+          <input type="checkbox" className="w-4 h-4 accent-black" checked={!!data.noGo} onChange={(e) => setField("noGo", e.target.checked)} />
+          {t("nogo_activate")}
         </label>
 
         <textarea
           value={data.noGoComment}
-          onChange={(e)=>setField('noGoComment', e.target.value)}
+          onChange={(e) => setField("noGoComment", e.target.value)}
           rows={2}
-          placeholder="Explique pourquoi c’est NO-GO…"
+          placeholder={t("nogo_placeholder")}
           className="w-full px-3 py-2 rounded-xl border"
         />
       </Section>
 
       <div className="grid grid-cols-1 gap-2 mt-4">
         <button onClick={envoyer} className="px-4 py-3 rounded-xl border bg-black text-white">
-          {t('send')}
+          {t("send")}
         </button>
       </div>
     </main>
   );
 }
 
+// ========================= HEADER COMPONENTS =========================
+function Brand() {
+  return (
+    <a href="#home" className="flex items-center gap-2" aria-label="QHSE">
+      <img
+        src="qhse-logo.svg"
+        alt=""
+        className="w-8 h-8 rounded-lg border"
+        onError={(e) => {
+          e.currentTarget.replaceWith(
+            Object.assign(document.createElement("span"), {
+              className:
+                "inline-flex items-center justify-center w-8 h-8 rounded-lg border font-bold",
+              innerText: "QHSE",
+            })
+          );
+        }}
+      />
+    </a>
+  );
+}
 
+function LangPicker() {
+  const { lang, setLang } = useI18n();
+
+  const Btn = ({ code, src, alt }) => (
+    <button
+      onClick={() => setLang(code)}
+      className={
+        "w-9 h-9 flex items-center justify-center rounded-lg border " +
+        (lang === code ? "bg-black" : "bg-white")
+      }
+      aria-label={code.toUpperCase()}
+      title={code.toUpperCase()}
+    >
+      <img src={src} alt={alt} className="w-6 h-4 rounded-sm pointer-events-none select-none" />
+    </button>
+  );
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <Btn code="fr" src="flag-fr.svg" alt="FR" />
+      <Btn code="en" src="flag-gb.svg" alt="EN" />
+      <Btn code="nl" src="flag-nl.svg" alt="NL" />
+    </div>
+  );
+}
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error, info) {
+    console.error("ErrorBoundary caught an error", error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return <div className="p-4 text-center text-red-600">Une erreur inattendue est survenue. Merci de recharger la page.</div>;
+    }
+    return this.props.children;
+  }
+}
+
+// ========================= APP ROUTER =========================
+function App() {
+  const { t } = useI18n();
+  const [route, setRoute] = React.useState(parseRoute());
+
+  React.useEffect(() => {
+    const onHash = () => setRoute(parseRoute());
+    globalThis.addEventListener("hashchange", onHash);
+    return () => globalThis.removeEventListener("hashchange", onHash);
+  }, []);
+
+  return (
+    <div>
+      <header className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b">
+        <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between gap-3">
+          <Brand />
+          <div className="flex items-center gap-3">
+            <LangPicker />
+            <button onClick={() => globalThis.print()} className="px-3 py-1.5 rounded-xl border">
+              {t("print")}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {route === "home" && <HomeScreen />}
+      {route === "lmra" && <LmraScreen />}
+      {route === "firstaid" && <FirstAidScreen />}
+      {route === "stop" && <StopScreen />}
+
+      <footer className="max-w-md mx-auto px-4 pb-8 text-center text-xs text-gray-400">
+        QHSE PWA • Données locales + collecte centrale
+      </footer>
+    </div>
+  );
+}
+
+// ========================= BOOTSTRAP =========================
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(
+  <I18nProvider>
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  </I18nProvider>
+);
