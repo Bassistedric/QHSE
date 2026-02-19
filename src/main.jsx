@@ -1312,6 +1312,7 @@ function FirstAidScreen(){
 }
 
 /* ======================= STOP ======================= */
+
 function StopScreen(){
   const { t } = useI18n();
 
@@ -1326,7 +1327,8 @@ function StopScreen(){
     callNom: "",
     callFonction: "chef", // chef/site/pm/opm/cp/coord/client
     solution: "",
-    noGo: ""
+    noGo: false,          // ✅ bool
+    noGoComment: ""       // ✅ texte
   });
 
   const [data, setData] = React.useState(loadLS(STATE_KEY, initialState()));
@@ -1371,11 +1373,22 @@ function StopScreen(){
       alert(t('required_fields'));
       return;
     }
+
     const payload = {
       type: "stop",
-      meta: { sentAt:new Date().toISOString(), page:location.href, userAgent:navigator.userAgent, formType:"stop" },
-      data: { ...data, photoDataUrl: photoDataUrl || "" } // ✅ include photo
+      meta: {
+        sentAt: new Date().toISOString(),
+        page: location.href,
+        userAgent: navigator.userAgent,
+        formType: "stop"
+      },
+      data: {
+        ...data,
+        // ✅ photo incluse
+        photoDataUrl: photoDataUrl || ""
+      }
     };
+
     const ok = await sendNow(payload);
     if(ok){
       alert(t('alert_sent'));
@@ -1392,22 +1405,54 @@ function StopScreen(){
 
   return (
     <main className="max-w-md mx-auto p-4">
-      <h1 className="mb-3 px-4 py-2 rounded-xl bg-[#104861] text-[#D9D9D9] text-center">{t('stop_title')}</h1>
+      <h1 className="mb-3 px-4 py-2 rounded-xl bg-[#104861] text-[#D9D9D9] text-center">
+        {t('stop_title')}
+      </h1>
+
       <div className="mb-3">
-        <button onClick={resetAll} className="px-3 py-2 rounded-xl border">{t('reset_all')}</button>
+        <button onClick={resetAll} className="px-3 py-2 rounded-xl border">
+          {t('reset_all')}
+        </button>
       </div>
 
       <Section title={t('coords')}>
         <div className="flex flex-col gap-3">
           <label className="text-sm">{t('datetime')}
-            <input type="datetime-local" value={data.datetime} onChange={(e)=>setField("datetime", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+            <input
+              type="datetime-local"
+              value={data.datetime}
+              onChange={(e)=>setField("datetime", e.target.value)}
+              className="mt-1 w-full px-3 py-2 rounded-xl border"
+            />
           </label>
+
           <label className="text-sm">{t('site')}
-            <input name="chantier" value={data.chantier} onChange={(e)=>{ const v=e.target.value; setData({...data, chantier:v, responsable:""}); if(errors.chantier) setErrors({...errors, chantier:false}); }} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.chantier? 'border-red-500':''}`} />
+            <input
+              name="chantier"
+              value={data.chantier}
+              onChange={(e)=>{
+                const v=e.target.value;
+                setData({...data, chantier:v, responsable:""});
+                if(errors.chantier) setErrors({...errors, chantier:false});
+              }}
+              className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.chantier? 'border-red-500':''}`}
+            />
             {errors.chantier && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
           </label>
+
           <label className="text-sm">{t('manager')}
-            <input list="responsables-stop" name="responsable" value={data.responsable} onChange={(e)=>{ setField("responsable", e.target.value); if(errors.responsable) setErrors({...errors, responsable:false}); }} placeholder={t('manager_ph')} className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable? 'border-red-500':''}`} required />
+            <input
+              list="responsables-stop"
+              name="responsable"
+              value={data.responsable}
+              onChange={(e)=>{
+                setField("responsable", e.target.value);
+                if(errors.responsable) setErrors({...errors, responsable:false});
+              }}
+              placeholder={t('manager_ph')}
+              className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable? 'border-red-500':''}`}
+              required
+            />
             <datalist id="responsables-stop">
               {(RESPONSABLES_PAR_CHANTIER[data.site || data.chantier] || []).map(n => <option key={n} value={n} />)}
             </datalist>
@@ -1417,16 +1462,31 @@ function StopScreen(){
       </Section>
 
       <Section title={t('stop_box')} tone="red">
-        <textarea value={data.situation} onChange={(e)=>setField("situation", e.target.value)} rows={3} placeholder={t('stop_desc')} className="w-full px-3 py-2 rounded-xl border" />
+        <textarea
+          value={data.situation}
+          onChange={(e)=>setField("situation", e.target.value)}
+          rows={3}
+          placeholder={t('stop_desc')}
+          className="w-full px-3 py-2 rounded-xl border"
+        />
       </Section>
 
       <Section title={t('call_box')} tone="amber">
         <div className="grid grid-cols-1 gap-3">
           <label className="text-sm">{t('call_name')}
-            <input value={data.callNom} onChange={(e)=>setField("callNom", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+            <input
+              value={data.callNom}
+              onChange={(e)=>setField("callNom", e.target.value)}
+              className="mt-1 w-full px-3 py-2 rounded-xl border"
+            />
           </label>
+
           <label className="text-sm">{t('call_role')}
-            <select value={data.callFonction} onChange={(e)=>setField("callFonction", e.target.value)} className="mt-1 w-full px-3 py-2 rounded-xl border">
+            <select
+              value={data.callFonction}
+              onChange={(e)=>setField("callFonction", e.target.value)}
+              className="mt-1 w-full px-3 py-2 rounded-xl border"
+            >
               <option value="chef">{t('role_chef')}</option>
               <option value="site">{t('role_site')}</option>
               <option value="pm">{t('role_pm')}</option>
@@ -1475,20 +1535,48 @@ function StopScreen(){
 
       <Section title={t('act_box')} tone="green">
         <label className="text-sm">{t('solution')}
-          <textarea value={data.solution} onChange={(e)=>setField("solution", e.target.value)} rows={3} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+          <textarea
+            value={data.solution}
+            onChange={(e)=>setField("solution", e.target.value)}
+            rows={3}
+            className="mt-1 w-full px-3 py-2 rounded-xl border"
+          />
         </label>
       </Section>
 
-      <Section tone="dark" title={<><span className="text-red-600">{t('no_go')}</span> — {(t('nogo_wait').split('—')[1] || t('nogo_wait')).trim()}</>}>
-        <textarea value={data.noGo} onChange={(e)=>setField('noGo', e.target.value)} rows={2} className="w-full px-3 py-2 rounded-xl border" />
+      {/* ✅ NO-GO : bool + commentaire */}
+      <Section
+        tone="dark"
+        title={<><span className="text-red-600">{t('no_go')}</span> — {(t('nogo_wait').split('—')[1] || t('nogo_wait')).trim()}</>}
+      >
+        <label className="flex items-center gap-2 text-sm mb-2">
+          <input
+            type="checkbox"
+            className="w-4 h-4 accent-black"
+            checked={!!data.noGo}
+            onChange={(e)=>setField('noGo', e.target.checked)}
+          />
+          Activer NO-GO
+        </label>
+
+        <textarea
+          value={data.noGoComment}
+          onChange={(e)=>setField('noGoComment', e.target.value)}
+          rows={2}
+          placeholder="Explique pourquoi c’est NO-GO…"
+          className="w-full px-3 py-2 rounded-xl border"
+        />
       </Section>
 
       <div className="grid grid-cols-1 gap-2 mt-4">
-        <button onClick={envoyer} className="px-4 py-3 rounded-xl border bg-black text-white">{t('send')}</button>
+        <button onClick={envoyer} className="px-4 py-3 rounded-xl border bg-black text-white">
+          {t('send')}
+        </button>
       </div>
     </main>
   );
 }
+
 
 // Logo seul (pas de texte redondant)
 function Brand(){
