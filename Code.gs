@@ -6,10 +6,19 @@ const STOP_PHOTO_FOLDER_ID = '1uSori6tFovYEXOg7TViO-RMxQr2WX8M2';
 const STOP_ALERT_EMAILS_PROP = 'STOP_ALERT_EMAILS';
 
 function doPost(e) {
-  const { meta = {}, data = {}, type } = JSON.parse(e.postData.contents);
-  if (type === 'tbm') return handleTbm(meta, data);
-  if (type === 'stop') return handleStop(meta, data);
-  return respond({ ok: false, error: 'unknown type', type });
+  try {
+    const payload = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+    const meta = payload.meta || {};
+    const data = payload.data || {};
+    const type = String(payload.type || meta.formType || payload.formType || '').toLowerCase();
+
+    if (type === 'tbm') return handleTbm(meta, data);
+    if (type === 'stop') return handleStop(meta, data);
+
+    return respond({ ok: false, error: 'unknown type', type });
+  } catch (err) {
+    return respond({ ok: false, error: String(err && err.message ? err.message : err) });
+  }
 }
 
 function handleTbm(meta, d) {
@@ -51,9 +60,23 @@ function handleStop(meta, d) {
   const sh = getSheetByNameOrCreate(STOP_SHEET_NAME, headers);
   const caseId = d.caseId || Utilities.getUuid();
 
-  let photoUpload = { url: '', fileId: '', blob: null, fileName: '' };
+  let photoUpload = { url: '', fileId: '' };
+  let photoForEmail = { blob: null, fileName: '' };
+  let photoError = '';
+
   if (d.photoDataUrl) {
-    photoUpload = saveStopPhotoToDrive(d.photoDataUrl, caseId);
+    try {
+      photoForEmail = decodeStopPhoto_(d.photoDataUrl, caseId);
+    } catch (err) {
+      photoError = String(err && err.message ? err.message : err);
+    }
+
+    try {
+      photoUpload = saveStopPhotoToDrive_(d.photoDataUrl, caseId);
+    } catch (err) {
+      const driveError = String(err && err.message ? err.message : err);
+      photoError = photoError ? (photoError + ' | DRIVE: ' + driveError) : ('DRIVE: ' + driveError);
+    }
   }
 
   const row = [
@@ -70,7 +93,13 @@ function handleStop(meta, d) {
     caseId,
     photoUpload.url,
     photoUpload.fileId,
-    JSON.stringify({ ...d, photoDataUrl: d.photoDataUrl ? '[stored-in-drive]' : '' })
+    JSON.stringify({
+      ...d,
+      photoDataUrl: d.photoDataUrl ? '[received]' : '',
+      photoStored: !!photoUpload.fileId,
+      photoSentByEmail: !!photoForEmail.blob,
+      photoError
+    })
   ];
 
   sh.appendRow(row);
@@ -80,8 +109,9 @@ function handleStop(meta, d) {
       ...d,
       caseId,
       photoUrl: photoUpload.url,
-      photoBlob: photoUpload.blob,
-      photoFileName: photoUpload.fileName
+      photoBlob: photoForEmail.blob,
+      photoFileName: photoForEmail.fileName,
+      photoError
     });
   }
 
@@ -91,29 +121,36 @@ function handleStop(meta, d) {
     row: sh.getLastRow(),
     caseId,
     photoUrl: photoUpload.url,
-    photoFileId: photoUpload.fileId
+    photoFileId: photoUpload.fileId,
+    photoSentByEmail: !!photoForEmail.blob,
+    photoError
   });
 }
 
-function saveStopPhotoToDrive(photoDataUrl, caseId) {
-  const matches = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/.exec(photoDataUrl);
+function decodeStopPhoto_(photoDataUrl, caseId) {
+  const matches = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/.exec(String(photoDataUrl || ''));
   if (!matches) throw new Error('Invalid photoDataUrl format');
 
   const mimeType = matches[1];
   const base64 = matches[2];
   const bytes = Utilities.base64Decode(base64);
-  const extension = mimeType.split('/')[1] || 'jpg';
-  const fileName = `QHSE_STOP_${caseId}.${extension.replace('jpeg', 'jpg')}`;
+  const extension = (mimeType.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
+  const fileName = `QHSE_STOP_${caseId}.${extension}`;
 
-  const blob = Utilities.newBlob(bytes, mimeType, fileName);
+  return {
+    blob: Utilities.newBlob(bytes, mimeType, fileName),
+    fileName
+  };
+}
+
+function saveStopPhotoToDrive_(photoDataUrl, caseId) {
+  const decoded = decodeStopPhoto_(photoDataUrl, caseId);
   const folder = DriveApp.getFolderById(STOP_PHOTO_FOLDER_ID);
-  const file = folder.createFile(blob);
+  const file = folder.createFile(decoded.blob);
 
   return {
     url: file.getUrl(),
-    fileId: file.getId(),
-    blob,
-    fileName
+    fileId: file.getId()
   };
 }
 
@@ -133,7 +170,9 @@ function sendStopNoGoEmail(stopData) {
     `Personne contactée: ${stopData.callNom || ''}`,
     `Fonction: ${stopData.callFonction || ''}`,
     `Mesures prises: ${stopData.solution || ''}`,
-    stopData.photoUrl ? `Photo: ${stopData.photoUrl}` : 'Photo: aucune'
+    stopData.photoUrl ? `Photo Drive: ${stopData.photoUrl}` : 'Photo Drive: indisponible',
+    stopData.photoBlob ? 'Photo email: pièce jointe OK' : 'Photo email: aucune pièce jointe',
+    stopData.photoError ? `Photo erreur: ${stopData.photoError}` : ''
   ];
 
   const mailOptions = {};
