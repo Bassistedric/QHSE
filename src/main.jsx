@@ -1336,40 +1336,43 @@ function StopScreen(){
     callFonction: "chef", // chef/site/pm/opm/cp/coord/client
     solution: "",
     noGo: false,          // ✅ bool
-    noGoComment: ""       // ✅ texte
+    noGoComment: "",      // ✅ texte
+    // ✅ photo DANS data (persistée avec le formulaire)
+    photoDataUrl: ""
   });
 
   const [data, setData] = React.useState(loadLS(STATE_KEY, initialState()));
   React.useEffect(()=>{ saveLS(STATE_KEY, data); }, [data]);
   const [errors, setErrors] = React.useState({});
 
-  // Photo (pas dans LS pour éviter d’exploser le storage)
-  const [photoDataUrl, setPhotoDataUrl] = React.useState("");
+  // ✅ statut photo + reset input
   const [photoStatus, setPhotoStatus] = React.useState("");
+  const [fileKey, setFileKey] = React.useState(0);
 
   const setField = (k,v)=>setData({...data,[k]:v});
 
   const resetAll = () => {
     setData(initialState());
-    setPhotoDataUrl("");
     setPhotoStatus("");
+    setFileKey(k=>k+1);
   };
 
   const onPickPhoto = async (file) => {
     if(!file){
-      setPhotoDataUrl("");
+      setField("photoDataUrl", "");
       setPhotoStatus("");
       return;
     }
     try{
       setPhotoStatus(t('photo_status_processing'));
-      const dataUrl = await fileToCompressedDataUrl_(file, 1280, 0.72);
+      // ✅ réglage safe (tu peux remonter à 1280/0.72 si tu veux)
+      const dataUrl = await fileToCompressedDataUrl_(file, 1024, 0.60);
       const kb = approxSizeKbFromDataUrl_(dataUrl);
-      setPhotoDataUrl(dataUrl);
+      setField("photoDataUrl", dataUrl);
       setPhotoStatus(`${t('photo_status_ready')} (~${kb} KB)`);
     }catch(e){
       console.error(e);
-      setPhotoDataUrl("");
+      setField("photoDataUrl", "");
       setPhotoStatus(t('photo_status_error'));
     }
   };
@@ -1382,7 +1385,7 @@ function StopScreen(){
       return;
     }
 
-    // ✅ payload compatible doPost()
+    // ✅ payload compatible doPost() (meta.formType + data)
     const payload = {
       meta: {
         sentAt: new Date().toISOString(),
@@ -1390,10 +1393,7 @@ function StopScreen(){
         userAgent: navigator.userAgent,
         formType: "stop"
       },
-      data: {
-        ...data,
-        photoDataUrl: photoDataUrl || "" // ✅ photo incluse ICI
-      }
+      data
     };
 
     const ok = await sendNow(payload);
@@ -1402,8 +1402,8 @@ function StopScreen(){
       saveLS(PREFS_KEY, { ...loadLS(PREFS_KEY, {responsable:"", team:[]}), responsable:data.responsable });
       setData(initialState());
       setErrors({});
-      setPhotoDataUrl("");
       setPhotoStatus("");
+      setFileKey(k=>k+1);
     }else{
       enqueueOutbox(payload);
       alert(t('alert_offline_queued'));
@@ -1506,27 +1506,33 @@ function StopScreen(){
         </div>
       </Section>
 
+      {/* ✅ PHOTO */}
       <Section title={t('photo_box')} tone="blue">
         <div className="flex flex-col gap-2">
           <div className="text-xs text-gray-500">{t('photo_optional')}</div>
 
           <input
+            key={fileKey}
             type="file"
             accept="image/*"
-            capture="environment"
             className="block w-full text-sm"
-            onChange={(e)=> onPickPhoto(e.target.files && e.target.files[0])}
+            onChange={async (e)=> {
+              const f = e.target.files && e.target.files[0];
+              await onPickPhoto(f);
+              // ✅ force reset (sinon parfois pas de nouveau onChange)
+              setFileKey(k=>k+1);
+            }}
           />
 
           {!!photoStatus && <div className="text-xs text-gray-500">{photoStatus}</div>}
 
-          {!!photoDataUrl && (
+          {!!data.photoDataUrl && (
             <>
-              <img src={photoDataUrl} alt="preview" className="w-full rounded-xl border object-cover" />
+              <img src={data.photoDataUrl} alt="preview" className="w-full rounded-xl border object-cover" />
               <button
                 type="button"
                 className="text-sm text-red-600 underline self-start"
-                onClick={()=>{ setPhotoDataUrl(""); setPhotoStatus(""); }}
+                onClick={()=>{ setField("photoDataUrl", ""); setPhotoStatus(""); }}
               >
                 {t('photo_remove')}
               </button>
