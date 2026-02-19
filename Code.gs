@@ -6,7 +6,11 @@ const STOP_ALERT_EMAILS_PROP = 'STOP_ALERT_EMAILS';
 
 function doPost(e) {
   try {
-    const { meta = {}, data = {}, type } = JSON.parse(e.postData.contents);
+    const payload = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+    const meta = payload.meta || {};
+    const data = payload.data || {};
+    const type = String(meta.formType || payload.type || payload.formType || '').toLowerCase().trim();
+
     if (type === 'tbm') return handleTbm(meta, data);
     if (type === 'stop') return handleStop(meta, data);
     return respond({ ok: false, error: 'unknown type', type });
@@ -70,7 +74,7 @@ function handleStop(meta, d) {
     d.datetime || '',
     d.chantier || '',
     d.responsable || '',
-    d.situation || '',
+    d.situation || d.situationSTOP || '',
     d.callNom || '',
     d.callFonction || '',
     d.solution || '',
