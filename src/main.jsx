@@ -5,7 +5,7 @@ import { nowLocalDateTime } from './utils/date.js';
 
 // ========================= CONFIG =========================
 // ⬇⬇ Remplacer l' URL Apps Script /exec si modification du GSheet
-const COLLECT_URL = "https://script.google.com/macros/s/AKfycbyimBv8DeW8sxE-uw3acFWcJ9-vblLzcv4_Hhk36__IFFTcECWy6FJbeMm1na-jusx8LQ/exec";
+const COLLECT_URL = "https://script.google.com/macros/s/AKfycbwLRqxxGrcsW73R-iMHDbbKFchA2V6Xw5uUZmuo1qVW_DBW8KerO3GD2FRge7xPo-hbjw/exec";
 
 const STORAGE_KEY     = "qhse_current_v1";
 const OUTBOX_KEY      = "qhse_outbox_v1";
