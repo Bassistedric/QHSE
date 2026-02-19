@@ -1418,12 +1418,6 @@ function StopScreen(){
         </div>
       </Section>
 
-      <Section title={t('act_box')} tone="green">
-        <label className="text-sm">{t('solution')}
-          <textarea value={data.solution} onChange={(e)=>setField("solution", e.target.value)} rows={3} className="mt-1 w-full px-3 py-2 rounded-xl border" />
-        </label>
-      </Section>
-
       {/* ✅ PHOTO */}
       <Section title={t('photo_box')} tone="blue">
         <div className="flex flex-col gap-2">
@@ -1456,6 +1450,12 @@ function StopScreen(){
             </>
           )}
         </div>
+      </Section>
+
+      <Section title={t('act_box')} tone="green">
+        <label className="text-sm">{t('solution')}
+          <textarea value={data.solution} onChange={(e)=>setField("solution", e.target.value)} rows={3} className="mt-1 w-full px-3 py-2 rounded-xl border" />
+        </label>
       </Section>
 
       <Section tone="dark" title={<><span className="text-red-600">{t('no_go')}</span> — {(t('nogo_wait').split('—')[1] || t('nogo_wait')).trim()}</>}>
