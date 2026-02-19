@@ -637,28 +637,18 @@ async function sendNow(payload){
   try{
     const res = await fetch(COLLECT_URL, {
       method: "POST",
-      mode: "cors",
-      headers: { "Content-Type": "application/json" },
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(payload),
     });
-
-    // si Apps Script renvoie 4xx/5xx => res.ok = false
-    if (!res.ok) return false;
-
-    const txt = await res.text().catch(()=> "");
-    // optionnel: si tu renvoies {ok:true} côté script
-    if (txt) {
-      try {
-        const j = JSON.parse(txt);
-        if (j && j.ok === false) return false;
-      } catch {}
-    }
+    // opaque en no-cors : si fetch ne throw pas, on considère OK
     return true;
   } catch (e) {
     console.warn(e);
     return false;
   }
 }
+
 
 function enqueueOutbox(item){
   const box = loadLS(OUTBOX_KEY, []);
