@@ -15,11 +15,18 @@ After editing `sheetConfig.js`, reload `tbm.html` to use the new values.
 
 ## Merge conflict helper (dist/bundle.js)
 
-If a pull request is blocked by a conflict on `dist/bundle.js`, run:
+If GitHub shows `This branch has conflicts that must be resolved` on `dist/bundle.js`,
+run the sync helper from your PR branch:
 
 ```bash
-./scripts/resolve_bundle_conflict.sh
-git commit
+./scripts/sync_main_and_resolve_bundle.sh origin/main
+git push
 ```
 
-This keeps the current branch version for `dist/bundle.js`, rebuilds it, and stages the result.
+What it does automatically:
+
+1. fetches and merges `origin/main` into your current branch,
+2. if the only conflict is `dist/bundle.js`, it rebuilds with `npm run build`,
+3. creates the merge commit ready to push.
+
+If there are conflicts on other files, it stops and lists them for manual resolution.
