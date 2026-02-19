@@ -12,3 +12,14 @@ application logic:
 - `TBM_GID`
 
 After editing `sheetConfig.js`, reload `tbm.html` to use the new values.
+
+## Merge conflict helper (dist/bundle.js)
+
+If a pull request is blocked by a conflict on `dist/bundle.js`, run:
+
+```bash
+./scripts/resolve_bundle_conflict.sh
+git commit
+```
+
+This keeps the current branch version for `dist/bundle.js`, rebuilds it, and stages the result.
