@@ -1319,8 +1319,6 @@ function FirstAidScreen(){
 
 
 /* ======================= STOP (BACK TO WORKING) ======================= */
-
-
 function StopScreen(){
   const { t } = useI18n();
 
@@ -1337,19 +1335,30 @@ function StopScreen(){
     solution: "",
     noGo: false,          // ✅ bool
     noGoComment: "",      // ✅ texte
-    // ✅ photo DANS data (persistée avec le formulaire)
-    photoDataUrl: ""
+    photoDataUrl: ""      // ✅ photo dans data (sera envoyée)
   });
 
-  const [data, setData] = React.useState(loadLS(STATE_KEY, initialState()));
-  React.useEffect(()=>{ saveLS(STATE_KEY, data); }, [data]);
+  // ✅ Charger l'état sans exploser le localStorage:
+  // - on recharge depuis LS uniquement les champs hors photo
+  // - la photo repart vide au rechargement (recommandé)
+  const [data, setData] = React.useState(() => ({
+    ...initialState(),
+    ...loadLS(STATE_KEY, {})
+  }));
+
+  // ✅ Sauver dans LS SANS la photo
+  React.useEffect(()=>{
+    const { photoDataUrl, ...rest } = data;
+    saveLS(STATE_KEY, rest);
+  }, [data]);
+
   const [errors, setErrors] = React.useState({});
 
-  // ✅ statut photo + reset input
+  // ✅ statut photo + reset input (pour permettre re-sélection même fichier)
   const [photoStatus, setPhotoStatus] = React.useState("");
   const [fileKey, setFileKey] = React.useState(0);
 
-  const setField = (k,v)=>setData({...data,[k]:v});
+  const setField = (k,v)=>setData(prev => ({...prev, [k]: v}));
 
   const resetAll = () => {
     setData(initialState());
@@ -1399,7 +1408,10 @@ function StopScreen(){
     const ok = await sendNow(payload);
     if(ok){
       alert(t('alert_sent'));
-      saveLS(PREFS_KEY, { ...loadLS(PREFS_KEY, {responsable:"", team:[]}), responsable:data.responsable });
+      saveLS(
+        PREFS_KEY,
+        { ...loadLS(PREFS_KEY, {responsable:"", team:[]}), responsable:data.responsable }
+      );
       setData(initialState());
       setErrors({});
       setPhotoStatus("");
@@ -1438,9 +1450,9 @@ function StopScreen(){
               name="chantier"
               value={data.chantier}
               onChange={(e)=>{
-                const v=e.target.value;
-                setData({...data, chantier:v, responsable:""});
-                if(errors.chantier) setErrors({...errors, chantier:false});
+                const v = e.target.value;
+                setData(prev => ({...prev, chantier:v, responsable:""}));
+                if(errors.chantier) setErrors(prev => ({...prev, chantier:false}));
               }}
               className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.chantier? 'border-red-500':''}`}
             />
@@ -1454,14 +1466,16 @@ function StopScreen(){
               value={data.responsable}
               onChange={(e)=>{
                 setField("responsable", e.target.value);
-                if(errors.responsable) setErrors({...errors, responsable:false});
+                if(errors.responsable) setErrors(prev => ({...prev, responsable:false}));
               }}
               placeholder={t('manager_ph')}
               className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable? 'border-red-500':''}`}
               required
             />
             <datalist id="responsables-stop">
-              {(RESPONSABLES_PAR_CHANTIER[data.site || data.chantier] || []).map(n => <option key={n} value={n} />)}
+              {(RESPONSABLES_PAR_CHANTIER[data.site || data.chantier] || []).map(n => (
+                <option key={n} value={n} />
+              ))}
             </datalist>
             {errors.responsable && <div className="text-red-600 text-xs mt-1">{t('required_field')}</div>}
           </label>
@@ -1515,12 +1529,13 @@ function StopScreen(){
             key={fileKey}
             type="file"
             accept="image/*"
+            capture="environment"
             className="block w-full text-sm"
             onChange={async (e)=> {
               const f = e.target.files && e.target.files[0];
               await onPickPhoto(f);
-              // ✅ force reset (sinon parfois pas de nouveau onChange)
-              setFileKey(k=>k+1);
+              // ✅ force reset input file
+              setFileKey(k => k + 1);
             }}
           />
 
@@ -1528,11 +1543,19 @@ function StopScreen(){
 
           {!!data.photoDataUrl && (
             <>
-              <img src={data.photoDataUrl} alt="preview" className="w-full rounded-xl border object-cover" />
+              <img
+                src={data.photoDataUrl}
+                alt="preview"
+                className="w-full rounded-xl border object-cover"
+              />
               <button
                 type="button"
                 className="text-sm text-red-600 underline self-start"
-                onClick={()=>{ setField("photoDataUrl", ""); setPhotoStatus(""); }}
+                onClick={() => {
+                  setField("photoDataUrl", "");
+                  setPhotoStatus("");
+                  setFileKey(k => k + 1);
+                }}
               >
                 {t('photo_remove')}
               </button>
@@ -1552,7 +1575,16 @@ function StopScreen(){
         </label>
       </Section>
 
-      <Section tone="dark" title={<><span className="text-red-600">{t('no_go')}</span> — {(t('nogo_wait').split('—')[1] || t('nogo_wait')).trim()}</>}>
+      <Section
+        tone="dark"
+        title={
+          <>
+            <span className="text-red-600">{t('no_go')}</span>
+            {" — "}
+            {(t('nogo_wait').split('—')[1] || t('nogo_wait')).trim()}
+          </>
+        }
+      >
         <label className="flex items-center gap-2 text-sm mb-2">
           <input
             type="checkbox"
@@ -1582,104 +1614,3 @@ function StopScreen(){
 }
 
 
-
-// Logo seul (pas de texte redondant)
-function Brand(){
-  return (
-    <a href="#home" className="flex items-center gap-2" aria-label="QHSE">
-      <img src="qhse-logo.svg" alt="" className="w-8 h-8 rounded-lg border"
-        onError={(e)=>{ e.currentTarget.replaceWith(Object.assign(document.createElement('span'),{className:'inline-flex items-center justify-center w-8 h-8 rounded-lg border font-bold', innerText:'QHSE'})); }} />
-    </a>
-  );
-}
-
-// === LangPicker (images SVG locales) ===
-function LangPicker(){
-  const { lang, setLang } = useI18n();
-
-  const Btn = ({code, src, alt}) => (
-    <button
-      onClick={()=>setLang(code)}
-      className={
-        "w-9 h-9 flex items-center justify-center rounded-lg border " +
-        (lang===code ? "bg-black" : "bg-white")
-      }
-      aria-label={code.toUpperCase()}
-      title={code.toUpperCase()}
-    >
-      <img src={src} alt={alt} className="w-6 h-4 rounded-sm pointer-events-none select-none" />
-    </button>
-  );
-
-  return (
-    <div className="flex items-center gap-1.5">
-      <Btn code="fr" src="flag-fr.svg" alt="FR" />
-      <Btn code="en" src="flag-gb.svg" alt="EN" />
-      <Btn code="nl" src="flag-nl.svg" alt="NL" />
-    </div>
-  );
-}
-
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false };
-  }
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-  componentDidCatch(error, info) {
-    console.error('ErrorBoundary caught an error', error, info);
-  }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="p-4 text-center text-red-600">
-          Une erreur inattendue est survenue. Merci de recharger la page.
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
-function App(){
-  const { t } = useI18n();
-  const [route,setRoute] = React.useState(parseRoute());
-  React.useEffect(()=>{
-    const onHash=()=>setRoute(parseRoute());
-    globalThis.addEventListener('hashchange', onHash);
-    return ()=>globalThis.removeEventListener('hashchange', onHash);
-  },[]);
-  return (
-    <div>
-      <header className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b">
-        <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between gap-3">
-          <Brand />
-          <div className="flex items-center gap-3">
-            <LangPicker />
-            <button onClick={()=>globalThis.print()} className="px-3 py-1.5 rounded-xl border">{t('print')}</button>
-          </div>
-        </div>
-      </header>
-
-      {route==='home' && <HomeScreen/>}
-      {route==='lmra' && <LmraScreen/>}
-      {route==='firstaid' && <FirstAidScreen/>}
-      {route==='stop' && <StopScreen/>}
-
-      <footer className="max-w-md mx-auto px-4 pb-8 text-center text-xs text-gray-400">
-        QHSE PWA • Données locales + collecte centrale
-      </footer>
-    </div>
-  );
-}
-
-const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(
-  <I18nProvider>
-    <ErrorBoundary>
-      <App/>
-    </ErrorBoundary>
-  </I18nProvider>
-);
