@@ -1352,6 +1352,7 @@ function StopScreen(){
       return;
     }
     const payload = {
+      type: "stop",
       meta: { sentAt:new Date().toISOString(), page:location.href, userAgent:navigator.userAgent, formType:"stop" },
       data: { ...data, photoDataUrl: photoDataUrl || "" } // ✅ include photo
     };
