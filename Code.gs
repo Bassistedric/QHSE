@@ -22,19 +22,21 @@ function doPost(e) {
 function handleTbm(meta, d) {
   const headers = ['sentAt', 'datetime', 'metier', 'chantier', 'responsable', 'equipe', 'youtubeUrl', 'userAgent', 'payloadJson'];
   const sh = getSheetByNameOrCreate(TBM_SHEET_NAME, headers);
-  const row = [
-    new Date().toISOString(),
-    d.datetime || '',
-    d.metier || '',
-    d.chantier || '',
-    d.responsable || '',
-    Array.isArray(d.equipe) ? d.equipe.join('|') : '',
-    d.youtubeUrl || '',
-    meta.userAgent || '',
-    JSON.stringify(d)
-  ];
-  sh.appendRow(row);
-  return respond({ ok: true, sheet: TBM_SHEET_NAME, row: sh.getLastRow() });
+
+  const row = {
+    sentAt: new Date().toISOString(),
+    datetime: d.datetime || '',
+    metier: d.metier || '',
+    chantier: d.chantier || '',
+    responsable: d.responsable || '',
+    equipe: Array.isArray(d.equipe) ? d.equipe.join('|') : '',
+    youtubeUrl: d.youtubeUrl || '',
+    userAgent: meta.userAgent || '',
+    payloadJson: JSON.stringify(d)
+  };
+
+  const rowIndex = appendRowByHeaders(sh, row);
+  return respond({ ok: true, sheet: TBM_SHEET_NAME, row: rowIndex });
 }
 
 function handleStop(meta, d) {
@@ -68,29 +70,29 @@ function handleStop(meta, d) {
     }
   }
 
-  const row = [
-    new Date().toISOString(),
-    d.datetime || '',
-    d.chantier || '',
-    d.responsable || '',
-    d.situation || '',
-    d.callNom || '',
-    d.callFonction || '',
-    d.solution || '',
-    !!d.noGo,
-    meta.userAgent || '',
+  const row = {
+    sentAt: new Date().toISOString(),
+    datetime: d.datetime || '',
+    chantier: d.chantier || '',
+    responsable: d.responsable || '',
+    situation: d.situation || '',
+    callNom: d.callNom || '',
+    callFonction: d.callFonction || '',
+    solution: d.solution || '',
+    noGo: !!d.noGo,
+    userAgent: meta.userAgent || '',
     caseId,
-    photoUpload.url,
-    photoUpload.fileId,
-    JSON.stringify({
+    photoUrl: photoUpload.url,
+    photoFileId: photoUpload.fileId,
+    payloadJson: JSON.stringify({
       ...d,
       photoDataUrl: d.photoDataUrl ? '[stored-in-drive]' : '',
       photoStored: !!photoUpload.fileId,
       photoError
     })
-  ];
+  };
 
-  sh.appendRow(row);
+  const rowIndex = appendRowByHeaders(sh, row);
 
   if (d.noGo) {
     sendStopNoGoEmail({
@@ -105,7 +107,7 @@ function handleStop(meta, d) {
   return respond({
     ok: true,
     sheet: STOP_SHEET_NAME,
-    row: sh.getLastRow(),
+    row: rowIndex,
     caseId,
     photoUrl: photoUpload.url,
     photoFileId: photoUpload.fileId
@@ -161,13 +163,45 @@ function sendStopNoGoEmail(stopData) {
   MailApp.sendEmail(recipients, subject, lines.join('\n'), mailOptions);
 }
 
+
+function appendRowByHeaders(sh, dataByHeader) {
+  const lastColumn = Math.max(sh.getLastColumn(), 1);
+  const headers = sh.getRange(1, 1, 1, lastColumn).getValues()[0].map((h) => String(h || '').trim());
+
+  const headerToIndex = {};
+  headers.forEach((h, idx) => {
+    if (h) headerToIndex[h] = idx;
+  });
+
+  const rowValues = new Array(lastColumn).fill('');
+  Object.keys(dataByHeader).forEach((key) => {
+    if (Object.prototype.hasOwnProperty.call(headerToIndex, key)) {
+      rowValues[headerToIndex[key]] = dataByHeader[key];
+    }
+  });
+
+  sh.appendRow(rowValues);
+  return sh.getLastRow();
+}
+
 function getSheetByNameOrCreate(name, headers) {
   const ss = SpreadsheetApp.getActive();
   let sh = ss.getSheetByName(name);
   if (!sh) {
     sh = ss.insertSheet(name);
     sh.appendRow(headers);
+    return sh;
   }
+
+  const existingLastColumn = Math.max(sh.getLastColumn(), 1);
+  const existingHeaders = sh.getRange(1, 1, 1, existingLastColumn).getValues()[0].map((h) => String(h || '').trim());
+  const missing = headers.filter((h) => existingHeaders.indexOf(h) === -1);
+
+  if (missing.length) {
+    const startCol = existingLastColumn + 1;
+    sh.getRange(1, startCol, 1, missing.length).setValues([missing]);
+  }
+
   return sh;
 }
 
