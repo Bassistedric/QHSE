@@ -1,6 +1,5 @@
 const TBM_SHEET_NAME = 'tbm';
 const STOP_SHEET_NAME = 'stop';
-const STOP_PHOTO_FOLDER_ID = '1uSori6tFovYEXOg7TViO-RMxQr2WX8M2';
 
 // Configure in Apps Script properties: STOP_ALERT_EMAILS="a@b.com,c@d.com"
 const STOP_ALERT_EMAILS_PROP = 'STOP_ALERT_EMAILS';
@@ -49,17 +48,18 @@ function handleStop(meta, d) {
     'caseId',
     'photoUrl',
     'photoFileId',
-    'payloadJson'
+    'payloadJson',
+    'photo'
   ];
 
   const sh = getSheetByNameOrCreate(STOP_SHEET_NAME, headers);
   const caseId = d.caseId || Utilities.getUuid();
 
-  let photoUpload = { url: '', fileId: '', blob: null, fileName: '' };
+  let photoAttachment = { blob: null, fileName: '', mimeType: '', bytes: 0 };
   let photoError = '';
   if (d.photoDataUrl) {
     try {
-      photoUpload = saveStopPhotoToDrive(d.photoDataUrl, caseId);
+      photoAttachment = buildStopPhotoAttachment(d.photoDataUrl, caseId);
     } catch (err) {
       photoError = String(err && err.message ? err.message : err);
     }
@@ -77,25 +77,31 @@ function handleStop(meta, d) {
     !!d.noGo,
     meta.userAgent || '',
     caseId,
-    photoUpload.url,
-    photoUpload.fileId,
+    '',
+    '',
     JSON.stringify({
       ...d,
-      photoDataUrl: d.photoDataUrl ? '[stored-in-drive]' : '',
-      photoStored: !!photoUpload.fileId,
+      photoDataUrl: d.photoDataUrl ? '[sent-by-email]' : '',
+      photoIncluded: !!photoAttachment.blob,
+      photoMimeType: photoAttachment.mimeType || '',
+      photoBytes: photoAttachment.bytes || 0,
+      sourcePage: meta.page || '',
+      sourceFormType: meta.formType || '',
       photoError
-    })
+    }),
+    d.photoDataUrl ? 'oui' : ''
   ];
 
   sh.appendRow(row);
 
-  if (d.noGo) {
-    sendStopNoGoEmail({
+  const shouldSendStopEmail = !!d.noGo || !!d.photoDataUrl;
+  if (shouldSendStopEmail) {
+    sendStopAlertEmail({
       ...d,
       caseId,
-      photoUrl: photoUpload.url,
-      photoBlob: photoUpload.blob,
-      photoFileName: photoUpload.fileName
+      photoError,
+      photoBlob: photoAttachment.blob,
+      photoFileName: photoAttachment.fileName
     });
   }
 
@@ -103,13 +109,11 @@ function handleStop(meta, d) {
     ok: true,
     sheet: STOP_SHEET_NAME,
     row: sh.getLastRow(),
-    caseId,
-    photoUrl: photoUpload.url,
-    photoFileId: photoUpload.fileId
+    caseId
   });
 }
 
-function saveStopPhotoToDrive(photoDataUrl, caseId) {
+function buildStopPhotoAttachment(photoDataUrl, caseId) {
   const matches = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/.exec(photoDataUrl);
   if (!matches) throw new Error('Invalid photoDataUrl format');
 
@@ -120,24 +124,18 @@ function saveStopPhotoToDrive(photoDataUrl, caseId) {
   const fileName = `QHSE_STOP_${caseId}.${extension.replace('jpeg', 'jpg')}`;
 
   const blob = Utilities.newBlob(bytes, mimeType, fileName);
-  const folder = DriveApp.getFolderById(STOP_PHOTO_FOLDER_ID);
-  const file = folder.createFile(blob);
-
-  return {
-    url: file.getUrl(),
-    fileId: file.getId(),
-    blob,
-    fileName
-  };
+  return { blob, fileName, mimeType, bytes: bytes.length };
 }
 
-function sendStopNoGoEmail(stopData) {
+function sendStopAlertEmail(stopData) {
   const recipients = (PropertiesService.getScriptProperties().getProperty(STOP_ALERT_EMAILS_PROP) || '').trim();
   if (!recipients) return;
 
-  const subject = `[STOP][NO-GO] ${stopData.chantier || 'Sans chantier'} - ${stopData.caseId}`;
+  const isNoGo = !!stopData.noGo;
+  const subjectPrefix = isNoGo ? '[STOP][NO-GO]' : '[STOP][PHOTO]';
+  const subject = `${subjectPrefix} ${stopData.chantier || 'Sans chantier'} - ${stopData.caseId}`;
   const lines = [
-    'Un NO-GO STOP a été déclaré.',
+    isNoGo ? 'Un NO-GO STOP a été déclaré.' : 'Un STOP avec photo a été déclaré.',
     '',
     `Case ID: ${stopData.caseId || ''}`,
     `Date/heure: ${stopData.datetime || ''}`,
@@ -147,8 +145,9 @@ function sendStopNoGoEmail(stopData) {
     `Personne contactée: ${stopData.callNom || ''}`,
     `Fonction: ${stopData.callFonction || ''}`,
     `Mesures prises: ${stopData.solution || ''}`,
-    stopData.photoUrl ? `Photo: ${stopData.photoUrl}` : 'Photo: aucune'
-  ];
+    stopData.photoError ? `Erreur photo: ${stopData.photoError}` : '',
+    stopData.photoBlob ? 'Photo: jointe au mail' : 'Photo: aucune'
+  ].filter(Boolean);
 
   const mailOptions = {};
   if (stopData.photoBlob) {
