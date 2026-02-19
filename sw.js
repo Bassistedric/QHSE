@@ -1,4 +1,4 @@
-// sw.js — QHSE PWA (robuste) — v8
+// sw.js — QHSE PWA (robuste) — v9
 const VERSION = 'v9';
 
 const CACHE_STATIC  = `qhse-static-${VERSION}`;
