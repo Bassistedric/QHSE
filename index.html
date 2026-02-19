@@ -15,31 +15,31 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @media print{header,footer,.no-print{display:none!important}main{max-width:100%!important}section{page-break-inside:avoid}}
-    .card{ @apply bg-white rounded-2xl shadow p-4 mb-4; }
   </style>
 </head>
+
 <body class="min-h-screen bg-gray-50">
   <div id="root"></div>
 
-  <!-- PWA / Service Worker (bump ?v=... pour forcer la MAJ) -->
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () =>
-      navigator.serviceWorker
-        .register('./sw.js?v=v9')
-        .catch(console.error)
-    );
-  }
+  <!-- ✅ Config AVANT le bundle -->
   <script>
-  window.QHSE_CONFIG = {
-    COLLECT_URL: "https://script.google.com/macros/s/AKfycbwLRqxxGrcsW73R-iMHDbbKFchA2V6Xw5uUZmuo1qVW_DBW8KerO3GD2FRge7xPo-hbjw/exec"
-  };
-</script>
-<script type="module" src="dist/bundle.js?v=v10"></script>
+    window.QHSE_CONFIG = {
+      COLLECT_URL: "https://script.google.com/macros/s/AKfycbwLRqxxGrcsW73R-iMHDbbKFchA2V6Xw5uUZmuo1qVW_DBW8KerO3GD2FRge7xPo-hbjw/exec"
+    };
+  </script>
 
-</script>
+  <!-- ✅ Service Worker (bump v=... pour forcer la MAJ) -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker
+          .register('./sw.js?v=v10')
+          .catch(console.error);
+      });
+    }
+  </script>
 
-  <!-- Bundled React app -->
-  <script type="module" src="dist/bundle.js?v=v9"></script>
+  <!-- ✅ Bundle React (1 seule fois) -->
+  <script type="module" src="dist/bundle.js?v=v10"></script>
 </body>
 </html>
