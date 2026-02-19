@@ -704,6 +704,13 @@ function Toggle({ checked, onChange, label }) {
 
 // ========================= ENVOI + OFFLINE QUEUE =========================
 async function sendNow(payload) {
+
+  console.log("[SENDNOW] called", {
+    formType: payload?.meta?.formType,
+    hasPhoto: !!payload?.data?.photoDataUrl,
+    len: (payload?.data?.photoDataUrl || "").length
+  });
+
   console.log("[CONFIG] COLLECT_URL =", COLLECT_URL);
   if (!COLLECT_URL) {
     console.error("[CONFIG] COLLECT_URL is empty => impossible d'envoyer");
@@ -711,40 +718,36 @@ async function sendNow(payload) {
   }
 
   try {
-    // ✅ DEBUG STOP PHOTO
-    if ((payload?.meta?.formType || payload?.type) === "stop") {
-      const p = payload?.data?.photoDataUrl || "";
-      console.log(
-        "[STOP] hasPhoto:",
-        !!p,
-        "len:",
-        p.length,
-        "head:",
-        p.slice(0, 30)
-      );
-    }
+    console.log("[SEND] POST ->", COLLECT_URL);
 
     const res = await fetch(COLLECT_URL, {
       method: "POST",
-      body: JSON.stringify(payload), // no headers (Apps Script ok)
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
     });
 
     const txt = await res.text().catch(() => "");
-    console.log("[API] status:", res.status, "body:", txt.slice(0, 200));
+    console.log("[API] status:", res.status, "ok:", res.ok, "body:", txt.slice(0, 500));
 
     if (!res.ok) return false;
+
+    // Si le script renvoie un JSON {ok:false} on considère échec
     if (txt) {
       try {
         const j = JSON.parse(txt);
         if (j && j.ok === false) return false;
-      } catch {}
+      } catch {
+        // pas du JSON => ok, on ignore
+      }
     }
+
     return true;
   } catch (e) {
-    console.warn(e);
+    console.warn("[SEND] exception:", e);
     return false;
   }
 }
+
 
 function enqueueOutbox(item) {
   const box = loadLS(OUTBOX_KEY, []);
