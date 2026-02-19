@@ -634,10 +634,31 @@ function Toggle({ checked, onChange, label }){
 // Envoi + file d’attente locale (offline)
 async function sendNow(payload){
   try{
-    await fetch(COLLECT_URL, { method:"POST", mode:"no-cors", headers:{ "Content-Type":"text/plain" }, body: JSON.stringify(payload) });
+    const res = await fetch(COLLECT_URL, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    // si Apps Script renvoie 4xx/5xx => res.ok = false
+    if (!res.ok) return false;
+
+    const txt = await res.text().catch(()=> "");
+    // optionnel: si tu renvoies {ok:true} côté script
+    if (txt) {
+      try {
+        const j = JSON.parse(txt);
+        if (j && j.ok === false) return false;
+      } catch {}
+    }
     return true;
-  }catch(e){ console.warn(e); return false; }
+  } catch (e) {
+    console.warn(e);
+    return false;
+  }
 }
+
 function enqueueOutbox(item){
   const box = loadLS(OUTBOX_KEY, []);
   box.unshift(item);
