@@ -6,10 +6,14 @@ const STOP_PHOTO_FOLDER_ID = '1uSori6tFovYEXOg7TViO-RMxQr2WX8M2';
 const STOP_ALERT_EMAILS_PROP = 'STOP_ALERT_EMAILS';
 
 function doPost(e) {
-  const { meta = {}, data = {}, type } = JSON.parse(e.postData.contents);
-  if (type === 'tbm') return handleTbm(meta, data);
-  if (type === 'stop') return handleStop(meta, data);
-  return respond({ ok: false, error: 'unknown type', type });
+  try {
+    const { meta = {}, data = {}, type } = JSON.parse(e.postData.contents);
+    if (type === 'tbm') return handleTbm(meta, data);
+    if (type === 'stop') return handleStop(meta, data);
+    return respond({ ok: false, error: 'unknown type', type });
+  } catch (err) {
+    return respond({ ok: false, error: String(err && err.message ? err.message : err) });
+  }
 }
 
 function handleTbm(meta, d) {
@@ -52,8 +56,13 @@ function handleStop(meta, d) {
   const caseId = d.caseId || Utilities.getUuid();
 
   let photoUpload = { url: '', fileId: '', blob: null, fileName: '' };
+  let photoError = '';
   if (d.photoDataUrl) {
-    photoUpload = saveStopPhotoToDrive(d.photoDataUrl, caseId);
+    try {
+      photoUpload = saveStopPhotoToDrive(d.photoDataUrl, caseId);
+    } catch (err) {
+      photoError = String(err && err.message ? err.message : err);
+    }
   }
 
   const row = [
@@ -70,7 +79,12 @@ function handleStop(meta, d) {
     caseId,
     photoUpload.url,
     photoUpload.fileId,
-    JSON.stringify({ ...d, photoDataUrl: d.photoDataUrl ? '[stored-in-drive]' : '' })
+    JSON.stringify({
+      ...d,
+      photoDataUrl: d.photoDataUrl ? '[stored-in-drive]' : '',
+      photoStored: !!photoUpload.fileId,
+      photoError
+    })
   ];
 
   sh.appendRow(row);
