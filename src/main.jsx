@@ -703,9 +703,7 @@ function Toggle({ checked, onChange, label }) {
 }
 
 // ========================= ENVOI + OFFLINE QUEUE =========================
-
-  async function sendNow(payload) {
-    
+async function sendNow(payload) {
   console.log("[SENDNOW] called", {
     formType: payload?.meta?.formType,
     hasPhoto: !!payload?.data?.photoDataUrl,
@@ -723,7 +721,9 @@ function Toggle({ checked, onChange, label }) {
 
     const res = await fetch(COLLECT_URL, {
       method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      mode: "cors",                 // ✅ IMPORTANT
+      redirect: "follow",           // ✅ IMPORTANT (Apps Script 302)
+      headers: { "Content-Type": "text/plain;charset=utf-8" }, // ✅ évite preflight
       body: JSON.stringify(payload),
     });
 
@@ -748,6 +748,8 @@ function Toggle({ checked, onChange, label }) {
     return false;
   }
 }
+
+
 
 
 
@@ -1919,10 +1921,16 @@ function StopScreen() {
       return;
     }
 
-    const payload = {
-      meta: { sentAt: new Date().toISOString(), page: location.href, userAgent: navigator.userAgent, formType: "stop" },
-      data,
-    };
+const payload = {
+  meta: {
+    formType: "stop",                 // ✅ indispensable
+    sentAt: new Date().toISOString(),
+    page: location.href,
+    userAgent: navigator.userAgent
+  },
+  data
+};
+
 
     const ok = await sendNow(payload);
     if (ok) {
