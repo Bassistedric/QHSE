@@ -703,8 +703,9 @@ function Toggle({ checked, onChange, label }) {
 }
 
 // ========================= ENVOI + OFFLINE QUEUE =========================
-async function sendNow(payload) {
 
+  async function sendNow(payload) {
+    
   console.log("[SENDNOW] called", {
     formType: payload?.meta?.formType,
     hasPhoto: !!payload?.data?.photoDataUrl,
@@ -747,6 +748,8 @@ async function sendNow(payload) {
     return false;
   }
 }
+
+
 
 
 function enqueueOutbox(item) {
