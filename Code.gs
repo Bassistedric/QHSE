@@ -3,10 +3,15 @@ const STOP_SHEET_NAME = 'stop';
 
 // Configure in Apps Script properties: STOP_ALERT_EMAILS="a@b.com,c@d.com"
 const STOP_ALERT_EMAILS_PROP = 'STOP_ALERT_EMAILS';
+const QHSE_EMAIL = 'qhse.sud@vma.be';
 
 function doPost(e) {
   try {
-    const { meta = {}, data = {}, type } = JSON.parse(e.postData.contents);
+    const payload = JSON.parse(e.postData.contents || '{}');
+    const meta = payload.meta || {};
+    const data = payload.data || {};
+    const type = String((meta.formType || payload.type || payload.formType || '')).toLowerCase().trim();
+
     if (type === 'tbm') return handleTbm(meta, data);
     if (type === 'stop') return handleStop(meta, data);
     return respond({ ok: false, error: 'unknown type', type });
@@ -66,7 +71,7 @@ function handleStop(meta, d) {
   }
 
   const row = [
-    new Date().toISOString(),
+    meta.sentAt || new Date().toISOString(),
     d.datetime || '',
     d.chantier || '',
     d.responsable || '',
@@ -74,7 +79,7 @@ function handleStop(meta, d) {
     d.callNom || '',
     d.callFonction || '',
     d.solution || '',
-    !!d.noGo,
+    d.noGo ? 'OUI' : 'NON',
     meta.userAgent || '',
     caseId,
     '',
@@ -90,10 +95,12 @@ function handleStop(meta, d) {
 
   sh.appendRow(row);
 
-  if (d.noGo) {
+  // Envoi si NO-GO ou photo (photo jointe quand présente)
+  if (d.noGo || d.photoDataUrl) {
     sendStopNoGoEmail({
       ...d,
       caseId,
+      photoError,
       photoBlob: photoAttachment.blob,
       photoFileName: photoAttachment.fileName
     });
@@ -122,12 +129,16 @@ function buildStopPhotoAttachment(photoDataUrl, caseId) {
 }
 
 function sendStopNoGoEmail(stopData) {
-  const recipients = (PropertiesService.getScriptProperties().getProperty(STOP_ALERT_EMAILS_PROP) || '').trim();
+  const extra = (PropertiesService.getScriptProperties().getProperty(STOP_ALERT_EMAILS_PROP) || '').trim();
+  const recipients = Array.from(new Set([
+    QHSE_EMAIL,
+    ...String(extra || '').split(',').map(s => s.trim()).filter(Boolean)
+  ])).join(',');
   if (!recipients) return;
 
-  const subject = `[STOP][NO-GO] ${stopData.chantier || 'Sans chantier'} - ${stopData.caseId}`;
+  const subject = `[STOP][${stopData.noGo ? 'NO-GO' : 'PHOTO'}] ${stopData.chantier || 'Sans chantier'} - ${stopData.caseId}`;
   const lines = [
-    'Un NO-GO STOP a été déclaré.',
+    stopData.noGo ? 'Un NO-GO STOP a été déclaré.' : 'Un STOP avec photo a été déclaré.',
     '',
     `Case ID: ${stopData.caseId || ''}`,
     `Date/heure: ${stopData.datetime || ''}`,
@@ -137,7 +148,8 @@ function sendStopNoGoEmail(stopData) {
     `Personne contactée: ${stopData.callNom || ''}`,
     `Fonction: ${stopData.callFonction || ''}`,
     `Mesures prises: ${stopData.solution || ''}`,
-    stopData.photoBlob ? 'Photo: jointe au mail' : 'Photo: aucune'
+    stopData.photoBlob ? 'Photo: jointe au mail' : 'Photo: aucune',
+    stopData.photoError ? `Erreur photo: ${stopData.photoError}` : ''
   ];
 
   const mailOptions = {};
@@ -153,8 +165,16 @@ function getSheetByNameOrCreate(name, headers) {
   let sh = ss.getSheetByName(name);
   if (!sh) {
     sh = ss.insertSheet(name);
-    sh.appendRow(headers);
+    sh.getRange(1, 1, 1, headers.length).setValues([headers]);
+    return sh;
   }
+
+  // Garantit les colonnes A:O attendues pour STOP
+  if (sh.getMaxColumns() < headers.length) {
+    sh.insertColumnsAfter(sh.getMaxColumns(), headers.length - sh.getMaxColumns());
+  }
+  sh.getRange(1, 1, 1, headers.length).setValues([headers]);
+
   return sh;
 }
 

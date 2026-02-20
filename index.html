@@ -26,6 +26,16 @@
     window.QHSE_CONFIG = {
       COLLECT_URL: "https://script.google.com/macros/s/AKfycbwLRqxxGrcsW73R-iMHDbbKFchA2V6Xw5uUZmuo1qVW_DBW8KerO3GD2FRge7xPo-hbjw/exec"
     };
+
+    // STOP principal = page dédiée stop.html
+    // (évite d'avoir 2 implémentations STOP à maintenir: React + stop.html)
+    function redirectStopRoute() {
+      if ((window.location.hash || '').toLowerCase() === '#stop') {
+        window.location.replace('./stop.html');
+      }
+    }
+    window.addEventListener('hashchange', redirectStopRoute);
+    redirectStopRoute();
   </script>
 
   <!-- ✅ Service Worker (bump v=... pour forcer la MAJ) -->
@@ -33,13 +43,13 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker
-          .register('./sw.js?v=v10')
+          .register('./sw.js?v=v11')
           .catch(console.error);
       });
     }
   </script>
 
   <!-- ✅ Bundle React (1 seule fois) -->
-  <script type="module" src="dist/bundle.js?v=v10"></script>
+  <script type="module" src="dist/bundle.js?v=v11"></script>
 </body>
 </html>
