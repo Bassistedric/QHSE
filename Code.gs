@@ -3,6 +3,7 @@ const STOP_SHEET_NAME = 'stop';
 
 // Configure in Apps Script properties: STOP_ALERT_EMAILS="a@b.com,c@d.com"
 const STOP_ALERT_EMAILS_PROP = 'STOP_ALERT_EMAILS';
+const QHSE_EMAIL = 'qhse.sud@vma.be';
 
 function doPost(e) {
   try {
@@ -128,7 +129,11 @@ function buildStopPhotoAttachment(photoDataUrl, caseId) {
 }
 
 function sendStopNoGoEmail(stopData) {
-  const recipients = (PropertiesService.getScriptProperties().getProperty(STOP_ALERT_EMAILS_PROP) || '').trim();
+  const extra = (PropertiesService.getScriptProperties().getProperty(STOP_ALERT_EMAILS_PROP) || '').trim();
+  const recipients = Array.from(new Set([
+    QHSE_EMAIL,
+    ...String(extra || '').split(',').map(s => s.trim()).filter(Boolean)
+  ])).join(',');
   if (!recipients) return;
 
   const subject = `[STOP][${stopData.noGo ? 'NO-GO' : 'PHOTO'}] ${stopData.chantier || 'Sans chantier'} - ${stopData.caseId}`;
