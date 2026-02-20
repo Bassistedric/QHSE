@@ -230,11 +230,23 @@
       });
     }
 
-    function sheetToMetier(sheetName) {
-      const s = String(sheetName || "").trim().toLowerCase();
-      if (s === "equipe_elec") return "Elec";
-      if (s === "equipe_hvac_ref") return "HVAC_REF";
-      return "";
+    function metierToken(value){
+      return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g,'')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g,'_')
+        .replace(/^_+|_+$/g,'');
+    }
+
+    function sheetToMetier(sheetName, metierValue) {
+      const sheet = metierToken(sheetName);
+      const metier = metierToken(metierValue);
+
+      const source = `${sheet}_${metier}`;
+      if (source.includes('elec')) return 'Elec';
+      if (source.includes('hvac_ref') || source.includes('hvac') || source.includes('ref')) return 'HVAC_REF';
+      return '';
     }
 
     function isoWeek(dateObj){
@@ -456,6 +468,7 @@
         const idx = {
           annee: headers.indexOf('annee'),
           semaine: headers.indexOf('semaine'),
+          metier: headers.indexOf('metier'),
           pm: headers.indexOf('pm'),
           sisu: headers.indexOf('sisu'),
           ce: headers.indexOf('ce'),
@@ -478,13 +491,14 @@
             return {
               annee: parseInt(r[idx.annee],10) || null,
               semaine: parseInt(r[idx.semaine],10) || null,
+              metierRaw: idx.metier >= 0 ? (r[idx.metier] || '').toString().trim() : '',
               pm: (r[idx.pm] || '').toString().trim(),
               sisu: (r[idx.sisu] || '').toString().trim(),
               ce: (r[idx.ce] || '').toString().trim(),
               ouvrier: (r[idx.ouvrier] || '').toString().trim(),
               chantier: (r[idx.chantier] || '').toString().trim(),
               sheet,
-              metier: sheetToMetier(sheet)
+              metier: sheetToMetier(sheet, idx.metier >= 0 ? r[idx.metier] : '')
             };
           })
           .filter(r => r.semaine && r.ouvrier && r.chantier && r.metier);
