@@ -705,35 +705,54 @@ function Toggle({ checked, onChange, label }) {
 // ========================= ENVOI + OFFLINE QUEUE =========================
 
 async function sendNow(payload) {
-  // ✅ Normaliser le payload au format attendu par ton API
+  const formType = payload?.meta?.formType || payload?.type || payload?.formType || "unknown";
+  const data = payload?.data || payload || {};
+
+  // Compat maximale: certains déploiements lisent meta.formType,
+  // d'autres lisent payload.type / payload.formType.
   const normalized = {
+    type: formType,
+    formType,
     meta: {
       ...(payload.meta || {}),
-      formType: payload?.meta?.formType || payload?.type || "unknown",
+      formType,
       sentAt: payload?.meta?.sentAt || new Date().toISOString(),
       page: payload?.meta?.page || location.href,
       userAgent: payload?.meta?.userAgent || navigator.userAgent,
     },
-    data: payload.data || payload,
+    data,
   };
 
   console.log("[CONFIG] COLLECT_URL =", COLLECT_URL);
   if (!COLLECT_URL) return false;
 
+  const body = JSON.stringify(normalized);
+
+  // Tentative CORS d'abord (permet de lire un vrai JSON de retour)
   try {
-    // ✅ Fire-and-forget: évite CORB/CORS
-    await fetch(COLLECT_URL, {
+    const res = await fetch(COLLECT_URL, {
       method: "POST",
-      mode: "no-cors", // ✅ clé pour Apps Script depuis GitHub Pages
+      mode: "cors",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(normalized),
+      body,
     });
 
-    // ✅ Ici tu ne peux PAS savoir si le serveur a répondu OK
-    // => on considère “ok” côté client et on s’appuie sur logs/sheet
+    if (res.ok) return true;
+  } catch (e) {
+    console.warn("[SEND][cors] exception:", e);
+  }
+
+  // Fallback no-cors (fire-and-forget)
+  try {
+    await fetch(COLLECT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body,
+    });
     return true;
   } catch (e) {
-    console.warn("[SEND] exception:", e);
+    console.warn("[SEND][no-cors] exception:", e);
     return false;
   }
 }
@@ -1908,13 +1927,19 @@ function StopScreen() {
     }
 
 const payload = {
+  type: "stop",
+  formType: "stop",
   meta: {
     formType: "stop",                 // ✅ indispensable
     sentAt: new Date().toISOString(),
     page: location.href,
     userAgent: navigator.userAgent
   },
-  data
+  data: {
+    ...data,
+    situationSTOP: data.situation || "",
+    photoDataUrl: data.photoDataUrl || "",
+  }
 };
 
 
