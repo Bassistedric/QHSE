@@ -703,54 +703,40 @@ function Toggle({ checked, onChange, label }) {
 }
 
 // ========================= ENVOI + OFFLINE QUEUE =========================
+
 async function sendNow(payload) {
-  console.log("[SENDNOW] called", {
-    formType: payload?.meta?.formType,
-    hasPhoto: !!payload?.data?.photoDataUrl,
-    len: (payload?.data?.photoDataUrl || "").length
-  });
+  // ✅ Normaliser le payload au format attendu par ton API
+  const normalized = {
+    meta: {
+      ...(payload.meta || {}),
+      formType: payload?.meta?.formType || payload?.type || "unknown",
+      sentAt: payload?.meta?.sentAt || new Date().toISOString(),
+      page: payload?.meta?.page || location.href,
+      userAgent: payload?.meta?.userAgent || navigator.userAgent,
+    },
+    data: payload.data || payload,
+  };
 
   console.log("[CONFIG] COLLECT_URL =", COLLECT_URL);
-  if (!COLLECT_URL) {
-    console.error("[CONFIG] COLLECT_URL is empty => impossible d'envoyer");
-    return false;
-  }
+  if (!COLLECT_URL) return false;
 
   try {
-    console.log("[SEND] POST ->", COLLECT_URL);
-
-    const res = await fetch(COLLECT_URL, {
+    // ✅ Fire-and-forget: évite CORB/CORS
+    await fetch(COLLECT_URL, {
       method: "POST",
-      mode: "cors",                 // ✅ IMPORTANT
-      redirect: "follow",           // ✅ IMPORTANT (Apps Script 302)
-      headers: { "Content-Type": "text/plain;charset=utf-8" }, // ✅ évite preflight
-      body: JSON.stringify(payload),
+      mode: "no-cors", // ✅ clé pour Apps Script depuis GitHub Pages
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(normalized),
     });
 
-    const txt = await res.text().catch(() => "");
-    console.log("[API] status:", res.status, "ok:", res.ok, "body:", txt.slice(0, 500));
-
-    if (!res.ok) return false;
-
-    // Si le script renvoie un JSON {ok:false} on considère échec
-    if (txt) {
-      try {
-        const j = JSON.parse(txt);
-        if (j && j.ok === false) return false;
-      } catch {
-        // pas du JSON => ok, on ignore
-      }
-    }
-
+    // ✅ Ici tu ne peux PAS savoir si le serveur a répondu OK
+    // => on considère “ok” côté client et on s’appuie sur logs/sheet
     return true;
   } catch (e) {
     console.warn("[SEND] exception:", e);
     return false;
   }
 }
-
-
-
 
 
 
