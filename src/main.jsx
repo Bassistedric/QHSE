@@ -2130,9 +2130,18 @@ const payload = {
 }
 
 // ========================= HEADER COMPONENTS =========================
-function Brand() {
+function Brand({ showBack = false }) {
   return (
-    <a href="#home" className="flex items-center gap-2" aria-label="QHSE">
+    <a
+      href="#home"
+      className={
+        showBack
+          ? "inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl border bg-white"
+          : "flex items-center gap-2"
+      }
+      aria-label={showBack ? "Retour à l'accueil QHSE" : "QHSE"}
+    >
+      {showBack && <span aria-hidden="true">← Retour</span>}
       <img
         src="qhse-logo.svg"
         alt=""
@@ -2200,6 +2209,7 @@ class ErrorBoundary extends React.Component {
 function App() {
   const { t } = useI18n();
   const [route, setRoute] = React.useState(parseRoute());
+  const showBackHome = route !== "home";
 
   React.useEffect(() => {
     const onHash = () => setRoute(parseRoute());
@@ -2211,7 +2221,7 @@ function App() {
     <div>
       <header className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between gap-3">
-          <Brand />
+          <Brand showBack={showBackHome} />
           <div className="flex items-center gap-3">
             <LangPicker />
             <button onClick={() => globalThis.print()} className="px-3 py-1.5 rounded-xl border">
