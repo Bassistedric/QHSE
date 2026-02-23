@@ -57,7 +57,7 @@
     </section>
 
     <section class="bg-white rounded shadow p-4">
-      <label for="responsableSelect" class="block text-sm font-medium mb-1">Responsable (CE)</label>
+      <label for="responsableSelect" class="block text-sm font-medium mb-1">Responsable (CE/PM)</label>
       <select id="responsableSelect" class="border rounded px-2 py-1 w-full"></select>
       <input id="responsableManual" type="text" class="border rounded px-2 py-1 w-full mt-1 text-sm" placeholder="Ajouter manuellement">
       <p id="responsableHelper" class="text-sm text-gray-500 mt-1"></p>
@@ -129,7 +129,7 @@
   <script type="module">
     import { SHEET_BASE_URL, TBM_GID } from './sheetConfig.js';
 
-    // ✅ ON FORCE LE GID DE AFFECTATIONS_SEMAINE (pas les onglets Equipe_*)
+    // ✅ ON FORCE LE GID DE AFFECTATIONS_SEMAINE
     const AFFECTATIONS_GID = "496527492";
 
     // URL Apps Script (collect TBM)
@@ -305,10 +305,13 @@
       return affectRows.filter(r => targetSheets.has(r.sheetNorm) && r.semaine === week);
     }
 
+    // ✅ inclure aussi CE et PM dans les suggestions
     function updateKnownNamesFromRows(rows){
       normalizedNameMap.clear();
       manualSuggestions.innerHTML='';
-      const names = uniqSorted(rows.map(r=>r.ouvrier));
+      const names = uniqSorted(
+        rows.flatMap(r => [r.ouvrier, r.ce, r.pm]).filter(Boolean)
+      );
       names.forEach(name=>{
         const opt=document.createElement('option');
         opt.value=name;
@@ -360,6 +363,10 @@
       }
     }
 
+    function responsableLabelFromRow(r){
+      return (r.ce || r.pm || '').toString().trim();
+    }
+
     function populateResponsableAndTeam(){
       if(chantierManualInput.value.trim()){
         clearSelect(responsableSelect);
@@ -379,26 +386,34 @@
       const target = normUpper(chantier);
       const chantierRows = base.filter(r => normUpper(r.chantier) === target);
 
-      const ces = uniqSorted(chantierRows.map(r=>r.ce));
-      if(ces.length){
-        setSelectOptions(responsableSelect, ces);
+      // ✅ Responsable = CE si présent sinon PM
+      const responsibles = uniqSorted(
+        chantierRows.map(responsableLabelFromRow).filter(Boolean)
+      );
+
+      if(responsibles.length){
+        setSelectOptions(responsableSelect, responsibles);
         responsableSelect.disabled=false;
       }else{
         responsableSelect.disabled=true;
-        responsableHelper.textContent='Aucun CE trouvé';
+        responsableHelper.textContent='Aucun responsable trouvé (CE/PM)';
       }
 
       if(responsableManualInput.value.trim()){
         responsableSelect.disabled=true;
       }
 
-      const selectedCE = responsableManualInput.value.trim() || (responsableSelect.disabled ? '' : responsableSelect.value);
-      if(!selectedCE) return;
+      const selectedResp = responsableManualInput.value.trim() || (responsableSelect.disabled ? '' : responsableSelect.value);
+      if(!selectedResp) return;
 
-      const ceTarget = normUpper(selectedCE);
-      const members = uniqSorted(chantierRows
-        .filter(r => normUpper(r.ce) === ceTarget)
-        .map(r=>r.ouvrier)
+      const respTarget = normUpper(selectedResp);
+
+      // ✅ Membres = ouvriers rattachés à ce responsable (CE/PM)
+      const members = uniqSorted(
+        chantierRows
+          .filter(r => normUpper(responsableLabelFromRow(r)) === respTarget)
+          .map(r=>r.ouvrier)
+          .filter(Boolean)
       );
 
       members.forEach(n=>{
@@ -462,7 +477,7 @@
 
     function cleanHeaderCell(s){
       return String(s ?? '')
-        .replace(/^\uFEFF/, '')     // BOM
+        .replace(/^\uFEFF/, '')
         .replace(/\t/g,' ')
         .trim()
         .toLowerCase();
@@ -471,7 +486,7 @@
     async function loadSheets(){
       loadStatus.textContent = 'Chargement...';
       try{
-        // 1) AFFECTATIONS_SEMAINE (gid fixe)
+        // 1) AFFECTATIONS_SEMAINE
         const url = csvUrl(SHEET_BASE_URL, AFFECTATIONS_GID);
         if(!url) throw new Error('URL CSV AFFECTATIONS invalide.');
 
@@ -519,7 +534,8 @@
               row: parseInt(r[idx.row],10) || null
             };
           })
-          .filter(r => r.semaine && r.ouvrier && r.chantier && r.sheetNorm);
+          // ✅ IMPORTANT : garder lignes chantier même si ouvrier est vide (cas CE/PM en HVAC)
+          .filter(r => r.semaine && r.chantier && r.sheetNorm && (r.ouvrier || r.ce || r.pm));
 
         // 2) TBM videos
         const tbmUrl = csvUrl(SHEET_BASE_URL, TBM_GID);
