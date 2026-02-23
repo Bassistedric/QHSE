@@ -236,13 +236,31 @@
         .replace(/[\u0300-\u036f]/g, '')
         .trim()
         .toUpperCase()
-        .replace(/\s+/g, '_');
+        .replace(/[^A-Z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
     }
 
     function metierToSheetSet(metier) {
-      if (metier === 'Elec') return new Set(['EQUIPE_ELEC']);
-      if (metier === 'HVAC_REF') return new Set(['EQUIPE_HVAC_REF']);
+      if (metier === 'Elec') {
+        return new Set(['EQUIPE_ELEC']);
+      }
+      if (metier === 'HVAC_REF') {
+        return new Set([
+          'EQUIPE_HVAC_REF',
+          'EQUIPE_HVAC_REF_',
+          'EQUIPE_HVACREF',
+          'HVAC_REF'
+        ]);
+      }
       return new Set();
+    }
+
+    function findHeaderIndex(headers, aliases) {
+      for (const alias of aliases) {
+        const idx = headers.indexOf(alias);
+        if (idx >= 0) return idx;
+      }
+      return -1;
     }
 
     function isoWeek(dateObj){
@@ -464,14 +482,16 @@
         const headers = headersRaw.map(cleanHeaderCell);
 
         const idx = {
-          annee: headers.indexOf('annee'),
-          semaine: headers.indexOf('semaine'),
-          pm: headers.indexOf('pm'),
-          sisu: headers.indexOf('sisu'),
-          ce: headers.indexOf('ce'),
-          ouvrier: headers.indexOf('ouvrier'),
-          chantier: headers.indexOf('chantier'),
-          sheet: headers.indexOf('sheet')
+          annee: findHeaderIndex(headers, ['annee', 'annee_iso']),
+          semaine: findHeaderIndex(headers, ['semaine', 'semaine_iso']),
+          pm: findHeaderIndex(headers, ['pm']),
+          sisu: findHeaderIndex(headers, ['sisu']),
+          ce: findHeaderIndex(headers, ['ce', 'chef_equipe']),
+          ouvrier: findHeaderIndex(headers, ['ouvrier', 'ouvriers']),
+          chantier: findHeaderIndex(headers, ['chantier']),
+          nbColonnes: findHeaderIndex(headers, ['nbcolonnes', 'nb_colonnes']),
+          sheet: findHeaderIndex(headers, ['sheet', 'feuille']),
+          row: findHeaderIndex(headers, ['row', 'ligne'])
         };
 
         const missing = Object.entries(idx).filter(([k,v])=>v < 0).map(([k])=>k);
@@ -493,8 +513,10 @@
               ce: (r[idx.ce] || '').toString().trim(),
               ouvrier: (r[idx.ouvrier] || '').toString().trim(),
               chantier: (r[idx.chantier] || '').toString().trim(),
+              nbColonnes: parseInt(r[idx.nbColonnes],10) || null,
               sheet,
-              sheetNorm: normalizeSheetName(sheet)
+              sheetNorm: normalizeSheetName(sheet),
+              row: parseInt(r[idx.row],10) || null
             };
           })
           .filter(r => r.semaine && r.ouvrier && r.chantier && r.sheetNorm);
