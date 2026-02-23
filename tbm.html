@@ -129,7 +129,7 @@
   <script type="module">
     import { SHEET_BASE_URL, TBM_GID } from './sheetConfig.js';
 
-    // ✅ ON FORCE LE GID DE AFFECTATIONS_SEMAINE
+    // ✅ GID AFFECTATIONS_SEMAINE
     const AFFECTATIONS_GID = "496527492";
 
     // URL Apps Script (collect TBM)
@@ -209,20 +209,20 @@
       return normalize(str).toUpperCase().replace(/\s+/g,' ');
     }
 
-function csvUrl(base, gid){
-  try {
-    const u = new URL(base);
-    u.searchParams.set('output','csv');
-    u.searchParams.set('gid', gid);
+    function csvUrl(base, gid){
+      try {
+        const u = new URL(base);
+        u.searchParams.set('output','csv');
+        u.searchParams.set('gid', gid);
 
-    // ✅ évite le cache
-    u.searchParams.set('_cb', Date.now().toString());
+        // ✅ anti-cache
+        u.searchParams.set('_cb', Date.now().toString());
 
-    return u.toString();
-  } catch {
-    return null;
-  }
-}
+        return u.toString();
+      } catch {
+        return null;
+      }
+    }
 
     function parseCsv(url){
       return new Promise((resolve,reject)=>{
@@ -245,16 +245,9 @@ function csvUrl(base, gid){
     }
 
     function metierToSheetSet(metier) {
-      if (metier === 'Elec') {
-        return new Set(['EQUIPE_ELEC']);
-      }
+      if (metier === 'Elec') return new Set(['EQUIPE_ELEC']);
       if (metier === 'HVAC_REF') {
-        return new Set([
-          'EQUIPE_HVAC_REF',
-          'EQUIPE_HVAC_REF_',
-          'EQUIPE_HVACREF',
-          'HVAC_REF'
-        ]);
+        return new Set(['EQUIPE_HVAC_REF','EQUIPE_HVAC_REF_','EQUIPE_HVACREF','HVAC_REF']);
       }
       return new Set();
     }
@@ -309,13 +302,16 @@ function csvUrl(base, gid){
       return affectRows.filter(r => targetSheets.has(r.sheetNorm) && r.semaine === week);
     }
 
+    // ✅ CE/PM label
+    function responsableLabelFromRow(r){
+      return (r.ce || r.pm || '').toString().trim();
+    }
+
     // ✅ inclure aussi CE et PM dans les suggestions
     function updateKnownNamesFromRows(rows){
       normalizedNameMap.clear();
       manualSuggestions.innerHTML='';
-      const names = uniqSorted(
-        rows.flatMap(r => [r.ouvrier, r.ce, r.pm]).filter(Boolean)
-      );
+      const names = uniqSorted(rows.flatMap(r => [r.ouvrier, r.ce, r.pm]).filter(Boolean));
       names.forEach(name=>{
         const opt=document.createElement('option');
         opt.value=name;
@@ -363,24 +359,21 @@ function csvUrl(base, gid){
 
       if(chantiers.length){
         chantierSelect.value = chantiers[0];
-        populateResponsableAndTeam();
+        populateResponsablesForChantier();
       }
     }
 
-    function responsableLabelFromRow(r){
-      return (r.ce || r.pm || '').toString().trim();
-    }
-
-    function populateResponsableAndTeam(){
+    // ✅ 1) Remplit la liste des responsables POUR LE CHANTIER (sans figer l'équipe)
+    function populateResponsablesForChantier(){
       if(chantierManualInput.value.trim()){
         clearSelect(responsableSelect);
         teamContainer.innerHTML='';
         responsableSelect.disabled=true;
+        responsableHelper.textContent='';
         return;
       }
 
       teamContainer.innerHTML='';
-      clearSelect(responsableSelect);
       responsableHelper.textContent='';
 
       const chantier = chantierSelect.value;
@@ -390,33 +383,49 @@ function csvUrl(base, gid){
       const target = normUpper(chantier);
       const chantierRows = base.filter(r => normUpper(r.chantier) === target);
 
-      // ✅ Responsable = CE si présent sinon PM
-      const responsibles = uniqSorted(
-        chantierRows.map(responsableLabelFromRow).filter(Boolean)
-      );
+      const responsibles = uniqSorted(chantierRows.map(responsableLabelFromRow).filter(Boolean));
+
+      clearSelect(responsableSelect);
 
       if(responsibles.length){
         setSelectOptions(responsableSelect, responsibles);
-        responsableSelect.disabled=false;
+        responsableSelect.disabled = !!responsableManualInput.value.trim();
+        if(!responsableSelect.disabled){
+          responsableSelect.value = responsibles[0];
+        }
       }else{
         responsableSelect.disabled=true;
         responsableHelper.textContent='Aucun responsable trouvé (CE/PM)';
       }
 
-      if(responsableManualInput.value.trim()){
-        responsableSelect.disabled=true;
-      }
+      populateTeamForSelectedResponsable();
+    }
 
-      const selectedResp = responsableManualInput.value.trim() || (responsableSelect.disabled ? '' : responsableSelect.value);
+    // ✅ 2) Recalcule uniquement l'équipe pour le responsable choisi (sans toucher au select)
+    function populateTeamForSelectedResponsable(){
+      teamContainer.innerHTML='';
+
+      if(chantierManualInput.value.trim()) return;
+
+      const chantier = chantierSelect.value;
+      if(!chantier) return;
+
+      const base = getFilteredRowsBase();
+      const target = normUpper(chantier);
+      const chantierRows = base.filter(r => normUpper(r.chantier) === target);
+
+      const selectedResp = responsableManualInput.value.trim()
+        ? responsableManualInput.value.trim()
+        : (responsableSelect.disabled ? '' : responsableSelect.value);
+
       if(!selectedResp) return;
 
       const respTarget = normUpper(selectedResp);
 
-      // ✅ Membres = ouvriers rattachés à ce responsable (CE/PM)
       const members = uniqSorted(
         chantierRows
           .filter(r => normUpper(responsableLabelFromRow(r)) === respTarget)
-          .map(r=>r.ouvrier)
+          .map(r => r.ouvrier)
           .filter(Boolean)
       );
 
@@ -490,7 +499,6 @@ function csvUrl(base, gid){
     async function loadSheets(){
       loadStatus.textContent = 'Chargement...';
       try{
-        // 1) AFFECTATIONS_SEMAINE
         const url = csvUrl(SHEET_BASE_URL, AFFECTATIONS_GID);
         if(!url) throw new Error('URL CSV AFFECTATIONS invalide.');
 
@@ -538,10 +546,9 @@ function csvUrl(base, gid){
               row: parseInt(r[idx.row],10) || null
             };
           })
-          // ✅ IMPORTANT : garder lignes chantier même si ouvrier est vide (cas CE/PM en HVAC)
+          // ✅ garder lignes chantier même si ouvrier est vide (CE/PM)
           .filter(r => r.semaine && r.chantier && r.sheetNorm && (r.ouvrier || r.ce || r.pm));
 
-        // 2) TBM videos
         const tbmUrl = csvUrl(SHEET_BASE_URL, TBM_GID);
         if(tbmUrl){
           try{ tbmData = await parseCsv(tbmUrl); }
@@ -627,9 +634,10 @@ function csvUrl(base, gid){
       boxes.forEach(b=>b.checked=!allChecked);
     });
 
+    // ✅ listeners
     metierInput.addEventListener('change', updateAll);
-    chantierSelect.addEventListener('change', populateResponsableAndTeam);
-    responsableSelect.addEventListener('change', populateResponsableAndTeam);
+    chantierSelect.addEventListener('change', populateResponsablesForChantier);
+    responsableSelect.addEventListener('change', populateTeamForSelectedResponsable);
 
     chantierManualInput.addEventListener('input',()=>{
       if(chantierManualInput.value.trim()){
@@ -648,12 +656,11 @@ function csvUrl(base, gid){
     responsableManualInput.addEventListener('input',()=>{
       if(responsableManualInput.value.trim()){
         responsableSelect.disabled=true;
-        responsableSelect.value='';
         responsableHelper.textContent='';
-        populateResponsableAndTeam();
       }else{
-        populateResponsableAndTeam();
+        responsableSelect.disabled=false;
       }
+      populateTeamForSelectedResponsable();
     });
 
     dateInput.addEventListener('change', updateAll);
