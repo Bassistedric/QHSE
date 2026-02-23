@@ -231,9 +231,20 @@
     }
 
     function sheetToMetier(sheetName) {
-      const s = String(sheetName || "").trim().toLowerCase();
-      if (s === "equipe_elec") return "Elec";
-      if (s === "equipe_hvac_ref") return "HVAC_REF";
+      const normalized = String(sheetName || "")
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+        .toLowerCase();
+      const slug = normalized.replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+
+      if (slug === "equipe_elec") return "Elec";
+
+      const isHvacRef =
+        slug === "equipe_hvac_ref" ||
+        (slug.startsWith("equipe_") && slug.includes("hvac") && slug.includes("ref"));
+      if (isHvacRef) return "HVAC_REF";
+
       return "";
     }
 
