@@ -230,22 +230,19 @@
       });
     }
 
-    function sheetToMetier(sheetName) {
-      const normalized = String(sheetName || "")
+    function normalizeSheetName(sheetName) {
+      return String(sheetName || "")
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .trim()
-        .toLowerCase();
-      const slug = normalized.replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+        .toUpperCase()
+        .replace(/\s+/g, '_');
+    }
 
-      if (slug === "equipe_elec") return "Elec";
-
-      const isHvacRef =
-        slug === "equipe_hvac_ref" ||
-        (slug.startsWith("equipe_") && slug.includes("hvac") && slug.includes("ref"));
-      if (isHvacRef) return "HVAC_REF";
-
-      return "";
+    function metierToSheetSet(metier) {
+      if (metier === 'Elec') return new Set(['EQUIPE_ELEC']);
+      if (metier === 'HVAC_REF') return new Set(['EQUIPE_HVAC_REF']);
+      return new Set();
     }
 
     function isoWeek(dateObj){
@@ -285,7 +282,9 @@
       const metier = metierInput.value;
       const week = getSelectedWeek();
       if (!metier || !week) return [];
-      return affectRows.filter(r => r.metier === metier && r.semaine === week);
+      const targetSheets = metierToSheetSet(metier);
+      if (!targetSheets.size) return [];
+      return affectRows.filter(r => targetSheets.has(r.sheetNorm) && r.semaine === week);
     }
 
     function updateKnownNamesFromRows(rows){
@@ -495,10 +494,10 @@
               ouvrier: (r[idx.ouvrier] || '').toString().trim(),
               chantier: (r[idx.chantier] || '').toString().trim(),
               sheet,
-              metier: sheetToMetier(sheet)
+              sheetNorm: normalizeSheetName(sheet)
             };
           })
-          .filter(r => r.semaine && r.ouvrier && r.chantier && r.metier);
+          .filter(r => r.semaine && r.ouvrier && r.chantier && r.sheetNorm);
 
         // 2) TBM videos
         const tbmUrl = csvUrl(SHEET_BASE_URL, TBM_GID);
