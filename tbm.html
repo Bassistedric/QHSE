@@ -118,6 +118,14 @@
     </div>
   </div>
 
+  <div id="successModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-labelledby="successTitle" aria-hidden="true">
+    <div class="bg-slate-900 text-white rounded-lg shadow-xl max-w-sm w-full p-6 text-center space-y-4">
+      <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-600 text-3xl font-bold leading-none" aria-hidden="true">V</div>
+      <h2 id="successTitle" class="text-lg font-semibold">Confirmation de données envoyées</h2>
+      <button id="closeSuccessModal" type="button" class="px-4 py-2 bg-white text-slate-900 rounded font-medium">OK</button>
+    </div>
+  </div>
+
   <script>
     const LANG_KEY = "qhse_lang_v1";
     function setLang(l){
@@ -175,6 +183,8 @@
     const cancelConfirmationBtn = document.getElementById('cancelConfirmation');
     const confirmSendBtn = document.getElementById('confirmSend');
     const confirmationMessage = confirmationModal.querySelector('[data-modal-message]');
+    const successModal = document.getElementById('successModal');
+    const closeSuccessModalBtn = document.getElementById('closeSuccessModal');
 
     let affectRows = [];
     let tbmData = null;
@@ -693,15 +703,27 @@
       pendingSendPayload = null;
       if(returnFocus) sendBtn.focus();
     }
+    function showSuccessModal(){
+      successModal.classList.remove('hidden');
+      successModal.setAttribute('aria-hidden','false');
+      closeSuccessModalBtn.focus();
+    }
+    function hideSuccessModal(returnFocus = true){
+      successModal.classList.add('hidden');
+      successModal.setAttribute('aria-hidden','true');
+      if(returnFocus) sendBtn.focus();
+    }
 
     async function submitPayload(payload){
       sendBtn.disabled = true;
       const originalLabel = sendBtn.textContent;
       sendBtn.textContent = 'Envoi...';
+      let sent = false;
 
       try{
         await fetch(COLLECT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
         sendStatus.textContent='Envoyé';
+        sent = true;
       }catch(e){
         sendStatus.textContent="Erreur d'envoi, enregistré localement.";
         enqueue(payload);
@@ -722,6 +744,10 @@
 
       sendBtn.disabled = false;
       sendBtn.textContent = originalLabel;
+
+      if(sent){
+        showSuccessModal();
+      }
     }
 
     cancelConfirmationBtn.addEventListener('click', ()=> hideConfirmation());
@@ -733,7 +759,13 @@
       sendBtn.focus();
     });
     confirmationModal.addEventListener('click', (ev)=>{ if(ev.target === confirmationModal) hideConfirmation(); });
-    document.addEventListener('keydown', (ev)=>{ if(ev.key==='Escape' && !confirmationModal.classList.contains('hidden')) hideConfirmation(); });
+    closeSuccessModalBtn.addEventListener('click', ()=> hideSuccessModal());
+    successModal.addEventListener('click', (ev)=>{ if(ev.target === successModal) hideSuccessModal(); });
+    document.addEventListener('keydown', (ev)=>{
+      if(ev.key !== 'Escape') return;
+      if(!confirmationModal.classList.contains('hidden')) hideConfirmation();
+      else if(!successModal.classList.contains('hidden')) hideSuccessModal();
+    });
 
     sendBtn.addEventListener('click',()=>{
       const dateVal=dateInput.value;
