@@ -110,8 +110,11 @@
   <div id="confirmationModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-labelledby="confirmationTitle" aria-hidden="true">
     <div class="bg-white rounded-lg shadow-xl max-w-sm w-full p-6 text-center space-y-4">
       <h2 id="confirmationTitle" class="text-lg font-semibold">Confirmation</h2>
-      <p data-modal-message class="text-sm text-gray-700">Votre envoi a bien été pris en compte.</p>
-      <button id="closeConfirmation" class="px-4 py-2 bg-blue-600 text-white rounded">OK</button>
+      <p data-modal-message class="text-sm text-gray-700">Voulez-vous envoyer ?</p>
+      <div class="flex justify-center gap-3">
+        <button id="cancelConfirmation" type="button" class="px-4 py-2 bg-red-600 text-white rounded">Annuler</button>
+        <button id="confirmSend" type="button" class="px-4 py-2 bg-green-600 text-white rounded">Confirmer</button>
+      </div>
     </div>
   </div>
 
@@ -169,7 +172,8 @@
     const historyTable = document.getElementById('historyTable');
 
     const confirmationModal = document.getElementById('confirmationModal');
-    const closeConfirmationBtn = document.getElementById('closeConfirmation');
+    const cancelConfirmationBtn = document.getElementById('cancelConfirmation');
+    const confirmSendBtn = document.getElementById('confirmSend');
     const confirmationMessage = confirmationModal.querySelector('[data-modal-message]');
 
     let affectRows = [];
@@ -675,23 +679,63 @@
     playBtn.addEventListener('click',()=>{ if(lastVideoUrl) window.open(lastVideoUrl, '_blank'); });
     copyLinkBtn.addEventListener('click',async()=>{ if(!lastVideoUrl) return; try{await navigator.clipboard.writeText(lastVideoUrl);}catch{} });
 
-    function showConfirmation(message){
+    let pendingSendPayload = null;
+
+    function showConfirmation(message = 'Voulez-vous envoyer ?'){
       confirmationMessage.textContent = message;
       confirmationModal.classList.remove('hidden');
       confirmationModal.setAttribute('aria-hidden','false');
-      closeConfirmationBtn.focus();
+      cancelConfirmationBtn.focus();
     }
-    function hideConfirmation(){
+    function hideConfirmation(returnFocus = true){
       confirmationModal.classList.add('hidden');
       confirmationModal.setAttribute('aria-hidden','true');
-      sendBtn.focus();
+      pendingSendPayload = null;
+      if(returnFocus) sendBtn.focus();
     }
 
-    closeConfirmationBtn.addEventListener('click', hideConfirmation);
+    async function submitPayload(payload){
+      sendBtn.disabled = true;
+      const originalLabel = sendBtn.textContent;
+      sendBtn.textContent = 'Envoi...';
+
+      try{
+        await fetch(COLLECT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+        sendStatus.textContent='Envoyé';
+      }catch(e){
+        sendStatus.textContent="Erreur d'envoi, enregistré localement.";
+        enqueue(payload);
+      }
+
+      const entries=JSON.parse(localStorage.getItem('tbmEntries')||'[]');
+      entries.push({
+        savedAt:new Date().toISOString(),
+        dateHeure:payload.data.datetime,
+        metier:payload.data.metier,
+        chantier:payload.data.chantier,
+        responsable:payload.data.responsable,
+        equipe:payload.data.equipe,
+        youtubeUrl:payload.data.youtubeUrl
+      });
+      localStorage.setItem('tbmEntries',JSON.stringify(entries));
+      loadHistory();
+
+      sendBtn.disabled = false;
+      sendBtn.textContent = originalLabel;
+    }
+
+    cancelConfirmationBtn.addEventListener('click', ()=> hideConfirmation());
+    confirmSendBtn.addEventListener('click', async()=>{
+      if(!pendingSendPayload) return;
+      const payload = pendingSendPayload;
+      hideConfirmation(false);
+      await submitPayload(payload);
+      sendBtn.focus();
+    });
     confirmationModal.addEventListener('click', (ev)=>{ if(ev.target === confirmationModal) hideConfirmation(); });
     document.addEventListener('keydown', (ev)=>{ if(ev.key==='Escape' && !confirmationModal.classList.contains('hidden')) hideConfirmation(); });
 
-    sendBtn.addEventListener('click',async()=>{
+    sendBtn.addEventListener('click',()=>{
       const dateVal=dateInput.value;
       const metier=metierInput.value.trim();
       const chantier=chantierManualInput.value.trim()||chantierSelect.value;
@@ -703,40 +747,13 @@
         return;
       }
 
-      sendBtn.disabled = true;
-      const originalLabel = sendBtn.textContent;
-      sendBtn.textContent = 'Envoi...';
-
-      const payload={
+      pendingSendPayload={
         type:'tbm',
         meta:{userAgent:navigator.userAgent},
         data:{datetime:dateVal,metier,chantier,responsable,equipe:members,youtubeUrl:lastVideoUrl}
       };
-
-      try{
-        await fetch(COLLECT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
-        sendStatus.textContent='Envoyé';
-        showConfirmation('Votre envoi a bien été pris en compte.');
-        teamContainer.querySelectorAll('input[type="checkbox"]').forEach(b=>b.checked=false);
-        manualMembers=[];manualChips.innerHTML='';
-        setManualError('');
-      }catch(e){
-        sendStatus.textContent="Erreur d'envoi, enregistré localement.";
-        enqueue(payload);
-        showConfirmation("Une erreur réseau est survenue. L'envoi sera retenté automatiquement.");
-      }
-
-      const entries=JSON.parse(localStorage.getItem('tbmEntries')||'[]');
-      entries.push({
-        savedAt:new Date().toISOString(),
-        dateHeure:dateVal,
-        metier,chantier,responsable,equipe:members,youtubeUrl:lastVideoUrl
-      });
-      localStorage.setItem('tbmEntries',JSON.stringify(entries));
-      loadHistory();
-
-      sendBtn.disabled = false;
-      sendBtn.textContent = originalLabel;
+      sendStatus.textContent='';
+      showConfirmation('Voulez-vous envoyer ?');
     });
 
     function loadHistory(){
