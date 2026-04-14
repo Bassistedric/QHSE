@@ -849,6 +849,16 @@
       successModal.setAttribute('aria-hidden','true');
       if(returnFocus) sendBtn.focus();
     }
+    function showSuccessModal(){
+      successModal.classList.remove('hidden');
+      successModal.setAttribute('aria-hidden','false');
+      closeSuccessModalBtn.focus();
+    }
+    function hideSuccessModal(returnFocus = true){
+      successModal.classList.add('hidden');
+      successModal.setAttribute('aria-hidden','true');
+      if(returnFocus) sendBtn.focus();
+    }
 
     async function submitPayload(payload){
       sendBtn.disabled = true;
