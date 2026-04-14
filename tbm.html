@@ -689,10 +689,21 @@
     playBtn.addEventListener('click',()=>{ if(lastVideoUrl) window.open(lastVideoUrl, '_blank'); });
     copyLinkBtn.addEventListener('click',async()=>{ if(!lastVideoUrl) return; try{await navigator.clipboard.writeText(lastVideoUrl);}catch{} });
 
-    let pendingSendPayload = null;
+    let pendingConfirmationAction = null;
+    let confirmationReturnFocusEl = null;
 
-    function showConfirmation(message = 'Voulez-vous envoyer ?'){
+    function showConfirmation({
+      message = 'Voulez-vous envoyer ?',
+      confirmLabel = 'Confirmer',
+      cancelLabel = 'Annuler',
+      onConfirm = null,
+      returnFocusEl = null
+    } = {}){
       confirmationMessage.textContent = message;
+      confirmSendBtn.textContent = confirmLabel;
+      cancelConfirmationBtn.textContent = cancelLabel;
+      pendingConfirmationAction = typeof onConfirm === 'function' ? onConfirm : null;
+      confirmationReturnFocusEl = returnFocusEl;
       confirmationModal.classList.remove('hidden');
       confirmationModal.setAttribute('aria-hidden','false');
       cancelConfirmationBtn.focus();
@@ -700,8 +711,11 @@
     function hideConfirmation(returnFocus = true){
       confirmationModal.classList.add('hidden');
       confirmationModal.setAttribute('aria-hidden','true');
-      pendingSendPayload = null;
-      if(returnFocus) sendBtn.focus();
+      pendingConfirmationAction = null;
+      if(returnFocus){
+        (confirmationReturnFocusEl || sendBtn).focus();
+      }
+      confirmationReturnFocusEl = null;
     }
     function showSuccessModal(){
       successModal.classList.remove('hidden');
@@ -752,11 +766,12 @@
 
     cancelConfirmationBtn.addEventListener('click', ()=> hideConfirmation());
     confirmSendBtn.addEventListener('click', async()=>{
-      if(!pendingSendPayload) return;
-      const payload = pendingSendPayload;
+      if(!pendingConfirmationAction) return;
+      const action = pendingConfirmationAction;
+      const returnFocusEl = confirmationReturnFocusEl;
       hideConfirmation(false);
-      await submitPayload(payload);
-      sendBtn.focus();
+      await action();
+      (returnFocusEl || sendBtn).focus();
     });
     confirmationModal.addEventListener('click', (ev)=>{ if(ev.target === confirmationModal) hideConfirmation(); });
     closeSuccessModalBtn.addEventListener('click', ()=> hideSuccessModal());
@@ -779,13 +794,19 @@
         return;
       }
 
-      pendingSendPayload={
+      const payload={
         type:'tbm',
         meta:{userAgent:navigator.userAgent},
         data:{datetime:dateVal,metier,chantier,responsable,equipe:members,youtubeUrl:lastVideoUrl}
       };
       sendStatus.textContent='';
-      showConfirmation('Voulez-vous envoyer ?');
+      showConfirmation({
+        message:'Voulez-vous envoyer ?',
+        confirmLabel:'Confirmer',
+        cancelLabel:'Annuler',
+        onConfirm: async()=> submitPayload(payload),
+        returnFocusEl: sendBtn
+      });
     });
 
     function loadHistory(){
@@ -812,7 +833,18 @@
       a.click();
     });
 
-    clearBtn.addEventListener('click',()=>{ localStorage.removeItem('tbmEntries'); loadHistory(); });
+    clearBtn.addEventListener('click',()=>{
+      showConfirmation({
+        message:"Voulez-vous vraiment vider l'historique ?",
+        confirmLabel:'Confirmer',
+        cancelLabel:'Revenir en arrière',
+        onConfirm: ()=>{
+          localStorage.removeItem('tbmEntries');
+          loadHistory();
+        },
+        returnFocusEl: clearBtn
+      });
+    });
 
     function init(){
       const now=new Date();
