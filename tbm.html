@@ -33,7 +33,10 @@
     <h1 class="text-2xl font-bold mb-4 px-4 py-2 rounded-xl bg-[#104861] text-[#D9D9D9] text-center">TBM</h1>
 
     <p id="loadStatus" class="text-sm text-gray-500"></p>
-    <button id="retryBtn" class="text-sm text-blue-600 underline">Réessayer</button>
+    <div class="flex items-center justify-between">
+      <button id="retryBtn" class="text-sm text-blue-600 underline">Réessayer</button>
+      <button id="resetBtn" type="button" class="text-sm text-red-600 underline">Reset données</button>
+    </div>
 
     <section class="bg-white rounded shadow p-4">
       <label for="dateInput" class="block text-sm font-medium mb-1">Date / heure</label>
@@ -149,6 +152,7 @@
 
     const loadStatus = document.getElementById('loadStatus');
     const retryBtn = document.getElementById('retryBtn');
+    const resetBtn = document.getElementById('resetBtn');
     const dateInput = document.getElementById('dateInput');
     const weekHint = document.getElementById('weekHint');
 
@@ -557,6 +561,28 @@
       if(hasAttemptedSubmit) validateRequiredFields(true);
     }
 
+    function resetFormData(){
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+
+      hasAttemptedSubmit = false;
+      dateInput.value = now.toISOString().slice(0,16);
+      metierInput.value = '';
+      chantierManualInput.value = '';
+      responsableManualInput.value = '';
+      chantierSelect.value = '';
+      responsableSelect.value = '';
+      manualInput.value = '';
+      manualMembers = [];
+      manualChips.innerHTML = '';
+      teamContainer.innerHTML = '';
+      sendStatus.textContent = '';
+      setManualError('');
+      clearAllFieldErrors();
+
+      updateAll();
+    }
+
     function cleanHeaderCell(s){
       return String(s ?? '')
         .replace(/^\uFEFF/, '')
@@ -697,6 +723,7 @@
     }
 
     retryBtn.addEventListener('click', loadSheets);
+    resetBtn.addEventListener('click', resetFormData);
 
     toggleAllBtn.addEventListener('click',()=>{
       const boxes = teamContainer.querySelectorAll('input[type="checkbox"]');
