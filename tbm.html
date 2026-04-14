@@ -149,7 +149,6 @@
     // URL Apps Script (collect TBM)
     const COLLECT_URL = "https://script.google.com/macros/s/AKfycbwLRqxxGrcsW73R-iMHDbbKFchA2V6Xw5uUZmuo1qVW_DBW8KerO3GD2FRge7xPo-hbjw/exec";
     const OUTBOX_KEY = 'tbm_outbox_v1';
-    const FORM_PREFS_KEY = 'tbm_form_prefs_v1';
 
     const loadStatus = document.getElementById('loadStatus');
     const retryBtn = document.getElementById('retryBtn');
@@ -198,27 +197,6 @@
     const normalizedNameMap = new Map();
     let lastVideoUrl = '';
     let hasAttemptedSubmit = false;
-    let formPrefs = { metier: '', chantier: '', responsable: '' };
-
-    function loadFormPrefs(){
-      try{
-        const raw = JSON.parse(localStorage.getItem(FORM_PREFS_KEY) || '{}');
-        formPrefs = {
-          metier: (raw.metier || '').toString(),
-          chantier: (raw.chantier || '').toString(),
-          responsable: (raw.responsable || '').toString()
-        };
-      }catch{
-        formPrefs = { metier: '', chantier: '', responsable: '' };
-      }
-    }
-
-    function saveFormPrefs(){
-      try{
-        localStorage.setItem(FORM_PREFS_KEY, JSON.stringify(formPrefs));
-      }catch{}
-    }
-
     function markInvalidField(element, invalid){
       if(!element) return;
       element.classList.toggle('border-red-500', invalid);
@@ -451,9 +429,7 @@
       setSelectOptions(chantierSelect, chantiers);
 
       if(chantiers.length){
-        chantierSelect.value = chantiers.includes(formPrefs.chantier) ? formPrefs.chantier : chantiers[0];
-        formPrefs.chantier = chantierSelect.value;
-        saveFormPrefs();
+        chantierSelect.value = chantiers[0];
         populateResponsablesForChantier();
       }
     }
@@ -486,9 +462,7 @@
         setSelectOptions(responsableSelect, responsibles);
         responsableSelect.disabled = !!responsableManualInput.value.trim();
         if(!responsableSelect.disabled){
-          responsableSelect.value = responsibles.includes(formPrefs.responsable) ? formPrefs.responsable : responsibles[0];
-          formPrefs.responsable = responsableSelect.value;
-          saveFormPrefs();
+          responsableSelect.value = responsibles[0];
         }
       }else{
         responsableSelect.disabled=true;
@@ -595,8 +569,6 @@
       metierInput.value = '';
       chantierManualInput.value = '';
       responsableManualInput.value = '';
-      formPrefs = { metier: '', chantier: '', responsable: '' };
-      localStorage.removeItem(FORM_PREFS_KEY);
       chantierSelect.value = '';
       responsableSelect.value = '';
       manualInput.value = '';
@@ -762,20 +734,14 @@
 
     // ✅ listeners
     metierInput.addEventListener('change', ()=>{
-      formPrefs.metier = metierInput.value;
-      saveFormPrefs();
       updateAll();
       if(hasAttemptedSubmit) validateRequiredFields(true);
     });
     chantierSelect.addEventListener('change', ()=>{
-      formPrefs.chantier = chantierSelect.value;
-      saveFormPrefs();
       populateResponsablesForChantier();
       if(hasAttemptedSubmit) validateRequiredFields(true);
     });
     responsableSelect.addEventListener('change', ()=>{
-      formPrefs.responsable = responsableSelect.value;
-      saveFormPrefs();
       populateTeamForSelectedResponsable();
       if(hasAttemptedSubmit) validateRequiredFields(true);
     });
@@ -976,11 +942,7 @@
     function init(){
       const now=new Date();
       now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
-      loadFormPrefs();
       dateInput.value=now.toISOString().slice(0,16);
-      if(formPrefs.metier){
-        metierInput.value = formPrefs.metier;
-      }
       updateWeekHint();
       flushQueue();
       loadHistory();
