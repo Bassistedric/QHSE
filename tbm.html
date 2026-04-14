@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="fr">
 <head>
@@ -192,60 +193,6 @@
     let manualMembers = [];
     const normalizedNameMap = new Map();
     let lastVideoUrl = '';
-    let hasAttemptedSubmit = false;
-
-    function markInvalidField(element, invalid){
-      if(!element) return;
-      element.classList.toggle('border-red-500', invalid);
-      element.classList.toggle('ring-1', invalid);
-      element.classList.toggle('ring-red-500', invalid);
-    }
-
-    function clearAllFieldErrors(){
-      [
-        dateInput,
-        metierInput,
-        chantierSelect,
-        chantierManualInput,
-        responsableSelect,
-        responsableManualInput,
-        teamContainer,
-        thumbContainer
-      ].forEach(el=>markInvalidField(el, false));
-    }
-
-    function validateRequiredFields(showErrors = false){
-      const dateVal = dateInput.value;
-      const metier = metierInput.value.trim();
-      const chantier = chantierManualInput.value.trim() || chantierSelect.value;
-      const responsable = responsableManualInput.value.trim() || (responsableSelect.disabled ? '' : responsableSelect.value);
-      const members = [...teamContainer.querySelectorAll('input[type="checkbox"]:checked')].map(b=>b.value).concat(manualMembers);
-
-      const missing = {
-        date: !dateVal,
-        metier: !metier,
-        chantier: !chantier,
-        responsable: !responsable,
-        members: !members.length,
-        video: !lastVideoUrl
-      };
-
-      const chantierMissing = missing.chantier;
-      const responsableMissing = missing.responsable;
-
-      if(showErrors){
-        markInvalidField(dateInput, missing.date);
-        markInvalidField(metierInput, missing.metier);
-        markInvalidField(chantierSelect, chantierMissing);
-        markInvalidField(chantierManualInput, chantierMissing);
-        markInvalidField(responsableSelect, responsableMissing);
-        markInvalidField(responsableManualInput, responsableMissing);
-        markInvalidField(teamContainer, missing.members);
-        markInvalidField(thumbContainer, missing.video);
-      }
-
-      return { missing, dateVal, metier, chantier, responsable, members };
-    }
 
     function markInvalidField(element, invalid){
       if(!element) return;
@@ -301,691 +248,90 @@
     function enqueue(item){
       const queue = JSON.parse(localStorage.getItem(OUTBOX_KEY) || '[]');
       queue.push(item);
-      localStorage.setItem(OUTBOX_KEY, JSON.stringify(queue));
-    }
-
-    async function flushQueue(){
-      const queue = JSON.parse(localStorage.getItem(OUTBOX_KEY) || '[]');
-      const remaining = [];
-      for(const item of queue){
-        try{
-          await fetch(COLLECT_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(item)});
-        }catch(e){
-          remaining.push(item);
-        }
-      }
-      localStorage.setItem(OUTBOX_KEY, JSON.stringify(remaining));
-    }
-    window.addEventListener('online', flushQueue);
-
-    function normalize(str){
-      return String(str ?? '')
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g,'')
-        .trim();
-    }
-    function normUpper(str){
-      return normalize(str).toUpperCase().replace(/\s+/g,' ');
-    }
-
-    function csvUrl(base, gid){
-      try {
-        const u = new URL(base);
-        u.searchParams.set('output','csv');
-        u.searchParams.set('gid', gid);
-
-        // ✅ anti-cache
-        u.searchParams.set('_cb', Date.now().toString());
-
-        return u.toString();
-      } catch {
-        return null;
-      }
-    }
-
-    function parseCsv(url){
-      return new Promise((resolve,reject)=>{
-        Papa.parse(url,{
-          download:true,
-          complete: res => resolve(res.data),
-          error: err => reject(err)
-        });
-      });
-    }
-
-    function normalizeSheetName(sheetName) {
-      return String(sheetName || "")
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .trim()
-        .toUpperCase()
-        .replace(/[^A-Z0-9]+/g, '_')
-        .replace(/^_+|_+$/g, '');
-    }
-
-    function metierToSheetSet(metier) {
-      if (metier === 'Elec') return new Set(['EQUIPE_ELEC']);
-      if (metier === 'HVAC_REF') {
-        return new Set(['EQUIPE_HVAC_REF','EQUIPE_HVAC_REF_','EQUIPE_HVACREF','HVAC_REF']);
-      }
-      return new Set();
-    }
-
-    function findHeaderIndex(headers, aliases) {
-      for (const alias of aliases) {
-        const idx = headers.indexOf(alias);
-        if (idx >= 0) return idx;
-      }
-      return -1;
-    }
-
-    function isoWeek(dateObj){
-      const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
-      const dayNum = d.getUTCDay() || 7;
-      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-      return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-    }
-
-    function getSelectedWeek(){
-      const d = new Date(dateInput.value);
-      if (!(d instanceof Date) || isNaN(d.getTime())) return null;
-      return isoWeek(d);
-    }
-
-    function updateWeekHint(){
-      const w = getSelectedWeek();
-      weekHint.textContent = w ? `Semaine ISO détectée : ${w}` : '';
-    }
-
-    function uniqSorted(arr){
-      return Array.from(new Set(arr.filter(Boolean))).sort((a,b)=>a.localeCompare(b,'fr'));
-    }
-
-    function clearSelect(sel){ sel.innerHTML=''; }
-    function setSelectOptions(sel, values){
-      clearSelect(sel);
-      values.forEach(v=>{
-        const opt=document.createElement('option');
-        opt.value=v; opt.textContent=v;
-        sel.appendChild(opt);
-      });
-    }
-
-    function getFilteredRowsBase(){
-      const metier = metierInput.value;
-      const week = getSelectedWeek();
-      if (!metier || !week) return [];
-      const targetSheets = metierToSheetSet(metier);
-      if (!targetSheets.size) return [];
-      return affectRows.filter(r => targetSheets.has(r.sheetNorm) && r.semaine === week);
-    }
-
-    // ✅ CE/PM label
-    function responsableLabelFromRow(r){
-      return (r.ce || r.pm || '').toString().trim();
-    }
-
-    // ✅ inclure aussi CE et PM dans les suggestions
-    function updateKnownNamesFromRows(rows){
-      normalizedNameMap.clear();
-      manualSuggestions.innerHTML='';
-      const names = uniqSorted(rows.flatMap(r => [r.ouvrier, r.ce, r.pm]).filter(Boolean));
-      names.forEach(name=>{
-        const opt=document.createElement('option');
-        opt.value=name;
-        manualSuggestions.appendChild(opt);
-
-        const key = normUpper(name);
-        if(!normalizedNameMap.has(key)) normalizedNameMap.set(key, []);
-        normalizedNameMap.get(key).push(name);
-      });
-    }
-
-    function populateChantiers(){
-      if(chantierManualInput.value.trim()){
-        clearSelect(chantierSelect);
-        clearSelect(responsableSelect);
-        teamContainer.innerHTML='';
-        chantierSelect.disabled=true;
-        responsableSelect.disabled=true;
-        return;
-      }
-
-      const base = getFilteredRowsBase();
-      if(!base.length){
-        loadStatus.textContent = 'Sélectionnez un métier + une date (semaine)';
-        chantierSelect.disabled=true;
-        responsableSelect.disabled=true;
-        teamContainer.innerHTML='';
-        return;
-      }
-
-      chantierSelect.disabled=false;
-      responsableSelect.disabled=true;
-      responsableHelper.textContent='';
-      teamContainer.innerHTML='';
-
-      const chantiers = uniqSorted(base
-        .map(r=>r.chantier)
-        .filter(ch => {
-          const n = normUpper(ch);
-          return n !== 'CONGE' && n !== 'MALADE';
-        })
-      );
-
-      setSelectOptions(chantierSelect, chantiers);
-
-      if(chantiers.length){
-        chantierSelect.value = chantiers[0];
-        populateResponsablesForChantier();
-      }
-    }
-
-    // ✅ 1) Remplit la liste des responsables POUR LE CHANTIER (sans figer l'équipe)
-    function populateResponsablesForChantier(){
-      if(chantierManualInput.value.trim()){
-        clearSelect(responsableSelect);
-        teamContainer.innerHTML='';
-        responsableSelect.disabled=true;
-        responsableHelper.textContent='';
-        return;
-      }
-
-      teamContainer.innerHTML='';
-      responsableHelper.textContent='';
-
-      const chantier = chantierSelect.value;
-      if(!chantier) return;
-
-      const base = getFilteredRowsBase();
-      const target = normUpper(chantier);
-      const chantierRows = base.filter(r => normUpper(r.chantier) === target);
-
-      const responsibles = uniqSorted(chantierRows.map(responsableLabelFromRow).filter(Boolean));
-
-      clearSelect(responsableSelect);
-
-      if(responsibles.length){
-        setSelectOptions(responsableSelect, responsibles);
-        responsableSelect.disabled = !!responsableManualInput.value.trim();
-        if(!responsableSelect.disabled){
-          responsableSelect.value = responsibles[0];
-        }
-      }else{
-        responsableSelect.disabled=true;
-        responsableHelper.textContent='Aucun responsable trouvé (CE/PM)';
-      }
-
-      populateTeamForSelectedResponsable();
-    }
-
-    // ✅ 2) Recalcule uniquement l'équipe pour le responsable choisi (sans toucher au select)
-    function populateTeamForSelectedResponsable(){
-      teamContainer.innerHTML='';
-
-      if(chantierManualInput.value.trim()) return;
-
-      const chantier = chantierSelect.value;
-      if(!chantier) return;
-
-      const base = getFilteredRowsBase();
-      const target = normUpper(chantier);
-      const chantierRows = base.filter(r => normUpper(r.chantier) === target);
-
-      const selectedResp = responsableManualInput.value.trim()
-        ? responsableManualInput.value.trim()
-        : (responsableSelect.disabled ? '' : responsableSelect.value);
-
-      if(!selectedResp) return;
-
-      const respTarget = normUpper(selectedResp);
-
-      const members = uniqSorted(
-        chantierRows
-          .filter(r => normUpper(responsableLabelFromRow(r)) === respTarget)
-          .map(r => r.ouvrier)
-          .filter(Boolean)
-      );
-
-      members.forEach(n=>{
-        const lbl=document.createElement('label');
-        lbl.className='inline-flex items-center gap-2';
-        const cb=document.createElement('input');
-        cb.type='checkbox'; cb.value=n; cb.className='rounded';
-        lbl.appendChild(cb); lbl.append(n);
-        teamContainer.appendChild(lbl);
-      });
-    }
-
-    function populateVideo(){
-      thumbContainer.innerHTML='Vidéo non disponible';
-      qrcodeEl.innerHTML='';
-      playBtn.disabled=true;
-      copyLinkBtn.disabled=true;
-      lastVideoUrl='';
-      if(!tbmData) return;
-
-      const monthName = new Date(dateInput.value).toLocaleString('fr-FR',{month:'long'}).toLowerCase();
-      for(const row of tbmData){
-        if((row[0]||'').toString().toLowerCase() === monthName){
-          const url = row[1];
-          if(url){
-            lastVideoUrl = url;
-            renderVideo(url);
-          }
-          break;
-        }
-      }
-    }
-
-    function renderVideo(url){
-      const id = extractYoutubeId(url);
-      const img = new Image();
-      img.alt='Miniature';
-      img.className='w-64 h-36 object-cover rounded';
-      img.src=`https://img.youtube.com/vi/${id}/maxresdefault.jpg`;
-      img.onerror=()=>{img.src=`https://img.youtube.com/vi/${id}/hqdefault.jpg`;};
-      thumbContainer.innerHTML='';
-      thumbContainer.appendChild(img);
-      playBtn.disabled=false;
-      copyLinkBtn.disabled=false;
-      qrcodeEl.innerHTML='';
-      new QRCode(qrcodeEl,{text:url,width:128,height:128});
-    }
-
-    function extractYoutubeId(url){
-      const m = String(url||'').match(/(?:v=|\.be\/)([\w-]{11})/);
-      return m?m[1]:'';
-    }
-
-    function updateAll(){
-      updateWeekHint();
-      const base = getFilteredRowsBase();
+@@ -500,6 +551,7 @@
       updateKnownNamesFromRows(base);
       populateChantiers();
       populateVideo();
-      if(hasAttemptedSubmit) validateRequiredFields(true);
+      validateRequiredFields();
     }
 
     function cleanHeaderCell(s){
-      return String(s ?? '')
-        .replace(/^\uFEFF/, '')
-        .replace(/\t/g,' ')
-        .trim()
-        .toLowerCase();
-    }
-
-    async function loadSheets(){
-      loadStatus.textContent = 'Chargement...';
-      try{
-        const url = csvUrl(SHEET_BASE_URL, AFFECTATIONS_GID);
-        if(!url) throw new Error('URL CSV AFFECTATIONS invalide.');
-
-        const raw = await parseCsv(url);
-        if(!raw || !raw.length) throw new Error('CSV AFFECTATIONS vide.');
-
-        const headersRaw = raw[0] || [];
-        const headers = headersRaw.map(cleanHeaderCell);
-
-        const idx = {
-          annee: findHeaderIndex(headers, ['annee', 'annee_iso']),
-          semaine: findHeaderIndex(headers, ['semaine', 'semaine_iso']),
-          pm: findHeaderIndex(headers, ['pm']),
-          sisu: findHeaderIndex(headers, ['sisu']),
-          ce: findHeaderIndex(headers, ['ce', 'chef_equipe']),
-          ouvrier: findHeaderIndex(headers, ['ouvrier', 'ouvriers']),
-          chantier: findHeaderIndex(headers, ['chantier']),
-          nbColonnes: findHeaderIndex(headers, ['nbcolonnes', 'nb_colonnes']),
-          sheet: findHeaderIndex(headers, ['sheet', 'feuille']),
-          row: findHeaderIndex(headers, ['row', 'ligne'])
-        };
-
-        const requiredKeys = ['semaine', 'chantier', 'sheet'];
-        const missingRequired = requiredKeys.filter((k)=>idx[k] < 0);
-        if(missingRequired.length){
-          console.error('Headers raw:', headersRaw);
-          console.error('Headers clean:', headers);
-          throw new Error(`En-têtes AFFECTATIONS manquants: ${missingRequired.join(', ')}`);
-        }
-
-        const readCell = (row, index, fallback = '') => {
-          if(index < 0) return fallback;
-          return (row[index] ?? fallback).toString().trim();
-        };
-        const readInt = (row, index) => {
-          if(index < 0) return null;
-          const v = parseInt(row[index],10);
-          return Number.isNaN(v) ? null : v;
-        };
-
-        affectRows = raw.slice(1)
-          .filter(r => r && r.length)
-          .map(r => {
-            const sheet = readCell(r, idx.sheet, '');
-            return {
-              annee: readInt(r, idx.annee),
-              semaine: readInt(r, idx.semaine),
-              pm: readCell(r, idx.pm, ''),
-              sisu: readCell(r, idx.sisu, ''),
-              ce: readCell(r, idx.ce, ''),
-              ouvrier: readCell(r, idx.ouvrier, ''),
-              chantier: readCell(r, idx.chantier, ''),
-              nbColonnes: readInt(r, idx.nbColonnes),
-              sheet,
-              sheetNorm: normalizeSheetName(sheet),
-              row: readInt(r, idx.row)
-            };
-          })
-          // ✅ garder lignes chantier même si ouvrier est vide (CE/PM)
-          .filter(r => r.semaine && r.chantier && r.sheetNorm && (r.ouvrier || r.ce || r.pm));
-
-        const tbmUrl = csvUrl(SHEET_BASE_URL, TBM_GID);
-        if(tbmUrl){
-          try{ tbmData = await parseCsv(tbmUrl); }
-          catch(e){ console.error('TBM video csv load error', e); tbmData=null; }
-        }
-
-        loadStatus.textContent = `Feuilles chargées (${affectRows.length} lignes affectations)`;
-        updateAll();
-
-      }catch(e){
-        console.error(e);
-        loadStatus.textContent = `Erreur chargement: ${e && e.message ? e.message : e}`;
-      }
-    }
-
-    function setManualError(message){
-      if(message){
-        manualError.textContent = message;
-        manualError.classList.remove('hidden');
-      }else{
-        manualError.textContent = '';
-        manualError.classList.add('hidden');
-      }
-    }
-
-    function resolveName(input){
-      const key = normUpper(input);
-      const matches = normalizedNameMap.get(key);
-      if(!matches || !matches.length) return null;
-      const exact = matches.find(n=>n===input);
-      return exact || matches[0];
-    }
-
-    function createManualChip(name){
-      const chip=document.createElement('span');
-      chip.className='bg-blue-100 px-2 py-1 rounded-full flex items-center gap-1';
-      chip.textContent=name;
-      const x=document.createElement('button');
-      x.textContent='×';
-      x.className='text-red-600';
+@@ -606,6 +658,7 @@
       x.addEventListener('click',()=>{
         manualMembers=manualMembers.filter(m=>m!==name);
         chip.remove();
-        if(hasAttemptedSubmit) validateRequiredFields(true);
+        validateRequiredFields();
       });
       chip.appendChild(x);
       manualChips.appendChild(chip);
-    }
-
-    function addManual(){
-      const raw = manualInput.value;
-      if(!raw.trim()){ setManualError(''); return false; }
-      const names = raw.split(',').map(n=>n.trim()).filter(Boolean);
-      if(!names.length){ setManualError(''); manualInput.value=''; return false; }
-
-      const invalid = [];
-      let hasValid=false;
-      names.forEach(n=>{
-        const resolved = resolveName(n);
-        if(!resolved){ invalid.push(n); return; }
-        hasValid=true;
-        if(!manualMembers.includes(resolved)){
-          manualMembers.push(resolved);
-          createManualChip(resolved);
-        }
-      });
-
-      if(invalid.length){
-        manualInput.value = invalid.join(', ');
-        setManualError('Ce nom ne correspond pas à la liste proposée.');
-        return false;
-      }else{
-        manualInput.value='';
-        if(hasValid) setManualError('');
-        return hasValid;
-      }
-    }
-
-    retryBtn.addEventListener('click', loadSheets);
-
-    toggleAllBtn.addEventListener('click',()=>{
+@@ -646,12 +699,14 @@
       const boxes = teamContainer.querySelectorAll('input[type="checkbox"]');
       const allChecked = Array.from(boxes).every(b=>b.checked);
       boxes.forEach(b=>b.checked=!allChecked);
-      if(hasAttemptedSubmit) validateRequiredFields(true);
+      validateRequiredFields();
     });
-    teamContainer.addEventListener('change', ()=>{ if(hasAttemptedSubmit) validateRequiredFields(true); });
+    teamContainer.addEventListener('change', ()=> validateRequiredFields());
 
     // ✅ listeners
-    metierInput.addEventListener('change', ()=>{ updateAll(); if(hasAttemptedSubmit) validateRequiredFields(true); });
-    chantierSelect.addEventListener('change', ()=>{ populateResponsablesForChantier(); if(hasAttemptedSubmit) validateRequiredFields(true); });
-    responsableSelect.addEventListener('change', ()=>{ populateTeamForSelectedResponsable(); if(hasAttemptedSubmit) validateRequiredFields(true); });
+    metierInput.addEventListener('change', updateAll);
+    chantierSelect.addEventListener('change', populateResponsablesForChantier);
+    responsableSelect.addEventListener('change', populateTeamForSelectedResponsable);
+    metierInput.addEventListener('change', ()=>{ updateAll(); validateRequiredFields(); });
+    chantierSelect.addEventListener('change', ()=>{ populateResponsablesForChantier(); validateRequiredFields(); });
+    responsableSelect.addEventListener('change', ()=>{ populateTeamForSelectedResponsable(); validateRequiredFields(); });
 
     chantierManualInput.addEventListener('input',()=>{
       if(chantierManualInput.value.trim()){
-        chantierSelect.disabled=true;
-        chantierSelect.value='';
-        clearSelect(responsableSelect);
-        responsableSelect.disabled=true;
-        responsableHelper.textContent='';
-        teamContainer.innerHTML='';
-      }else{
+@@ -665,6 +720,7 @@
         chantierSelect.disabled=false;
         populateChantiers();
       }
-      if(hasAttemptedSubmit) validateRequiredFields(true);
+      validateRequiredFields();
     });
 
     responsableManualInput.addEventListener('input',()=>{
-      if(responsableManualInput.value.trim()){
-        responsableSelect.disabled=true;
-        responsableHelper.textContent='';
-      }else{
+@@ -675,16 +731,17 @@
         responsableSelect.disabled=false;
       }
       populateTeamForSelectedResponsable();
-      if(hasAttemptedSubmit) validateRequiredFields(true);
+      validateRequiredFields();
     });
 
-    dateInput.addEventListener('change', ()=>{ updateAll(); if(hasAttemptedSubmit) validateRequiredFields(true); });
+    dateInput.addEventListener('change', updateAll);
+    dateInput.addEventListener('change', ()=>{ updateAll(); validateRequiredFields(); });
 
     manualInput.addEventListener('keydown',e=>{
       if(e.key==='Enter'){ e.preventDefault(); addManual(); manualInput.focus(); }
     });
-    manualInput.addEventListener('blur',()=>{ addManual(); if(hasAttemptedSubmit) validateRequiredFields(true); });
+    manualInput.addEventListener('blur',addManual);
+    manualInput.addEventListener('blur',()=>{ addManual(); validateRequiredFields(); });
     manualInput.addEventListener('input',()=> setManualError(''));
-    manualAddBtn.addEventListener('click',()=>{ addManual(); if(hasAttemptedSubmit) validateRequiredFields(true); manualInput.focus(); });
+    manualAddBtn.addEventListener('click',()=>{ addManual(); manualInput.focus(); });
+    manualAddBtn.addEventListener('click',()=>{ addManual(); validateRequiredFields(); manualInput.focus(); });
 
     playBtn.addEventListener('click',()=>{ if(lastVideoUrl) window.open(lastVideoUrl, '_blank'); });
     copyLinkBtn.addEventListener('click',async()=>{ if(!lastVideoUrl) return; try{await navigator.clipboard.writeText(lastVideoUrl);}catch{} });
-
-    let pendingConfirmationAction = null;
-    let confirmationReturnFocusEl = null;
-
-    function showConfirmation({
-      message = 'Voulez-vous envoyer ?',
-      confirmLabel = 'Confirmer',
-      cancelLabel = 'Annuler',
-      onConfirm = null,
-      returnFocusEl = null
-    } = {}){
-      confirmationMessage.textContent = message;
-      confirmSendBtn.textContent = confirmLabel;
-      cancelConfirmationBtn.textContent = cancelLabel;
-      pendingConfirmationAction = typeof onConfirm === 'function' ? onConfirm : null;
-      confirmationReturnFocusEl = returnFocusEl;
-      confirmationModal.classList.remove('hidden');
-      confirmationModal.setAttribute('aria-hidden','false');
-      cancelConfirmationBtn.focus();
-    }
-    function hideConfirmation(returnFocus = true){
-      confirmationModal.classList.add('hidden');
-      confirmationModal.setAttribute('aria-hidden','true');
-      pendingConfirmationAction = null;
-      if(returnFocus){
-        (confirmationReturnFocusEl || sendBtn).focus();
-      }
-      confirmationReturnFocusEl = null;
-    }
-    function showSuccessModal(){
-      successModal.classList.remove('hidden');
-      successModal.setAttribute('aria-hidden','false');
-      closeSuccessModalBtn.focus();
-    }
-    function hideSuccessModal(returnFocus = true){
-      successModal.classList.add('hidden');
-      successModal.setAttribute('aria-hidden','true');
-      if(returnFocus) sendBtn.focus();
-    }
-    function showSuccessModal(){
-      successModal.classList.remove('hidden');
-      successModal.setAttribute('aria-hidden','false');
-      closeSuccessModalBtn.focus();
-    }
-    function hideSuccessModal(returnFocus = true){
-      successModal.classList.add('hidden');
-      successModal.setAttribute('aria-hidden','true');
-      if(returnFocus) sendBtn.focus();
-    }
-
-    async function submitPayload(payload){
-      sendBtn.disabled = true;
-      const originalLabel = sendBtn.textContent;
-      sendBtn.textContent = 'Envoi...';
-      let sent = false;
-
-      try{
-        await fetch(COLLECT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
-        sendStatus.textContent='Envoyé';
-        sent = true;
-      }catch(e){
-        sendStatus.textContent="Erreur d'envoi, enregistré localement.";
-        enqueue(payload);
-      }
-
-      const entries=JSON.parse(localStorage.getItem('tbmEntries')||'[]');
-      entries.push({
-        savedAt:new Date().toISOString(),
-        dateHeure:payload.data.datetime,
-        metier:payload.data.metier,
-        chantier:payload.data.chantier,
-        responsable:payload.data.responsable,
-        equipe:payload.data.equipe,
-        youtubeUrl:payload.data.youtubeUrl
-      });
-      localStorage.setItem('tbmEntries',JSON.stringify(entries));
-      loadHistory();
-
-      sendBtn.disabled = false;
-      sendBtn.textContent = originalLabel;
-
-      if(sent){
-        showSuccessModal();
-      }
-    }
-
-    cancelConfirmationBtn.addEventListener('click', ()=> hideConfirmation());
-    confirmSendBtn.addEventListener('click', async()=>{
-      if(!pendingConfirmationAction) return;
-      const action = pendingConfirmationAction;
-      const returnFocusEl = confirmationReturnFocusEl;
-      hideConfirmation(false);
-      await action();
-      (returnFocusEl || sendBtn).focus();
-    });
-    confirmationModal.addEventListener('click', (ev)=>{ if(ev.target === confirmationModal) hideConfirmation(); });
-    closeSuccessModalBtn.addEventListener('click', ()=> hideSuccessModal());
-    successModal.addEventListener('click', (ev)=>{ if(ev.target === successModal) hideSuccessModal(); });
-    document.addEventListener('keydown', (ev)=>{
-      if(ev.key !== 'Escape') return;
-      if(!confirmationModal.classList.contains('hidden')) hideConfirmation();
-      else if(!successModal.classList.contains('hidden')) hideSuccessModal();
+@@ -783,13 +840,8 @@
     });
 
     sendBtn.addEventListener('click',()=>{
-      hasAttemptedSubmit = true;
-      const { missing, dateVal, metier, chantier, responsable, members } = validateRequiredFields(true);
+      const dateVal=dateInput.value;
+      const metier=metierInput.value.trim();
+      const chantier=chantierManualInput.value.trim()||chantierSelect.value;
+      const responsable=responsableManualInput.value.trim()||(responsableSelect.disabled?'':responsableSelect.value);
+      const members=[...teamContainer.querySelectorAll('input[type="checkbox"]:checked')].map(b=>b.value).concat(manualMembers);
+
+      if(!dateVal||!metier||!chantier||!responsable||!members.length||!lastVideoUrl){
+      const { missing, dateVal, metier, chantier, responsable, members } = validateRequiredFields();
       if(Object.values(missing).some(Boolean)){
         sendStatus.textContent='Veuillez remplir tous les champs.';
         return;
       }
-
-      const payload={
-        type:'tbm',
-        meta:{userAgent:navigator.userAgent},
+@@ -800,6 +852,7 @@
         data:{datetime:dateVal,metier,chantier,responsable,equipe:members,youtubeUrl:lastVideoUrl}
       };
       sendStatus.textContent='';
       clearAllFieldErrors();
-      hasAttemptedSubmit = false;
       showConfirmation({
         message:'Voulez-vous envoyer ?',
         confirmLabel:'Confirmer',
-        cancelLabel:'Annuler',
-        onConfirm: async()=> submitPayload(payload),
-        returnFocusEl: sendBtn
-      });
-    });
-
-    function loadHistory(){
-      const entries=JSON.parse(localStorage.getItem('tbmEntries')||'[]');
-      historyTable.innerHTML='';
-      entries.forEach(e=>{
-        const tr=document.createElement('tr');
-        tr.innerHTML=`<td class='border px-1'>${e.dateHeure}</td><td class='border px-1'>${e.metier}</td><td class='border px-1'>${e.chantier}</td><td class='border px-1'>${e.responsable}</td><td class='border px-1'>${e.equipe.join(', ')}</td>`;
-        historyTable.appendChild(tr);
-      });
-    }
-
-    exportBtn.addEventListener('click',()=>{
-      const entries=JSON.parse(localStorage.getItem('tbmEntries')||'[]');
-      if(!entries.length) return;
-      const header=['savedAt','dateHeure','metier','chantier','responsable','equipe','youtubeUrl'];
-      const rows=entries.map(e=>header.map(h=>Array.isArray(e[h])?e[h].join('|'):e[h]));
-      let csv=header.join(',')+'\n';
-      rows.forEach(r=>{csv+=r.join(',')+'\n';});
-      const blob=new Blob([csv],{type:'text/csv'});
-      const a=document.createElement('a');
-      a.href=URL.createObjectURL(blob);
-      a.download='tbm.csv';
-      a.click();
-    });
-
-    clearBtn.addEventListener('click',()=>{
-      showConfirmation({
-        message:"Voulez-vous vraiment vider l'historique ?",
-        confirmLabel:'Confirmer',
-        cancelLabel:'Revenir en arrière',
-        onConfirm: ()=>{
-          localStorage.removeItem('tbmEntries');
-          loadHistory();
-        },
-        returnFocusEl: clearBtn
-      });
-    });
-
-    function init(){
-      const now=new Date();
-      now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
-      dateInput.value=now.toISOString().slice(0,16);
-      updateWeekHint();
-      flushQueue();
-      loadHistory();
-      loadSheets();
-    }
-    init();
-  </script>
-</body>
-</html>
