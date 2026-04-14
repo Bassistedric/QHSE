@@ -247,6 +247,57 @@
       return { missing, dateVal, metier, chantier, responsable, members };
     }
 
+    function markInvalidField(element, invalid){
+      if(!element) return;
+      element.classList.toggle('border-red-500', invalid);
+      element.classList.toggle('ring-1', invalid);
+      element.classList.toggle('ring-red-500', invalid);
+    }
+
+    function clearAllFieldErrors(){
+      [
+        dateInput,
+        metierInput,
+        chantierSelect,
+        chantierManualInput,
+        responsableSelect,
+        responsableManualInput,
+        teamContainer,
+        thumbContainer
+      ].forEach(el=>markInvalidField(el, false));
+    }
+
+    function validateRequiredFields(){
+      const dateVal = dateInput.value;
+      const metier = metierInput.value.trim();
+      const chantier = chantierManualInput.value.trim() || chantierSelect.value;
+      const responsable = responsableManualInput.value.trim() || (responsableSelect.disabled ? '' : responsableSelect.value);
+      const members = [...teamContainer.querySelectorAll('input[type="checkbox"]:checked')].map(b=>b.value).concat(manualMembers);
+
+      const missing = {
+        date: !dateVal,
+        metier: !metier,
+        chantier: !chantier,
+        responsable: !responsable,
+        members: !members.length,
+        video: !lastVideoUrl
+      };
+
+      const chantierMissing = missing.chantier;
+      const responsableMissing = missing.responsable;
+
+      markInvalidField(dateInput, missing.date);
+      markInvalidField(metierInput, missing.metier);
+      markInvalidField(chantierSelect, chantierMissing);
+      markInvalidField(chantierManualInput, chantierMissing);
+      markInvalidField(responsableSelect, responsableMissing);
+      markInvalidField(responsableManualInput, responsableMissing);
+      markInvalidField(teamContainer, missing.members);
+      markInvalidField(thumbContainer, missing.video);
+
+      return { missing, dateVal, metier, chantier, responsable, members };
+    }
+
     function enqueue(item){
       const queue = JSON.parse(localStorage.getItem(OUTBOX_KEY) || '[]');
       queue.push(item);
