@@ -138,7 +138,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <script type="module">
-    import { SHEET_BASE_URL, TBM_GID } from './sheetConfig.js';
+    // Valeurs par défaut (fallback) si sheetConfig.js est absent/inaccessible
+    let SHEET_BASE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTNJqvjeu_Hox7I64HhX3y4j1SBWHswa6QO1mPwHEt2siXMP609WT__DnuGK-0Brlfq5D1a2R_iyL3g/pub?output=csv";
+    let TBM_GID = "2013584163";
 
     // ✅ GID AFFECTATIONS_SEMAINE
     const AFFECTATIONS_GID = "496527492";
@@ -192,6 +194,20 @@
     let manualMembers = [];
     const normalizedNameMap = new Map();
     let lastVideoUrl = '';
+
+    async function loadRuntimeConfig(){
+      try{
+        const cfg = await import('./sheetConfig.js');
+        if(cfg && typeof cfg.SHEET_BASE_URL === 'string' && cfg.SHEET_BASE_URL.trim()){
+          SHEET_BASE_URL = cfg.SHEET_BASE_URL.trim();
+        }
+        if(cfg && typeof cfg.TBM_GID === 'string' && cfg.TBM_GID.trim()){
+          TBM_GID = cfg.TBM_GID.trim();
+        }
+      }catch(e){
+        console.warn('sheetConfig.js introuvable, utilisation de la configuration par défaut.', e);
+      }
+    }
 
     function enqueue(item){
       const queue = JSON.parse(localStorage.getItem(OUTBOX_KEY) || '[]');
@@ -535,29 +551,40 @@
           row: findHeaderIndex(headers, ['row', 'ligne'])
         };
 
-        const missing = Object.entries(idx).filter(([k,v])=>v < 0).map(([k])=>k);
-        if(missing.length){
+        const requiredKeys = ['semaine', 'chantier', 'sheet'];
+        const missingRequired = requiredKeys.filter((k)=>idx[k] < 0);
+        if(missingRequired.length){
           console.error('Headers raw:', headersRaw);
           console.error('Headers clean:', headers);
-          throw new Error(`En-têtes AFFECTATIONS manquants: ${missing.join(', ')}`);
+          throw new Error(`En-têtes AFFECTATIONS manquants: ${missingRequired.join(', ')}`);
         }
+
+        const readCell = (row, index, fallback = '') => {
+          if(index < 0) return fallback;
+          return (row[index] ?? fallback).toString().trim();
+        };
+        const readInt = (row, index) => {
+          if(index < 0) return null;
+          const v = parseInt(row[index],10);
+          return Number.isNaN(v) ? null : v;
+        };
 
         affectRows = raw.slice(1)
           .filter(r => r && r.length)
           .map(r => {
-            const sheet = (r[idx.sheet] || '').toString().trim();
+            const sheet = readCell(r, idx.sheet, '');
             return {
-              annee: parseInt(r[idx.annee],10) || null,
-              semaine: parseInt(r[idx.semaine],10) || null,
-              pm: (r[idx.pm] || '').toString().trim(),
-              sisu: (r[idx.sisu] || '').toString().trim(),
-              ce: (r[idx.ce] || '').toString().trim(),
-              ouvrier: (r[idx.ouvrier] || '').toString().trim(),
-              chantier: (r[idx.chantier] || '').toString().trim(),
-              nbColonnes: parseInt(r[idx.nbColonnes],10) || null,
+              annee: readInt(r, idx.annee),
+              semaine: readInt(r, idx.semaine),
+              pm: readCell(r, idx.pm, ''),
+              sisu: readCell(r, idx.sisu, ''),
+              ce: readCell(r, idx.ce, ''),
+              ouvrier: readCell(r, idx.ouvrier, ''),
+              chantier: readCell(r, idx.chantier, ''),
+              nbColonnes: readInt(r, idx.nbColonnes),
               sheet,
               sheetNorm: normalizeSheetName(sheet),
-              row: parseInt(r[idx.row],10) || null
+              row: readInt(r, idx.row)
             };
           })
           // ✅ garder lignes chantier même si ouvrier est vide (CE/PM)
@@ -846,14 +873,15 @@
       });
     });
 
-    function init(){
+    async function init(){
       const now=new Date();
       now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
       dateInput.value=now.toISOString().slice(0,16);
       updateWeekHint();
+      await loadRuntimeConfig();
       flushQueue();
       loadHistory();
-      loadSheets();
+      await loadSheets();
     }
     init();
   </script>
