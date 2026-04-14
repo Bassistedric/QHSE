@@ -193,6 +193,57 @@
     const normalizedNameMap = new Map();
     let lastVideoUrl = '';
 
+    function markInvalidField(element, invalid){
+      if(!element) return;
+      element.classList.toggle('border-red-500', invalid);
+      element.classList.toggle('ring-1', invalid);
+      element.classList.toggle('ring-red-500', invalid);
+    }
+
+    function clearAllFieldErrors(){
+      [
+        dateInput,
+        metierInput,
+        chantierSelect,
+        chantierManualInput,
+        responsableSelect,
+        responsableManualInput,
+        teamContainer,
+        thumbContainer
+      ].forEach(el=>markInvalidField(el, false));
+    }
+
+    function validateRequiredFields(){
+      const dateVal = dateInput.value;
+      const metier = metierInput.value.trim();
+      const chantier = chantierManualInput.value.trim() || chantierSelect.value;
+      const responsable = responsableManualInput.value.trim() || (responsableSelect.disabled ? '' : responsableSelect.value);
+      const members = [...teamContainer.querySelectorAll('input[type="checkbox"]:checked')].map(b=>b.value).concat(manualMembers);
+
+      const missing = {
+        date: !dateVal,
+        metier: !metier,
+        chantier: !chantier,
+        responsable: !responsable,
+        members: !members.length,
+        video: !lastVideoUrl
+      };
+
+      const chantierMissing = missing.chantier;
+      const responsableMissing = missing.responsable;
+
+      markInvalidField(dateInput, missing.date);
+      markInvalidField(metierInput, missing.metier);
+      markInvalidField(chantierSelect, chantierMissing);
+      markInvalidField(chantierManualInput, chantierMissing);
+      markInvalidField(responsableSelect, responsableMissing);
+      markInvalidField(responsableManualInput, responsableMissing);
+      markInvalidField(teamContainer, missing.members);
+      markInvalidField(thumbContainer, missing.video);
+
+      return { missing, dateVal, metier, chantier, responsable, members };
+    }
+
     function enqueue(item){
       const queue = JSON.parse(localStorage.getItem(OUTBOX_KEY) || '[]');
       queue.push(item);
@@ -500,6 +551,7 @@
       updateKnownNamesFromRows(base);
       populateChantiers();
       populateVideo();
+      validateRequiredFields();
     }
 
     function cleanHeaderCell(s){
@@ -606,6 +658,7 @@
       x.addEventListener('click',()=>{
         manualMembers=manualMembers.filter(m=>m!==name);
         chip.remove();
+        validateRequiredFields();
       });
       chip.appendChild(x);
       manualChips.appendChild(chip);
@@ -646,12 +699,14 @@
       const boxes = teamContainer.querySelectorAll('input[type="checkbox"]');
       const allChecked = Array.from(boxes).every(b=>b.checked);
       boxes.forEach(b=>b.checked=!allChecked);
+      validateRequiredFields();
     });
+    teamContainer.addEventListener('change', ()=> validateRequiredFields());
 
     // ✅ listeners
-    metierInput.addEventListener('change', updateAll);
-    chantierSelect.addEventListener('change', populateResponsablesForChantier);
-    responsableSelect.addEventListener('change', populateTeamForSelectedResponsable);
+    metierInput.addEventListener('change', ()=>{ updateAll(); validateRequiredFields(); });
+    chantierSelect.addEventListener('change', ()=>{ populateResponsablesForChantier(); validateRequiredFields(); });
+    responsableSelect.addEventListener('change', ()=>{ populateTeamForSelectedResponsable(); validateRequiredFields(); });
 
     chantierManualInput.addEventListener('input',()=>{
       if(chantierManualInput.value.trim()){
@@ -665,6 +720,7 @@
         chantierSelect.disabled=false;
         populateChantiers();
       }
+      validateRequiredFields();
     });
 
     responsableManualInput.addEventListener('input',()=>{
@@ -675,16 +731,17 @@
         responsableSelect.disabled=false;
       }
       populateTeamForSelectedResponsable();
+      validateRequiredFields();
     });
 
-    dateInput.addEventListener('change', updateAll);
+    dateInput.addEventListener('change', ()=>{ updateAll(); validateRequiredFields(); });
 
     manualInput.addEventListener('keydown',e=>{
       if(e.key==='Enter'){ e.preventDefault(); addManual(); manualInput.focus(); }
     });
-    manualInput.addEventListener('blur',addManual);
+    manualInput.addEventListener('blur',()=>{ addManual(); validateRequiredFields(); });
     manualInput.addEventListener('input',()=> setManualError(''));
-    manualAddBtn.addEventListener('click',()=>{ addManual(); manualInput.focus(); });
+    manualAddBtn.addEventListener('click',()=>{ addManual(); validateRequiredFields(); manualInput.focus(); });
 
     playBtn.addEventListener('click',()=>{ if(lastVideoUrl) window.open(lastVideoUrl, '_blank'); });
     copyLinkBtn.addEventListener('click',async()=>{ if(!lastVideoUrl) return; try{await navigator.clipboard.writeText(lastVideoUrl);}catch{} });
@@ -783,13 +840,8 @@
     });
 
     sendBtn.addEventListener('click',()=>{
-      const dateVal=dateInput.value;
-      const metier=metierInput.value.trim();
-      const chantier=chantierManualInput.value.trim()||chantierSelect.value;
-      const responsable=responsableManualInput.value.trim()||(responsableSelect.disabled?'':responsableSelect.value);
-      const members=[...teamContainer.querySelectorAll('input[type="checkbox"]:checked')].map(b=>b.value).concat(manualMembers);
-
-      if(!dateVal||!metier||!chantier||!responsable||!members.length||!lastVideoUrl){
+      const { missing, dateVal, metier, chantier, responsable, members } = validateRequiredFields();
+      if(Object.values(missing).some(Boolean)){
         sendStatus.textContent='Veuillez remplir tous les champs.';
         return;
       }
@@ -800,6 +852,7 @@
         data:{datetime:dateVal,metier,chantier,responsable,equipe:members,youtubeUrl:lastVideoUrl}
       };
       sendStatus.textContent='';
+      clearAllFieldErrors();
       showConfirmation({
         message:'Voulez-vous envoyer ?',
         confirmLabel:'Confirmer',
