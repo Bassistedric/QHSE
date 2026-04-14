@@ -51,6 +51,7 @@ Ensuite, l’app peut fonctionner hors-ligne.`,
       queue_label: "File",
       prev: "Précédent",
       next: "Suivant",
+      back_to_top: "Remonter en haut",
 
       // Alerts
       alert_sent: "Envoyé ✅",
@@ -239,6 +240,7 @@ Then, the app can work offline.`,
       queue_label: "Queue",
       prev: "Previous",
       next: "Next",
+      back_to_top: "Back to top",
 
       alert_sent: "Sent ✅",
       alert_offline_queued:
@@ -427,6 +429,7 @@ Daarna kan de app offline werken.`,
       queue_label: "Wachtrij",
       prev: "Vorige",
       next: "Volgende",
+      back_to_top: "Terug naar boven",
 
       alert_sent: "Verzonden ✅",
       alert_offline_queued:
@@ -2186,6 +2189,46 @@ function LangPicker() {
   );
 }
 
+function ScrollToTopButton() {
+  const { t } = useI18n();
+  const [visible, setVisible] = React.useState(false);
+
+  React.useEffect(() => {
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      globalThis.requestAnimationFrame(() => {
+        setVisible(globalThis.scrollY > 240);
+        ticking = false;
+      });
+    };
+
+    onScroll();
+    globalThis.addEventListener("scroll", onScroll, { passive: true });
+    return () => globalThis.removeEventListener("scroll", onScroll);
+  }, []);
+
+  return (
+    <button
+      type="button"
+      onClick={() => globalThis.scrollTo({ top: 0, behavior: "smooth" })}
+      aria-label={t("back_to_top")}
+      title={t("back_to_top")}
+      className={
+        "fixed right-4 bottom-5 z-20 h-11 w-11 rounded-full border border-slate-300 " +
+        "bg-slate-800 text-white shadow-lg transition-all duration-200 " +
+        "hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 " +
+        (visible
+          ? "translate-y-0 opacity-95 pointer-events-auto"
+          : "translate-y-2 opacity-0 pointer-events-none")
+      }
+    >
+      <span aria-hidden="true" className="text-lg leading-none">↑</span>
+    </button>
+  );
+}
+
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -2235,6 +2278,7 @@ function App() {
       {route === "lmra" && <LmraScreen />}
       {route === "firstaid" && <FirstAidScreen />}
       {route === "stop" && <StopScreen />}
+      <ScrollToTopButton />
 
       <footer className="max-w-md mx-auto px-4 pb-8 text-center text-xs text-gray-400">
         QHSE PWA • Données locales + collecte centrale
