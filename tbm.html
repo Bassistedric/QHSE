@@ -62,7 +62,10 @@
     <section class="bg-white rounded shadow p-4">
       <label for="responsableSelect" class="block text-sm font-medium mb-1">3. Responsable (CE/SiSu)</label>
       <select id="responsableSelect" class="border rounded px-2 py-1 w-full"></select>
-      <input id="responsableManual" type="text" class="border rounded px-2 py-1 w-full mt-1 text-sm" placeholder="Ajouter manuellement">
+      <div class="flex gap-2 mt-1">
+        <input id="responsableManual" type="text" class="border rounded px-2 py-1 flex-1 text-sm" placeholder="Ajouter manuellement">
+        <button id="responsableManualBtn" type="button" class="px-3 py-1 bg-blue-600 text-white rounded text-sm">Valider</button>
+      </div>
       <p id="responsableHelper" class="text-sm text-gray-500 mt-1"></p>
     </section>
 
@@ -160,6 +163,7 @@
     const responsableSelect = document.getElementById('responsableSelect');
     const chantierManualInput = document.getElementById('chantierManual');
     const responsableManualInput = document.getElementById('responsableManual');
+    const responsableManualBtn = document.getElementById('responsableManualBtn');
     const responsableHelper = document.getElementById('responsableHelper');
 
     const teamContainer = document.getElementById('teamContainer');
@@ -510,6 +514,19 @@
       });
     }
 
+    function applyManualResponsable(){
+      const manualResponsable = responsableManualInput.value.trim();
+      if(!manualResponsable){
+        responsableHelper.textContent = '';
+        return false;
+      }
+      responsableSelect.value = '';
+      responsableSelect.disabled = true;
+      responsableHelper.textContent = 'Responsable manuel validé';
+      populateTeamForSelectedResponsable();
+      return true;
+    }
+
     function populateVideo(){
       thumbContainer.innerHTML='Vidéo non disponible';
       qrcodeEl.innerHTML='';
@@ -763,13 +780,27 @@
 
     responsableManualInput.addEventListener('input',()=>{
       if(responsableManualInput.value.trim()){
+        responsableSelect.value='';
         responsableSelect.disabled=true;
         responsableHelper.textContent='';
       }else{
         responsableSelect.disabled=false;
+        populateResponsablesForChantier();
       }
       populateTeamForSelectedResponsable();
       if(hasAttemptedSubmit) validateRequiredFields(true);
+    });
+    responsableManualInput.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){
+        e.preventDefault();
+        applyManualResponsable();
+        if(hasAttemptedSubmit) validateRequiredFields(true);
+      }
+    });
+    responsableManualBtn.addEventListener('click',()=>{
+      applyManualResponsable();
+      if(hasAttemptedSubmit) validateRequiredFields(true);
+      responsableManualInput.focus();
     });
 
     dateInput.addEventListener('change', ()=>{ updateAll(); if(hasAttemptedSubmit) validateRequiredFields(true); });
