@@ -96,7 +96,6 @@
     <section class="bg-white rounded shadow p-4">
       <div class="flex justify-between items-center mb-2">
         <label class="text-sm font-medium">5.Participants présents</label>
-        <button id="toggleAll" class="text-sm text-blue-600 underline">Tout cocher</button>
       </div>
       <div id="teamContainer" class="flex flex-col gap-1 mb-2"></div>
 
@@ -206,7 +205,6 @@
     const responsableHelper = document.getElementById('responsableHelper');
 
     const teamContainer = document.getElementById('teamContainer');
-    const toggleAllBtn = document.getElementById('toggleAll');
     const manualInput = document.getElementById('manualInput');
     const manualChips = document.getElementById('manualChips');
     const manualAddBtn = document.getElementById('manualAddBtn');
@@ -784,12 +782,6 @@
     retryBtn.addEventListener('click', loadSheets);
     resetBtn.addEventListener('click', resetFormData);
 
-    toggleAllBtn.addEventListener('click',()=>{
-      const boxes = teamContainer.querySelectorAll('input[type="checkbox"]');
-      const allChecked = Array.from(boxes).every(b=>b.checked);
-      boxes.forEach(b=>b.checked=!allChecked);
-      if(hasAttemptedSubmit) validateRequiredFields(true);
-    });
     teamContainer.addEventListener('change', ()=>{ if(hasAttemptedSubmit) validateRequiredFields(true); });
 
     // ✅ listeners
