@@ -1291,8 +1291,19 @@ function FmraScreen() {
   };
 
   const resetAll = () => {
-    setData(initialState());
+    const emptyState = initialState();
+    setData(emptyState);
+    saveLS(STATE_KEY, emptyState);
     setErrors({});
+  };
+
+  const resetAndGoToStop = () => {
+    const emptyState = initialState();
+    setData(emptyState);
+    saveLS(STATE_KEY, emptyState);
+    setErrors({});
+    setShowStopRedirectModal(false);
+    location.href = "./stop.html";
   };
 
   const submit = async (decision) => {
@@ -1551,7 +1562,7 @@ function FmraScreen() {
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-600 text-3xl font-bold leading-none" aria-hidden="true">V</div>
             <h2 id="fmraStopRedirectTitle" className="text-lg font-semibold">{t("fmra_stop_saved_title")}</h2>
             <p className="text-sm text-gray-200">{t("fmra_stop_redirect_message")}</p>
-            <button type="button" onClick={() => { location.href = "./stop.html"; }} className="px-4 py-2 bg-white text-slate-900 rounded font-medium">OK</button>
+            <button type="button" onClick={resetAndGoToStop} className="px-4 py-2 bg-white text-slate-900 rounded font-medium">OK</button>
           </div>
         </div>
       )}
