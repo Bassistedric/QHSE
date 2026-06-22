@@ -57,6 +57,11 @@ Ensuite, l’app peut fonctionner hors-ligne.`,
 
       // Alerts
       alert_sent: "Envoyé ✅",
+      confirm_send_message: "Voulez-vous envoyer ?",
+      confirm_send_confirm: "Confirmer",
+      confirm_send_cancel: "Annuler",
+      confirmation_title: "Confirmation",
+      success_sent_title: "Confirmation de données envoyées",
       alert_offline_queued:
         "Pas de réseau : enregistré localement. Envoi auto dès connexion.",
       required_field: "Champ obligatoire",
@@ -322,6 +327,11 @@ Then, the app can work offline.`,
       back_to_top: "Back to top",
 
       alert_sent: "Sent ✅",
+      confirm_send_message: "Do you want to send?",
+      confirm_send_confirm: "Confirm",
+      confirm_send_cancel: "Cancel",
+      confirmation_title: "Confirmation",
+      success_sent_title: "Data sent confirmation",
       alert_offline_queued:
         "No network: saved locally. Will auto-send when online.",
       required_field: "Required field",
@@ -511,6 +521,11 @@ Daarna kan de app offline werken.`,
       back_to_top: "Terug naar boven",
 
       alert_sent: "Verzonden ✅",
+      confirm_send_message: "Wilt u verzenden?",
+      confirm_send_confirm: "Bevestigen",
+      confirm_send_cancel: "Annuleren",
+      confirmation_title: "Bevestiging",
+      success_sent_title: "Bevestiging gegevens verzonden",
       alert_offline_queued:
         "Geen netwerk: lokaal opgeslagen. Wordt automatisch verzonden zodra online.",
       required_field: "Verplicht veld",
@@ -1182,6 +1197,8 @@ function FmraScreen() {
   const [loadStatus, setLoadStatus] = React.useState("");
   const [errors, setErrors] = React.useState({});
   const [sending, setSending] = React.useState(false);
+  const [confirmingGo, setConfirmingGo] = React.useState(false);
+  const [showSuccessModal, setShowSuccessModal] = React.useState(false);
 
   React.useEffect(() => {
     saveLS(STATE_KEY, data);
@@ -1315,11 +1332,21 @@ function FmraScreen() {
       return;
     }
 
-    alert(ok ? t("alert_sent") : t("alert_offline_queued"));
     if (ok) {
+      setShowSuccessModal(true);
       setData(initialState());
       setErrors({});
+    } else {
+      alert(t("alert_offline_queued"));
     }
+  };
+
+  const requestGoSubmit = () => {
+    if (!validate()) {
+      alert(t("required_fields"));
+      return;
+    }
+    setConfirmingGo(true);
   };
 
   return (
@@ -1457,7 +1484,7 @@ function FmraScreen() {
             <div className="grid grid-cols-2 gap-3">
               <button
                 disabled={sending}
-                onClick={() => submit("GO")}
+                onClick={requestGoSubmit}
                 className="px-4 py-3 rounded-xl border bg-green-600 text-white font-semibold disabled:opacity-50"
               >
                 {t("fmra_ok_go")}
@@ -1472,6 +1499,40 @@ function FmraScreen() {
             </div>
           </Section>
         </>
+      )}
+
+      {confirmingGo && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-30" role="dialog" aria-modal="true" aria-labelledby="fmraConfirmationTitle">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6 text-center space-y-4">
+            <h2 id="fmraConfirmationTitle" className="text-lg font-semibold">{t("confirmation_title")}</h2>
+            <p className="text-sm text-gray-700">{t("confirm_send_message")}</p>
+            <div className="flex justify-center gap-3">
+              <button type="button" onClick={() => setConfirmingGo(false)} className="px-4 py-2 bg-red-600 text-white rounded">
+                {t("confirm_send_cancel")}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmingGo(false);
+                  submit("GO");
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded"
+              >
+                {t("confirm_send_confirm")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-30" role="dialog" aria-modal="true" aria-labelledby="fmraSuccessTitle">
+          <div className="bg-slate-900 text-white rounded-lg shadow-xl max-w-sm w-full p-6 text-center space-y-4">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-600 text-3xl font-bold leading-none" aria-hidden="true">V</div>
+            <h2 id="fmraSuccessTitle" className="text-lg font-semibold">{t("success_sent_title")}</h2>
+            <button type="button" onClick={() => setShowSuccessModal(false)} className="px-4 py-2 bg-white text-slate-900 rounded font-medium">OK</button>
+          </div>
+        </div>
       )}
     </main>
   );
