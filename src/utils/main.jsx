@@ -2,8 +2,8 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import Papa from "papaparse";
-import { nowLocalDateTime } from "./utils/date.js";
-import { SHEET_BASE_URL, AFFECTATIONS_GID } from "../sheetConfig.js";
+import { nowLocalDateTime } from "./date.js";
+import { SHEET_BASE_URL, AFFECTATIONS_GID } from "../../sheetConfig.js";
 
 // ========================= CONFIG =========================
 // ⬇⬇ Remplacer l' URL Apps Script /exec si modification du GSheet
@@ -228,6 +228,8 @@ Ensuite, l’app peut fonctionner hors-ligne.`,
       fmra_metier_ref: "Réfrigération",
       fmra_chantier_manual_ph: "Ajouter manuellement",
       fmra_responsable_manual_ph: "Ajouter manuellement",
+      fmra_pm: "PM",
+      fmra_pm_none: "Aucun PM trouvé pour ce chantier",
       fmra_responsable_none: "Aucun chef d'équipe/PM trouvé pour ce chantier",
       fmra_loading: "Chargement des chantiers…",
       fmra_load_error: "Erreur de chargement des chantiers. Saisie manuelle possible.",
@@ -335,6 +337,8 @@ Then, the app can work offline.`,
       success_sent_title: "Data sent confirmation",
       fmra_stop_saved_title: "Blocking point recorded",
       fmra_stop_redirect_message: "redirecting to the STOP form",
+      fmra_pm: "PM",
+      fmra_pm_none: "No PM found for this site",
       alert_offline_queued:
         "No network: saved locally. Will auto-send when online.",
       required_field: "Required field",
@@ -531,6 +535,8 @@ Daarna kan de app offline werken.`,
       success_sent_title: "Bevestiging gegevens verzonden",
       fmra_stop_saved_title: "Blokkerend punt geregistreerd",
       fmra_stop_redirect_message: "doorverwijzing naar de STOP-fiche",
+      fmra_pm: "PM",
+      fmra_pm_none: "Geen PM gevonden voor deze werf",
       alert_offline_queued:
         "Geen netwerk: lokaal opgeslagen. Wordt automatisch verzonden zodra online.",
       required_field: "Verplicht veld",
@@ -1193,6 +1199,7 @@ function FmraScreen() {
     chantierManual: "",
     responsable: "",
     responsableManual: "",
+    pm: "",
     answers: {},
     autreText: "",
   });
@@ -1261,22 +1268,31 @@ function FmraScreen() {
     );
   }, [baseRows]);
 
-  const responsableOptions = React.useMemo(() => {
+  const chantierRows = React.useMemo(() => {
     if (!data.chantier) return [];
     const target = fmraNormUpper(data.chantier);
-    return fmraUniqSorted(
-      baseRows
-        .filter((r) => fmraNormUpper(r.chantier) === target)
-        .map((r) => r.ce || r.pm)
-        .filter(Boolean)
-    );
+    return baseRows.filter((r) => fmraNormUpper(r.chantier) === target);
   }, [baseRows, data.chantier]);
+
+  const responsableOptions = React.useMemo(() => {
+    return fmraUniqSorted(chantierRows.map((r) => r.ce || r.pm).filter(Boolean));
+  }, [chantierRows]);
+
+  const pmOptions = React.useMemo(() => {
+    return fmraUniqSorted(chantierRows.map((r) => r.pm).filter(Boolean));
+  }, [chantierRows]);
 
   const riskQuestions = FMRA_RISK_QUESTIONS[data.metier] || [];
   const allQuestions = React.useMemo(() => [...FMRA_COMMON_QUESTIONS, ...riskQuestions], [riskQuestions]);
 
   const resolvedChantier = data.chantierManual.trim() || data.chantier;
   const resolvedResponsable = data.responsableManual.trim() || data.responsable;
+
+  React.useEffect(() => {
+    if (!pmOptions.includes(data.pm)) {
+      setData((prev) => ({ ...prev, pm: pmOptions[0] || "" }));
+    }
+  }, [data.pm, pmOptions]);
 
   const validate = () => {
     const missing = {
@@ -1329,6 +1345,7 @@ function FmraScreen() {
         metier: data.metier,
         chantier: resolvedChantier,
         responsable: resolvedResponsable,
+        pm: data.pm,
         answers: data.answers,
         autreText: data.autreText,
         flagged,
@@ -1403,6 +1420,7 @@ function FmraScreen() {
                   metier: e.target.value,
                   chantier: "",
                   responsable: "",
+                  pm: "",
                   answers: {},
                   autreText: "",
                 }))
@@ -1425,7 +1443,7 @@ function FmraScreen() {
             <select
               value={data.chantier}
               disabled={!data.metier || !!data.chantierManual.trim()}
-              onChange={(e) => setData((prev) => ({ ...prev, chantier: e.target.value, responsable: "" }))}
+              onChange={(e) => setData((prev) => ({ ...prev, chantier: e.target.value, responsable: "", pm: "" }))}
               className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.chantier ? "border-red-500" : ""}`}
             >
               <option value="">{t("fmra_metier_ph")}</option>
@@ -1466,6 +1484,26 @@ function FmraScreen() {
             />
             {!!resolvedChantier && !responsableOptions.length && !data.responsableManual && (
               <div className="text-xs text-gray-400 mt-1">{t("fmra_responsable_none")}</div>
+            )}
+          </label>
+
+          <label className="text-sm">
+            {t("fmra_pm")}
+            <select
+              value={data.pm}
+              disabled={!resolvedChantier || !pmOptions.length}
+              onChange={(e) => setField("pm", e.target.value)}
+              className="mt-1 w-full px-3 py-2 rounded-xl border"
+            >
+              <option value="">{t("fmra_metier_ph")}</option>
+              {pmOptions.map((pm) => (
+                <option key={pm} value={pm}>
+                  {pm}
+                </option>
+              ))}
+            </select>
+            {!!resolvedChantier && !pmOptions.length && (
+              <div className="text-xs text-gray-400 mt-1">{t("fmra_pm_none")}</div>
             )}
           </label>
         </div>
