@@ -292,7 +292,8 @@ Ensuite, l’app peut fonctionner hors-ligne.`,
       fmra_ok_go: "OK GO",
       fmra_btn_stop: "STOP",
       fmra_validation_missing: "Merci de répondre à toutes les questions avant de valider.",
-      fmra_redirecting_stop: "Point bloquant enregistré — redirection vers la fiche STOP…",
+      fmra_stop_saved_title: "Point bloquant enregistré",
+      fmra_stop_redirect_message: "redirection vers la fiche STOP",
     },
 
     en: {
@@ -332,6 +333,8 @@ Then, the app can work offline.`,
       confirm_send_cancel: "Cancel",
       confirmation_title: "Confirmation",
       success_sent_title: "Data sent confirmation",
+      fmra_stop_saved_title: "Blocking point recorded",
+      fmra_stop_redirect_message: "redirecting to the STOP form",
       alert_offline_queued:
         "No network: saved locally. Will auto-send when online.",
       required_field: "Required field",
@@ -526,6 +529,8 @@ Daarna kan de app offline werken.`,
       confirm_send_cancel: "Annuleren",
       confirmation_title: "Bevestiging",
       success_sent_title: "Bevestiging gegevens verzonden",
+      fmra_stop_saved_title: "Blokkerend punt geregistreerd",
+      fmra_stop_redirect_message: "doorverwijzing naar de STOP-fiche",
       alert_offline_queued:
         "Geen netwerk: lokaal opgeslagen. Wordt automatisch verzonden zodra online.",
       required_field: "Verplicht veld",
@@ -1199,6 +1204,7 @@ function FmraScreen() {
   const [sending, setSending] = React.useState(false);
   const [confirmingGo, setConfirmingGo] = React.useState(false);
   const [showSuccessModal, setShowSuccessModal] = React.useState(false);
+  const [showStopRedirectModal, setShowStopRedirectModal] = React.useState(false);
 
   React.useEffect(() => {
     saveLS(STATE_KEY, data);
@@ -1327,8 +1333,12 @@ function FmraScreen() {
     saveLS(PREFS_KEY, { ...prefs, responsable: resolvedResponsable });
 
     if (decision === "STOP") {
-      alert(ok ? t("fmra_redirecting_stop") : t("alert_offline_queued"));
-      location.href = "./stop.html";
+      if (ok) {
+        setShowStopRedirectModal(true);
+      } else {
+        alert(t("alert_offline_queued"));
+        location.href = "./stop.html";
+      }
       return;
     }
 
@@ -1531,6 +1541,17 @@ function FmraScreen() {
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-600 text-3xl font-bold leading-none" aria-hidden="true">V</div>
             <h2 id="fmraSuccessTitle" className="text-lg font-semibold">{t("success_sent_title")}</h2>
             <button type="button" onClick={() => setShowSuccessModal(false)} className="px-4 py-2 bg-white text-slate-900 rounded font-medium">OK</button>
+          </div>
+        </div>
+      )}
+
+      {showStopRedirectModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-30" role="dialog" aria-modal="true" aria-labelledby="fmraStopRedirectTitle">
+          <div className="bg-slate-900 text-white rounded-lg shadow-xl max-w-sm w-full p-6 text-center space-y-4">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-600 text-3xl font-bold leading-none" aria-hidden="true">V</div>
+            <h2 id="fmraStopRedirectTitle" className="text-lg font-semibold">{t("fmra_stop_saved_title")}</h2>
+            <p className="text-sm text-gray-200">{t("fmra_stop_redirect_message")}</p>
+            <button type="button" onClick={() => { location.href = "./stop.html"; }} className="px-4 py-2 bg-white text-slate-900 rounded font-medium">OK</button>
           </div>
         </div>
       )}
