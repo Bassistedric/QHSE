@@ -1,0 +1,1338 @@
+diff --git a/Code.gs b/Code.gs
+index bda5e94..96e9cc0 100644
+--- a/Code.gs
++++ b/Code.gs
+@@ -1,5 +1,9 @@
+ const TBM_SHEET_NAME = 'tbm';
+ const STOP_SHEET_NAME = 'stop';
++const FMRA_SHEET_NAME = 'fmra';
++
++// Configure in Apps Script properties: FMRA_PM_EMAILS="pm1@vma.be,pm2@vma.be"
++const FMRA_PM_EMAILS_PROP = 'FMRA_PM_EMAILS';
+ 
+ // Configure in Apps Script properties: STOP_ALERT_EMAILS="a@b.com,c@d.com"
+ const STOP_ALERT_EMAILS_PROP = 'STOP_ALERT_EMAILS';
+@@ -14,6 +18,7 @@ function doPost(e) {
+ 
+     if (type === 'tbm') return handleTbm(meta, data);
+     if (type === 'stop') return handleStop(meta, data);
++    if (type === 'fmra') return handleFmra(meta, data);
+     return respond({ ok: false, error: 'unknown type', type });
+   } catch (err) {
+     return respond({ ok: false, error: String(err && err.message ? err.message : err) });
+@@ -160,6 +165,85 @@ function sendStopNoGoEmail(stopData) {
+   MailApp.sendEmail(recipients, subject, lines.join('\n'), mailOptions);
+ }
+ 
++function handleFmra(meta, d) {
++  const headers = [
++    'sentAt',
++    'datetime',
++    'metier',
++    'chantier',
++    'responsable',
++    'decision',
++    'pointsIdentifies',
++    'autreText',
++    'userAgent',
++    'payloadJson'
++  ];
++
++  const sh = getSheetByNameOrCreate(FMRA_SHEET_NAME, headers);
++  const flagged = Array.isArray(d.flagged) ? d.flagged : [];
++
++  const row = [
++    meta.sentAt || new Date().toISOString(),
++    d.datetime || '',
++    d.metier || '',
++    d.chantier || '',
++    d.responsable || '',
++    d.decision || '',
++    flagged.map(f => f.question).join(' | '),
++    d.autreText || '',
++    meta.userAgent || '',
++    JSON.stringify(d)
++  ];
++
++  sh.appendRow(row);
++
++  // ✅ Le PM est informé systématiquement, que la décision soit OK GO ou STOP.
++  // Le SIPP/QHSE n'est informé qu'à la clôture de la fiche STOP (logique existante, non modifiée ici).
++  sendFmraPmEmail(d, flagged);
++
++  return respond({ ok: true, sheet: FMRA_SHEET_NAME, row: sh.getLastRow() });
++}
++
++function sendFmraPmEmail(d, flagged) {
++  const recipients = (PropertiesService.getScriptProperties().getProperty(FMRA_PM_EMAILS_PROP) || '').trim();
++  if (!recipients) return; // ⚠️ Configurer la propriété de script FMRA_PM_EMAILS pour activer l'envoi.
++
++  const isStop = d.decision === 'STOP';
++  const subject = `[FMRA][${isStop ? 'STOP' : 'OK GO'}] ${d.chantier || 'Sans chantier'} - ${d.responsable || ''}`;
++
++  const pointsLines = flagged.length
++    ? flagged.map(f => `- ${f.question}\n  \u2192 ${f.recommandation}`)
++    : ['Aucun point particulier identifié cette semaine.'];
++
++  const lines = [
++    isStop
++      ? `${d.responsable || 'Le chef d\u2019équipe'} a lancé la procédure STOP suite à la FMRA.`
++      : `${d.responsable || 'Le chef d\u2019équipe'} confirme que le travail peut démarrer (OK GO).`,
++    '',
++    `Métier: ${d.metier || ''}`,
++    `Chantier: ${d.chantier || ''}`,
++    `Chef d'équipe: ${d.responsable || ''}`,
++    `Date: ${d.datetime || ''}`,
++    '',
++    'Points identifiés cette semaine:',
++    ...pointsLines
++  ];
++
++  if (d.autreText) {
++    lines.push('', `Autre risque précisé: ${d.autreText}`);
++  }
++
++  if (isStop) {
++    lines.push(
++      '',
++      'Le détail du blocage et son traitement sont à compléter dans la fiche STOP dédiée de l\u2019application QHSE.',
++      'Le SIPP/QHSE sera informé automatiquement à la clôture de cette fiche en cas d\u2019issue "no-go".'
++    );
++  }
++
++  MailApp.sendEmail(recipients, subject, lines.join('\n'));
++}
++
+ function getSheetByNameOrCreate(name, headers) {
+   const ss = SpreadsheetApp.getActive();
+   let sh = ss.getSheetByName(name);
+diff --git a/index.html b/index.html
+index e0a092b..617a2b0 100644
+--- a/index.html
++++ b/index.html
+@@ -43,13 +43,13 @@
+     if ('serviceWorker' in navigator) {
+       window.addEventListener('load', () => {
+         navigator.serviceWorker
+-          .register('./sw.js?v=v11')
++          .register('./sw.js?v=v12')
+           .catch(console.error);
+       });
+     }
+   </script>
+ 
+   <!-- ✅ Bundle React (1 seule fois) -->
+-  <script type="module" src="dist/bundle.js?v=v11"></script>
++  <script type="module" src="dist/bundle.js?v=v12"></script>
+ </body>
+ </html>
+diff --git a/package.json b/package.json
+index c36dff1..a8ae3ad 100644
+--- a/package.json
++++ b/package.json
+@@ -14,7 +14,8 @@
+   "type": "commonjs",
+   "dependencies": {
+     "react": "^18.2.0",
+-    "react-dom": "^18.2.0"
++    "react-dom": "^18.2.0",
++    "papaparse": "^5.4.1"
+   },
+   "devDependencies": {
+     "webpack": "^5.89.0",
+diff --git a/src/main.jsx b/src/main.jsx
+index 18028a4..f05ff29 100644
+--- a/src/main.jsx
++++ b/src/main.jsx
+@@ -1,7 +1,9 @@
+ // src/main.jsx
+ import React from "react";
+ import ReactDOM from "react-dom/client";
++import Papa from "papaparse";
+ import { nowLocalDateTime } from "./utils/date.js";
++import { SHEET_BASE_URL, AFFECTATIONS_GID } from "../sheetConfig.js";
+ 
+ // ========================= CONFIG =========================
+ // ⬇⬇ Remplacer l' URL Apps Script /exec si modification du GSheet
+@@ -209,6 +211,83 @@ Ensuite, l’app peut fonctionner hors-ligne.`,
+       photo_status_error: "Erreur traitement photo",
+       nogo_activate: "Activer NO-GO",
+       nogo_placeholder: "Explique pourquoi c’est NO-GO…",
++
++      // ✅ FMRA (First Minute Risk Analysis) — hebdomadaire, chef d'équipe
++      fmra_title: "FMRA",
++      fmra_intro: "Analyse hebdomadaire à compléter par le chef d'équipe en début de semaine.",
++      fmra_section_identification: "Identification",
++      fmra_metier: "Métier",
++      fmra_metier_ph: "Sélectionnez...",
++      fmra_metier_elec: "Élec (HT-BT)",
++      fmra_metier_hvac: "HVAC",
++      fmra_metier_ref: "Réfrigération",
++      fmra_chantier_manual_ph: "Ajouter manuellement",
++      fmra_responsable_manual_ph: "Ajouter manuellement",
++      fmra_responsable_none: "Aucun chef d'équipe/PM trouvé pour ce chantier",
++      fmra_loading: "Chargement des chantiers…",
++      fmra_load_error: "Erreur de chargement des chantiers. Saisie manuelle possible.",
++
++      fmra_section_orga: "Organisation de la semaine",
++      fmra_q_orga1: "Les travaux prévus cette semaine sont-ils clairement définis ?",
++      fmra_r_orga1: "Clarifier le planning de la semaine avec le responsable/coordination avant de démarrer",
++      fmra_q_orga2: "L'effectif est-il complet et qualifié pour ces travaux ?",
++      fmra_r_orga2: "Identifier le renfort ou la qualification manquante et en informer le planning/RH avant démarrage",
++      fmra_q_orga3: "Le matériel et les EPI nécessaires sont-ils disponibles et en bon état ?",
++      fmra_r_orga3: "Commander ou remplacer le matériel/EPI manquant ou défectueux avant de démarrer les travaux",
++
++      fmra_section_risks: "Risques spécifiques",
++
++      fmra_q_tst: "Travail sous tension (TST) prévu cette semaine ?",
++      fmra_r_tst: "Vérifier que la demande de travail sous tension a été introduite et validée",
++
++      fmra_q_consignation: "Consignation / déconsignation prévue cette semaine ?",
++      fmra_r_consignation: "Vérifier que la procédure de consignation/déconsignation complète sera appliquée",
++
++      fmra_q_tremie: "Travail à proximité d'une trémie ou d'une ouverture de sol/plancher prévu cette semaine ?",
++      fmra_r_tremie: "Vérifier la mise en place d'une protection collective (garde-corps, plaque, balisage)",
++
++      fmra_q_confine: "Travail en espace confiné prévu cette semaine ?",
++      fmra_r_confine: "Vérifier le permis d'entrée, la présence d'un surveillant et le contrôle atmosphérique",
++
++      fmra_q_nouvel_intervenant: "Nouvel intervenant non briefé dans l'équipe ?",
++      fmra_r_nouvel_intervenant: "Réaliser l'accueil sécurité et le briefing avant démarrage",
++
++      fmra_q_meteo_elec: "Risque de conditions météo dégradées ?",
++      fmra_q_meteo_ext: "Travaux extérieurs ou sensibles aux conditions météo prévus cette semaine ?",
++      fmra_r_meteo: "Vérifier les prévisions avant intervention, prévoir un report si nécessaire",
++
++      fmra_q_autre_elec: "Autre tâche à risque (à préciser) ?",
++      fmra_r_autre_elec: "Évaluer les mesures de prévention nécessaires avec le SIPP avant de démarrer",
++      fmra_q_autre_permis: "Autre tâche à risque (permis feu, ...) ?",
++      fmra_r_autre_permis: "Identifier précisément le risque concerné et introduire le permis de travail adapté (permis feu, etc.) en lien avec le SIPP avant de démarrer",
++      fmra_autre_text_ph: "Précisez le risque...",
++
++      fmra_q_pression_hvac: "Intervention sur installation sous pression ?",
++      fmra_r_pression_hvac: "Vérifier la dépressurisation/consignation de l'installation et le contrôle de l'équipement sous pression (ESP) si applicable",
++
++      fmra_q_pression_ref: "Intervention sur circuit sous pression ?",
++      fmra_r_pression_ref: "Vérifier la dépressurisation/consignation du circuit avant intervention",
++
++      fmra_q_levage: "Utilisation d'équipement de levage ?",
++      fmra_r_levage: "Vérifier le contrôle/certification CE de l'équipement et la formation/habilitation du conducteur",
++
++      fmra_q_legionelle: "Intervention sur tour de refroidissement ou circuit d'eau (légionelle) prévue ?",
++      fmra_r_legionelle: "Vérifier le port des EPI respiratoires adaptés et le respect du protocole de désinfection avant intervention",
++
++      fmra_q_fluides: "Manipulation de fluides réfrigérants prévue ?",
++      fmra_r_fluides: "Vérifier la disponibilité des EPI adaptés (gants, lunettes) contre les brûlures cryogéniques et les fuites",
++
++      fmra_q_nh3: "Intervention sur installation à l'ammoniac (NH3) prévue cette semaine ?",
++      fmra_r_nh3: "Vérifier l'habilitation NH3 des intervenants, le bon fonctionnement des détecteurs de fuite, et prévenir la coordination si nécessaire",
++
++      fmra_oui: "Oui",
++      fmra_non: "Non",
++      fmra_section_decision: "Décision",
++      fmra_decision_intro: "Sur base des éléments identifiés ci-dessus :",
++      fmra_ok_go: "OK GO",
++      fmra_btn_stop: "STOP",
++      fmra_validation_missing: "Merci de répondre à toutes les questions avant de valider.",
++      fmra_redirecting_stop: "Point bloquant enregistré — redirection vers la fiche STOP…",
+     },
+ 
+     en: {
+@@ -900,640 +979,503 @@ function HomeScreen() {
+   );
+ }
+ 
+-// ========================= LMRA =========================
+-function LmraScreen() {
+-  const { t } = useI18n();
++// ========================= FMRA =========================
++const FMRA_REF_CHANTIER_LABELS = new Set(["CHANTIER REF", "SAV REF"]);
++
++function fmraNormalize(str) {
++  return String(str ?? "")
++    .normalize("NFD")
++    .replace(/[\u0300-\u036f]/g, "")
++    .trim();
++}
++function fmraNormUpper(str) {
++  return fmraNormalize(str).toUpperCase().replace(/\s+/g, " ");
++}
++function fmraNormalizeSheetName(sheetName) {
++  return fmraNormalize(sheetName)
++    .toUpperCase()
++    .replace(/[^A-Z0-9]+/g, "_")
++    .replace(/^_+|_+$/g, "");
++}
++function fmraIsoWeek(dateObj) {
++  const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
++  const dayNum = d.getUTCDay() || 7;
++  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
++  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
++  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
++}
++function fmraUniqSorted(arr) {
++  return Array.from(new Set(arr.filter(Boolean))).sort((a, b) => a.localeCompare(b, "fr"));
++}
++// ✅ Elec = onglet dédié. HVAC et Réfrigération partagent la même équipe
++// (onglet combiné EQUIPE_HVAC_REF) — seul le libellé du chantier distingue
++// la Réfrigération ("Chantier REF" / "SAV REF"), voir fmraSplitByChantier().
++function fmraSheetSetForMetier(metier) {
++  if (metier === "Elec") return new Set(["EQUIPE_ELEC"]);
++  if (metier === "HVAC" || metier === "Ref") {
++    return new Set(["EQUIPE_HVAC_REF", "EQUIPE_HVAC_REF_", "EQUIPE_HVACREF", "HVAC_REF"]);
++  }
++  return new Set();
++}
++
++async function fmraFetchAffectations() {
++  const url = (() => {
++    try {
++      const u = new URL(SHEET_BASE_URL);
++      u.searchParams.set("output", "csv");
++      u.searchParams.set("gid", AFFECTATIONS_GID);
++      u.searchParams.set("_cb", Date.now().toString());
++      return u.toString();
++    } catch {
++      return null;
++    }
++  })();
++  if (!url) throw new Error("URL CSV AFFECTATIONS invalide.");
++
++  const raw = await new Promise((resolve, reject) => {
++    Papa.parse(url, { download: true, complete: (res) => resolve(res.data), error: reject });
++  });
++  if (!raw || !raw.length) throw new Error("CSV AFFECTATIONS vide.");
++
++  const cleanHeaderCell = (s) =>
++    String(s ?? "")
++      .replace(/^\uFEFF/, "")
++      .replace(/\t/g, " ")
++      .trim()
++      .toLowerCase();
++  const headers = (raw[0] || []).map(cleanHeaderCell);
++  const findIdx = (aliases) => {
++    for (const a of aliases) {
++      const i = headers.indexOf(a);
++      if (i >= 0) return i;
++    }
++    return -1;
++  };
++  const idx = {
++    semaine: findIdx(["semaine", "semaine_iso"]),
++    pm: findIdx(["pm"]),
++    ce: findIdx(["ce", "chef_equipe"]),
++    ouvrier: findIdx(["ouvrier", "ouvriers"]),
++    chantier: findIdx(["chantier"]),
++    sheet: findIdx(["sheet", "feuille"]),
++  };
++  const missing = Object.entries(idx)
++    .filter(([, v]) => v < 0)
++    .map(([k]) => k);
++  if (missing.length) throw new Error(`En-têtes AFFECTATIONS manquants: ${missing.join(", ")}`);
++
++  return raw
++    .slice(1)
++    .filter((r) => r && r.length)
++    .map((r) => {
++      const sheet = (r[idx.sheet] || "").toString().trim();
++      return {
++        semaine: parseInt(r[idx.semaine], 10) || null,
++        pm: (r[idx.pm] || "").toString().trim(),
++        ce: (r[idx.ce] || "").toString().trim(),
++        ouvrier: (r[idx.ouvrier] || "").toString().trim(),
++        chantier: (r[idx.chantier] || "").toString().trim(),
++        sheetNorm: fmraNormalizeSheetName(sheet),
++      };
++    })
++    .filter((r) => r.semaine && r.chantier && r.sheetNorm && (r.ouvrier || r.ce || r.pm));
++}
++
++const FMRA_COMMON_QUESTIONS = [
++  { id: "orga1", trigger: "Non", textKey: "fmra_q_orga1", recoKey: "fmra_r_orga1" },
++  { id: "orga2", trigger: "Non", textKey: "fmra_q_orga2", recoKey: "fmra_r_orga2" },
++  { id: "orga3", trigger: "Non", textKey: "fmra_q_orga3", recoKey: "fmra_r_orga3" },
++];
++
++const FMRA_RISK_QUESTIONS = {
++  Elec: [
++    { id: "tst", trigger: "Oui", textKey: "fmra_q_tst", recoKey: "fmra_r_tst" },
++    { id: "consignation", trigger: "Oui", textKey: "fmra_q_consignation", recoKey: "fmra_r_consignation" },
++    { id: "tremie", trigger: "Oui", textKey: "fmra_q_tremie", recoKey: "fmra_r_tremie" },
++    { id: "confine", trigger: "Oui", textKey: "fmra_q_confine", recoKey: "fmra_r_confine" },
++    { id: "nouvel_intervenant", trigger: "Oui", textKey: "fmra_q_nouvel_intervenant", recoKey: "fmra_r_nouvel_intervenant" },
++    { id: "meteo", trigger: "Oui", textKey: "fmra_q_meteo_elec", recoKey: "fmra_r_meteo" },
++    { id: "autre", trigger: "Oui", textKey: "fmra_q_autre_elec", recoKey: "fmra_r_autre_elec", freeText: true },
++  ],
++  HVAC: [
++    { id: "tremie", trigger: "Oui", textKey: "fmra_q_tremie", recoKey: "fmra_r_tremie" },
++    { id: "confine", trigger: "Oui", textKey: "fmra_q_confine", recoKey: "fmra_r_confine" },
++    { id: "pression", trigger: "Oui", textKey: "fmra_q_pression_hvac", recoKey: "fmra_r_pression_hvac" },
++    { id: "consignation", trigger: "Oui", textKey: "fmra_q_consignation", recoKey: "fmra_r_consignation" },
++    { id: "levage", trigger: "Oui", textKey: "fmra_q_levage", recoKey: "fmra_r_levage" },
++    { id: "legionelle", trigger: "Oui", textKey: "fmra_q_legionelle", recoKey: "fmra_r_legionelle" },
++    { id: "meteo", trigger: "Oui", textKey: "fmra_q_meteo_ext", recoKey: "fmra_r_meteo" },
++    { id: "nouvel_intervenant", trigger: "Oui", textKey: "fmra_q_nouvel_intervenant", recoKey: "fmra_r_nouvel_intervenant" },
++    { id: "autre", trigger: "Oui", textKey: "fmra_q_autre_permis", recoKey: "fmra_r_autre_permis", freeText: true },
++  ],
++  Ref: [
++    { id: "fluides", trigger: "Oui", textKey: "fmra_q_fluides", recoKey: "fmra_r_fluides" },
++    { id: "nh3", trigger: "Oui", textKey: "fmra_q_nh3", recoKey: "fmra_r_nh3" },
++    { id: "pression", trigger: "Oui", textKey: "fmra_q_pression_ref", recoKey: "fmra_r_pression_ref" },
++    { id: "consignation", trigger: "Oui", textKey: "fmra_q_consignation", recoKey: "fmra_r_consignation" },
++    { id: "meteo", trigger: "Oui", textKey: "fmra_q_meteo_ext", recoKey: "fmra_r_meteo" },
++    { id: "tremie", trigger: "Oui", textKey: "fmra_q_tremie", recoKey: "fmra_r_tremie" },
++    { id: "nouvel_intervenant", trigger: "Oui", textKey: "fmra_q_nouvel_intervenant", recoKey: "fmra_r_nouvel_intervenant" },
++    { id: "confine", trigger: "Oui", textKey: "fmra_q_confine", recoKey: "fmra_r_confine" },
++    { id: "autre", trigger: "Oui", textKey: "fmra_q_autre_permis", recoKey: "fmra_r_autre_permis", freeText: true },
++  ],
++};
++
++const FMRA_METIER_LABEL_KEY = { Elec: "fmra_metier_elec", HVAC: "fmra_metier_hvac", Ref: "fmra_metier_ref" };
++
++function FmraQuestion({ q, value, onChange, t }) {
++  const triggered = value === q.trigger;
++  const buttonClass = (optionValue) => {
++    if (value !== optionValue) return "border-gray-300 text-gray-500";
++    return optionValue === q.trigger
++      ? "bg-red-50 border-red-400 text-red-900"
++      : "bg-green-50 border-green-400 text-green-900";
++  };
++  return (
++    <div className="py-2 border-b last:border-b-0">
++      <div className="flex items-center justify-between gap-3">
++        <span className="text-sm flex-1">{t(q.textKey)}</span>
++        <div className="flex gap-1.5 shrink-0">
++          <button
++            type="button"
++            onClick={() => onChange("Oui")}
++            className={`px-3 py-1.5 rounded-lg border text-sm font-medium ${buttonClass("Oui")}`}
++          >
++            {t("fmra_oui")}
++          </button>
++          <button
++            type="button"
++            onClick={() => onChange("Non")}
++            className={`px-3 py-1.5 rounded-lg border text-sm font-medium ${buttonClass("Non")}`}
++          >
++            {t("fmra_non")}
++          </button>
++        </div>
++      </div>
++      {triggered && (
++        <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-2">
++          {t(q.recoKey)}
++        </div>
++      )}
++    </div>
++  );
++}
+ 
+-  const STATE_KEY = "qhse_lmra_state_v1";
++function FmraScreen() {
++  const { t } = useI18n();
++  const STATE_KEY = "qhse_fmra_state_v1";
+   const prefs = loadLS(PREFS_KEY, { responsable: "", team: [] });
+ 
+   const initialState = () => ({
+-    version: "v3.2",
+     datetime: nowLocalDateTime(),
+-    job: "",
+-    site: "",
+-    task: "",
+-    responsable: prefs.responsable || "",
+-    team: Array.isArray(prefs.team) ? [...prefs.team] : [],
+-    teamInput: "",
+-    conditions: { tacheClaires: false, coactivite: false, zonage: false, epi: false },
+-    permits: { feu: false, electrique: false, confine: false, levage: false, autre: false, autreText: "", na: false },
+-    risks: {
+-      energies: { electrique: false, mecanique: false, fluide: false, gravite: false, autre: false, autreText: "" },
+-      environnement: { hauteur: false, meteo: false, bruit: false, poussiere: false, thermique: false, chimique: false },
+-      operations: { trafic: false, levage: false, outillage: false, atex: false, confine: false, autres: false, autresText: "" },
+-    },
+-    measures: {
+-      septRegles: false,
+-      ventilation: false,
+-      terre: false,
+-      balisage: false,
+-      surveillant: false,
+-      planLevage: false,
+-      ancrage: false,
+-      outilsOk: false,
+-      autre: false,
+-      autreText: "",
+-    },
+-    top3: [
+-      { risk: "", action: "", resp: "" },
+-      { risk: "", action: "", resp: "" },
+-      { risk: "", action: "", resp: "" },
+-    ],
+-    decision: "GO",
+-    noGo: { name: "", tel: "" },
+-    notes: "",
++    metier: "",
++    chantier: "",
++    chantierManual: "",
++    responsable: "",
++    responsableManual: "",
++    answers: {},
++    autreText: "",
+   });
+ 
+   const [data, setData] = React.useState(loadLS(STATE_KEY, initialState()));
+-  const [step, setStep] = React.useState(0);
+-  const totalSteps = 6;
++  const [affectRows, setAffectRows] = React.useState([]);
++  const [loadStatus, setLoadStatus] = React.useState("");
+   const [errors, setErrors] = React.useState({});
++  const [sending, setSending] = React.useState(false);
+ 
+   React.useEffect(() => {
+     saveLS(STATE_KEY, data);
+   }, [data]);
+ 
++  React.useEffect(() => {
++    let active = true;
++    setLoadStatus(t("fmra_loading"));
++    fmraFetchAffectations()
++      .then((rows) => {
++        if (active) {
++          setAffectRows(rows);
++          setLoadStatus("");
++        }
++      })
++      .catch((e) => {
++        console.error(e);
++        if (active) setLoadStatus(t("fmra_load_error"));
++      });
++    return () => {
++      active = false;
++    };
++    // eslint-disable-next-line react-hooks/exhaustive-deps
++  }, []);
++
+   const setField = (k, v) => setData((prev) => ({ ...prev, [k]: v }));
++  const setAnswer = (id, v) => setData((prev) => ({ ...prev, answers: { ...prev.answers, [id]: v } }));
++
++  const week = React.useMemo(() => {
++    const d = new Date(data.datetime);
++    return isNaN(d.getTime()) ? null : fmraIsoWeek(d);
++  }, [data.datetime]);
++
++  const baseRows = React.useMemo(() => {
++    if (!data.metier || !week) return [];
++    const sheets = fmraSheetSetForMetier(data.metier);
++    let rows = affectRows.filter((r) => sheets.has(r.sheetNorm) && r.semaine === week);
++    if (data.metier === "HVAC") {
++      rows = rows.filter((r) => !FMRA_REF_CHANTIER_LABELS.has(fmraNormUpper(r.chantier)));
++    } else if (data.metier === "Ref") {
++      rows = rows.filter((r) => FMRA_REF_CHANTIER_LABELS.has(fmraNormUpper(r.chantier)));
++    }
++    return rows;
++  }, [affectRows, data.metier, week]);
++
++  const chantierOptions = React.useMemo(() => {
++    return fmraUniqSorted(
++      baseRows
++        .map((r) => r.chantier)
++        .filter((ch) => {
++          const n = fmraNormUpper(ch);
++          return n !== "CONGE" && n !== "MALADE";
++        })
++    );
++  }, [baseRows]);
++
++  const responsableOptions = React.useMemo(() => {
++    if (!data.chantier) return [];
++    const target = fmraNormUpper(data.chantier);
++    return fmraUniqSorted(
++      baseRows
++        .filter((r) => fmraNormUpper(r.chantier) === target)
++        .map((r) => r.ce || r.pm)
++        .filter(Boolean)
++    );
++  }, [baseRows, data.chantier]);
+ 
+-  const resetAll = () => {
+-    setData({ ...initialState(), responsable: data.responsable, team: data.team });
+-    setStep(0);
++  const riskQuestions = FMRA_RISK_QUESTIONS[data.metier] || [];
++  const allQuestions = React.useMemo(() => [...FMRA_COMMON_QUESTIONS, ...riskQuestions], [riskQuestions]);
++
++  const resolvedChantier = data.chantierManual.trim() || data.chantier;
++  const resolvedResponsable = data.responsableManual.trim() || data.responsable;
++
++  const validate = () => {
++    const missing = {
++      metier: !data.metier,
++      chantier: !resolvedChantier.trim(),
++      responsable: !resolvedResponsable.trim(),
++      questions: allQuestions.some((q) => !data.answers[q.id]),
++      autreText: !!(data.answers.autre === "Oui" && !data.autreText.trim()),
++    };
++    setErrors(missing);
++    return !Object.values(missing).some(Boolean);
+   };
+ 
+-  const next = () => {
+-    if (step === 0) {
+-      const name = data.teamInput.trim();
+-      if (name) {
+-        if (!data.team.includes(name)) {
+-          setData((prev) => ({ ...prev, team: [...prev.team, name], teamInput: "" }));
+-        } else {
+-          setData((prev) => ({ ...prev, teamInput: "" }));
+-        }
+-      }
++  const resetAll = () => {
++    setData(initialState());
++    setErrors({});
++  };
+ 
+-      const missing = { site: !data.site.trim(), responsable: !data.responsable.trim() };
+-      setErrors(missing);
+-      if (missing.site || missing.responsable) {
+-        alert(t("required_fields"));
+-        return;
+-      }
++  const submit = async (decision) => {
++    if (!validate()) {
++      alert(t("required_fields"));
++      return;
+     }
+-    setStep((s) => s + 1);
+-  };
++    setSending(true);
++
++    const flagged = allQuestions
++      .filter((q) => data.answers[q.id] === q.trigger)
++      .map((q) => ({ question: t(q.textKey), recommandation: t(q.recoKey) }));
+ 
+-  const envoyer = async () => {
+     const payload = {
+-      meta: { sentAt: new Date().toISOString(), page: location.href, userAgent: navigator.userAgent, formType: "lmra" },
+-      data,
++      meta: {
++        sentAt: new Date().toISOString(),
++        page: location.href,
++        userAgent: navigator.userAgent,
++        formType: "fmra",
++      },
++      data: {
++        datetime: data.datetime,
++        metier: data.metier,
++        chantier: resolvedChantier,
++        responsable: resolvedResponsable,
++        answers: data.answers,
++        autreText: data.autreText,
++        flagged,
++        decision,
++      },
+     };
+ 
+     const ok = await sendNow(payload);
++    setSending(false);
++
++    if (!ok) enqueueOutbox(payload);
++
++    saveLS(PREFS_KEY, { ...prefs, responsable: resolvedResponsable });
++
++    if (decision === "STOP") {
++      alert(ok ? t("fmra_redirecting_stop") : t("alert_offline_queued"));
++      location.href = "./stop.html";
++      return;
++    }
++
++    alert(ok ? t("alert_sent") : t("alert_offline_queued"));
+     if (ok) {
+-      alert(t("alert_sent"));
+-      saveLS(PREFS_KEY, { responsable: data.responsable, team: data.team });
+-      setData({ ...initialState(), site: data.site, responsable: data.responsable, team: data.team });
+-      setStep(0);
++      setData(initialState());
+       setErrors({});
+-    } else {
+-      enqueueOutbox(payload);
+-      alert(t("alert_offline_queued"));
+     }
+   };
+ 
+   return (
+     <main className="max-w-md mx-auto p-4">
+-      <h1 className="mb-3 px-4 py-2 rounded-xl bg-[#104861] text-[#D9D9D9] text-center">
+-        {t("lmra_title")}
+-      </h1>
++      <h1 className="mb-3 px-4 py-2 rounded-xl bg-[#104861] text-[#D9D9D9] text-center">{t("fmra_title")}</h1>
++      <p className="text-xs text-gray-500 mb-3">{t("fmra_intro")}</p>
+ 
+       <div className="mb-3">
+         <button onClick={resetAll} className="px-3 py-2 rounded-xl border">
+           {t("reset_all")}
+         </button>
+-        <div className="text-xs text-gray-500 mt-1">{t("reset_hint_team")}</div>
+       </div>
+ 
+-      <div className="mb-4">
+-        <div className="w-full bg-gray-200 rounded-full h-2">
+-          <div className="bg-black h-2 rounded-full" style={{ width: `${((step + 1) / totalSteps) * 100}%` }} />
+-        </div>
+-        <div className="text-center text-xs mt-1">
+-          {step + 1}/{totalSteps}
+-        </div>
+-      </div>
+-
+-      {step === 0 && (
+-        <Section title={t("general_info")}>
+-          <div className="flex flex-col gap-3">
+-            <label className="text-sm">
+-              {t("datetime")}
+-              <input
+-                type="datetime-local"
+-                value={data.datetime}
+-                onChange={(e) => setField("datetime", e.target.value)}
+-                className="mt-1 w-full px-3 py-2 rounded-xl border"
+-              />
+-            </label>
+-
+-            <label className="text-sm">
+-              {t("job")}
+-              <select
+-                value={data.job}
+-                onChange={(e) => setField("job", e.target.value)}
+-                className="mt-1 w-full px-3 py-2 rounded-xl border"
+-              >
+-                <option value="" disabled>
+-                  {t("job_ph")}
+-                </option>
+-                <option value="Elec">Elec</option>
+-                <option value="HVAC-Ref">HVAC-Ref</option>
+-              </select>
+-            </label>
+-
+-            <label className="text-sm">
+-              {t("site")}
+-              <input
+-                value={data.site}
+-                onChange={(e) => {
+-                  setField("site", e.target.value);
+-                  if (errors.site) setErrors((prev) => ({ ...prev, site: false }));
+-                }}
+-                placeholder={t("site_ph")}
+-                className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.site ? "border-red-500" : ""}`}
+-              />
+-              {errors.site && <div className="text-red-600 text-xs mt-1">{t("required_field")}</div>}
+-            </label>
+-
+-            <label className="text-sm">
+-              {t("task")}
+-              <input
+-                value={data.task}
+-                onChange={(e) => setField("task", e.target.value)}
+-                placeholder={t("task_ph")}
+-                className="mt-1 w-full px-3 py-2 rounded-xl border"
+-              />
+-            </label>
+-
+-            <label className="text-sm">
+-              {t("manager")}
+-              <input
+-                value={data.responsable}
+-                onChange={(e) => {
+-                  setField("responsable", e.target.value);
+-                  if (errors.responsable) setErrors((prev) => ({ ...prev, responsable: false }));
+-                }}
+-                placeholder={t("manager_ph")}
+-                className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable ? "border-red-500" : ""}`}
+-              />
+-              {errors.responsable && <div className="text-red-600 text-xs mt-1">{t("required_field")}</div>}
+-            </label>
+-
+-            {/* Équipe */}
+-            <div>
+-              <label className="text-sm block mb-2">{t("team")}</label>
+-              <div className="flex gap-2 mb-2">
+-                <input
+-                  value={data.teamInput}
+-                  onChange={(e) => setData((prev) => ({ ...prev, teamInput: e.target.value }))}
+-                  placeholder={t("team_member_ph")}
+-                  className="flex-1 px-3 py-2 rounded-xl border"
+-                />
+-                <button
+-                  onClick={() => {
+-                    const name = data.teamInput.trim();
+-                    if (!name) return;
+-                    if (data.team.includes(name)) return setData((prev) => ({ ...prev, teamInput: "" }));
+-                    setData((prev) => ({ ...prev, team: [...prev.team, name], teamInput: "" }));
+-                  }}
+-                  className="px-3 py-2 rounded-xl border"
+-                >
+-                  {data.team.length === 0 ? t("team_validate") : t("team_add")}
+-                </button>
+-              </div>
+-
+-              <div className="flex flex-wrap gap-2">
+-                {data.team.map((n) => (
+-                  <span key={n} className="inline-flex items-center gap-2 text-sm px-3 py-1 rounded-full bg-gray-100">
+-                    {n}
+-                    <button
+-                      onClick={() => setData((prev) => ({ ...prev, team: prev.team.filter((x) => x !== n) }))}
+-                      className="w-5 h-5 inline-flex items-center justify-center rounded-full border border-gray-300"
+-                    >
+-                      ×
+-                    </button>
+-                  </span>
+-                ))}
+-                {!data.team.length && <span className="text-sm text-gray-400">{t("team_empty")}</span>}
+-              </div>
+-            </div>
+-          </div>
+-        </Section>
+-      )}
+-
+-      {step === 1 && (
+-        <Section title={t("cond_title")}>
+-          <div className="flex flex-col gap-3">
+-            <Toggle
+-              checked={data.conditions.tacheClaires}
+-              onChange={(v) => setData((prev) => ({ ...prev, conditions: { ...prev.conditions, tacheClaires: v } }))}
+-              label={t("cond_task_clear")}
+-            />
+-            <Toggle
+-              checked={data.conditions.coactivite}
+-              onChange={(v) => setData((prev) => ({ ...prev, conditions: { ...prev.conditions, coactivite: v } }))}
+-              label={t("cond_coactivity")}
+-            />
+-            <Toggle
+-              checked={data.conditions.zonage}
+-              onChange={(v) => setData((prev) => ({ ...prev, conditions: { ...prev.conditions, zonage: v } }))}
+-              label={t("cond_zone")}
+-            />
+-            <Toggle
+-              checked={data.conditions.epi}
+-              onChange={(v) => setData((prev) => ({ ...prev, conditions: { ...prev.conditions, epi: v } }))}
+-              label={t("cond_epi")}
++      <Section title={t("fmra_section_identification")} tone="blue">
++        <div className="flex flex-col gap-3">
++          <label className="text-sm">
++            {t("datetime")}
++            <input
++              type="datetime-local"
++              value={data.datetime}
++              onChange={(e) => setField("datetime", e.target.value)}
++              className="mt-1 w-full px-3 py-2 rounded-xl border"
+             />
++          </label>
+ 
+-            <hr className="my-3 border-gray-200" />
+-
+-            <div>
+-              <div className="text-sm font-medium mb-2">{t("permits_title")}</div>
+-              <div className="grid grid-cols-2 gap-2">
+-                {[
+-                  ["feu", "permit_fire"],
+-                  ["electrique", "permit_elec"],
+-                  ["confine", "permit_confined"],
+-                  ["levage", "permit_lift"],
+-                  ["autre", "permit_other"],
+-                  ["na", "permit_na"],
+-                ].map(([k, label]) => (
+-                  <label key={k} className="flex items-center gap-2 text-sm">
+-                    <input
+-                      type="checkbox"
+-                      className="w-4 h-4 accent-black"
+-                      checked={!!data.permits[k]}
+-                      onChange={(e) =>
+-                        setData((prev) => ({ ...prev, permits: { ...prev.permits, [k]: e.target.checked } }))
+-                      }
+-                    />
+-                    {t(label)}
+-                  </label>
+-                ))}
+-              </div>
+-
+-              {data.permits.autre && (
+-                <input
+-                  value={data.permits.autreText}
+-                  onChange={(e) => setData((prev) => ({ ...prev, permits: { ...prev.permits, autreText: e.target.value } }))}
+-                  placeholder={t("permit_other_ph")}
+-                  className="mt-2 w-full px-3 py-2 rounded-xl border"
+-                />
+-              )}
+-            </div>
+-          </div>
+-        </Section>
+-      )}
++          <label className="text-sm">
++            {t("fmra_metier")}
++            <select
++              value={data.metier}
++              onChange={(e) =>
++                setData((prev) => ({
++                  ...prev,
++                  metier: e.target.value,
++                  chantier: "",
++                  responsable: "",
++                  answers: {},
++                  autreText: "",
++                }))
++              }
++              className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.metier ? "border-red-500" : ""}`}
++            >
++              <option value="" disabled>
++                {t("fmra_metier_ph")}
++              </option>
++              <option value="Elec">{t("fmra_metier_elec")}</option>
++              <option value="HVAC">{t("fmra_metier_hvac")}</option>
++              <option value="Ref">{t("fmra_metier_ref")}</option>
++            </select>
++          </label>
+ 
+-      {step === 2 && (
+-        <Section title={t("risks_title")}>
+-          <div className="flex flex-col gap-3">
+-            <div>
+-              <div className="text-sm font-medium mb-2">{t("energies_title")}</div>
+-              <div className="grid grid-cols-2 gap-2">
+-                {[
+-                  ["electrique", "energy_electric"],
+-                  ["mecanique", "energy_mechanical"],
+-                  ["fluide", "energy_fluid"],
+-                  ["gravite", "energy_gravity"],
+-                ].map(([k, label]) => (
+-                  <label key={k} className="flex items-center gap-2 text-sm">
+-                    <input
+-                      type="checkbox"
+-                      className="w-4 h-4 accent-black"
+-                      checked={data.risks.energies[k]}
+-                      onChange={(e) =>
+-                        setData((prev) => ({
+-                          ...prev,
+-                          risks: { ...prev.risks, energies: { ...prev.risks.energies, [k]: e.target.checked } },
+-                        }))
+-                      }
+-                    />
+-                    {t(label)}
+-                  </label>
+-                ))}
+-
+-                <label className="flex items-center gap-2 text-sm col-span-2">
+-                  <input
+-                    type="checkbox"
+-                    className="w-4 h-4 accent-black"
+-                    checked={data.risks.energies.autre}
+-                    onChange={(e) =>
+-                      setData((prev) => ({
+-                        ...prev,
+-                        risks: { ...prev.risks, energies: { ...prev.risks.energies, autre: e.target.checked } },
+-                      }))
+-                    }
+-                  />
+-                  {t("other")}
+-                </label>
+-              </div>
++          {!!loadStatus && <div className="text-xs text-gray-500">{loadStatus}</div>}
+ 
+-              {data.risks.energies.autre && (
+-                <input
+-                  value={data.risks.energies.autreText}
+-                  onChange={(e) =>
+-                    setData((prev) => ({
+-                      ...prev,
+-                      risks: { ...prev.risks, energies: { ...prev.risks.energies, autreText: e.target.value } },
+-                    }))
+-                  }
+-                  placeholder={t("other_specify")}
+-                  className="mt-2 w-full px-3 py-2 rounded-xl border"
+-                />
+-              )}
+-            </div>
++          <label className="text-sm">
++            {t("site")}
++            <select
++              value={data.chantier}
++              disabled={!data.metier || !!data.chantierManual.trim()}
++              onChange={(e) => setData((prev) => ({ ...prev, chantier: e.target.value, responsable: "" }))}
++              className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.chantier ? "border-red-500" : ""}`}
++            >
++              <option value="">{t("fmra_metier_ph")}</option>
++              {chantierOptions.map((c) => (
++                <option key={c} value={c}>
++                  {c}
++                </option>
++              ))}
++            </select>
++            <input
++              value={data.chantierManual}
++              onChange={(e) => setField("chantierManual", e.target.value)}
++              placeholder={t("fmra_chantier_manual_ph")}
++              className="mt-1 w-full px-3 py-2 rounded-xl border text-sm"
++            />
++          </label>
+ 
+-            <hr className="my-3 border-gray-200" />
+-
+-            <div>
+-              <div className="text-sm font-medium mb-2">{t("env_title")}</div>
+-              <div className="grid grid-cols-2 gap-2">
+-                {[
+-                  ["hauteur", "env_height"],
+-                  ["meteo", "env_weather"],
+-                  ["bruit", "env_noise"],
+-                  ["poussiere", "env_dust"],
+-                  ["thermique", "env_thermal"],
+-                  ["chimique", "env_chemical"],
+-                ].map(([k, label]) => (
+-                  <label key={k} className="flex items-center gap-2 text-sm">
+-                    <input
+-                      type="checkbox"
+-                      className="w-4 h-4 accent-black"
+-                      checked={data.risks.environnement[k]}
+-                      onChange={(e) =>
+-                        setData((prev) => ({
+-                          ...prev,
+-                          risks: {
+-                            ...prev.risks,
+-                            environnement: { ...prev.risks.environnement, [k]: e.target.checked },
+-                          },
+-                        }))
+-                      }
+-                    />
+-                    {t(label)}
+-                  </label>
+-                ))}
+-              </div>
+-            </div>
++          <label className="text-sm">
++            {t("manager")}
++            <select
++              value={data.responsable}
++              disabled={!resolvedChantier || !!data.responsableManual.trim()}
++              onChange={(e) => setField("responsable", e.target.value)}
++              className={`mt-1 w-full px-3 py-2 rounded-xl border ${errors.responsable ? "border-red-500" : ""}`}
++            >
++              <option value="">{t("fmra_metier_ph")}</option>
++              {responsableOptions.map((r) => (
++                <option key={r} value={r}>
++                  {r}
++                </option>
++              ))}
++            </select>
++            <input
++              value={data.responsableManual}
++              onChange={(e) => setField("responsableManual", e.target.value)}
++              placeholder={t("fmra_responsable_manual_ph")}
++              className="mt-1 w-full px-3 py-2 rounded-xl border text-sm"
++            />
++            {!!resolvedChantier && !responsableOptions.length && !data.responsableManual && (
++              <div className="text-xs text-gray-400 mt-1">{t("fmra_responsable_none")}</div>
++            )}
++          </label>
++        </div>
++      </Section>
+ 
+-            <hr className="my-3 border-gray-200" />
+-
+-            <div>
+-              <div className="text-sm font-medium mb-2">{t("ops_title")}</div>
+-              <div className="grid grid-cols-2 gap-2">
+-                {[
+-                  ["trafic", "ops_traffic"],
+-                  ["levage", "ops_lift"],
+-                  ["outillage", "ops_tools"],
+-                  ["atex", "ops_atex"],
+-                  ["confine", "ops_confined"],
+-                ].map(([k, label]) => (
+-                  <label key={k} className="flex items-center gap-2 text-sm">
+-                    <input
+-                      type="checkbox"
+-                      className="w-4 h-4 accent-black"
+-                      checked={data.risks.operations[k]}
+-                      onChange={(e) =>
+-                        setData((prev) => ({
+-                          ...prev,
+-                          risks: { ...prev.risks, operations: { ...prev.risks.operations, [k]: e.target.checked } },
+-                        }))
+-                      }
+-                    />
+-                    {t(label)}
+-                  </label>
+-                ))}
+-
+-                <label className="flex items-center gap-2 text-sm col-span-2">
+-                  <input
+-                    type="checkbox"
+-                    className="w-4 h-4 accent-black"
+-                    checked={data.risks.operations.autres}
+-                    onChange={(e) =>
+-                      setData((prev) => ({
+-                        ...prev,
+-                        risks: { ...prev.risks, operations: { ...prev.risks.operations, autres: e.target.checked } },
+-                      }))
+-                    }
++      {!!data.metier && (
++        <>
++          <Section title={t("fmra_section_orga")} tone="amber">
++            {FMRA_COMMON_QUESTIONS.map((q) => (
++              <FmraQuestion key={q.id} q={q} t={t} value={data.answers[q.id] || ""} onChange={(v) => setAnswer(q.id, v)} />
++            ))}
++          </Section>
++
++          <Section title={`${t("fmra_section_risks")} — ${t(FMRA_METIER_LABEL_KEY[data.metier])}`} tone="red">
++            {riskQuestions.map((q) => (
++              <div key={q.id}>
++                <FmraQuestion q={q} t={t} value={data.answers[q.id] || ""} onChange={(v) => setAnswer(q.id, v)} />
++                {q.freeText && data.answers[q.id] === "Oui" && (
++                  <textarea
++                    value={data.autreText}
++                    onChange={(e) => setField("autreText", e.target.value)}
++                    placeholder={t("fmra_autre_text_ph")}
++                    rows={2}
++                    className={`w-full px-3 py-2 rounded-xl border text-sm mt-1 mb-2 ${
++                      errors.autreText ? "border-red-500" : ""
++                    }`}
+                   />
+-                  {t("ops_others")}
+-                </label>
++                )}
+               </div>
+-
+-              {data.risks.operations.autres && (
+-                <input
+-                  value={data.risks.operations.autresText}
+-                  onChange={(e) =>
+-                    setData((prev) => ({
+-                      ...prev,
+-                      risks: {
+-                        ...prev.risks,
+-                        operations: { ...prev.risks.operations, autresText: e.target.value },
+-                      },
+-                    }))
+-                  }
+-                  placeholder={t("ops_others_ph")}
+-                  className="mt-2 w-full px-3 py-2 rounded-xl border"
+-                />
+-              )}
+-            </div>
+-          </div>
+-        </Section>
+-      )}
+-
+-      {step === 3 && (
+-        <Section title={t("measures_title")}>
+-          <div className="grid grid-cols-2 gap-2">
+-            {[
+-              ["septRegles", "measures_seven"],
+-              ["ventilation", "measures_ventilation"],
+-              ["terre", "measures_earth"],
+-              ["balisage", "measures_balisage"],
+-              ["surveillant", "measures_watch"],
+-              ["planLevage", "measures_liftplan"],
+-              ["ancrage", "measures_anchor"],
+-              ["outilsOk", "measures_toolsok"],
+-            ].map(([k, label]) => (
+-              <label key={k} className="flex items-center gap-2 text-sm">
+-                <input
+-                  type="checkbox"
+-                  className="w-4 h-4 accent-black"
+-                  checked={data.measures[k]}
+-                  onChange={(e) =>
+-                    setData((prev) => ({ ...prev, measures: { ...prev.measures, [k]: e.target.checked } }))
+-                  }
+-                />
+-                {t(label)}
+-              </label>
+             ))}
++          </Section>
+ 
+-            <label className="flex items-center gap-2 text-sm col-span-2">
+-              <input
+-                type="checkbox"
+-                className="w-4 h-4 accent-black"
+-                checked={data.measures.autre}
+-                onChange={(e) => setData((prev) => ({ ...prev, measures: { ...prev.measures, autre: e.target.checked } }))}
+-              />
+-              {t("other")}
+-            </label>
+-
+-            {data.measures.autre && (
+-              <input
+-                value={data.measures.autreText}
+-                onChange={(e) => setData((prev) => ({ ...prev, measures: { ...prev.measures, autreText: e.target.value } }))}
+-                placeholder={t("other_specify")}
+-                className="mt-2 w-full px-3 py-2 rounded-xl border col-span-2"
+-              />
+-            )}
+-          </div>
+-        </Section>
+-      )}
+-
+-      {step === 4 && (
+-        <Section title={t("top3_title")}>
+-          <div className="flex flex-col gap-2">
+-            {data.top3.map((it, i) => (
+-              <div key={i} className="grid grid-cols-1 gap-2">
+-                <div className="text-sm font-medium">#{i + 1}</div>
+-
+-                <input
+-                  value={it.risk}
+-                  onChange={(e) => {
+-                    const top3 = [...data.top3];
+-                    top3[i] = { ...top3[i], risk: e.target.value };
+-                    setField("top3", top3);
+-                  }}
+-                  placeholder={t("risk_ph")}
+-                  className="px-3 py-2 rounded-xl border"
+-                />
+-
+-                <input
+-                  value={it.action}
+-                  onChange={(e) => {
+-                    const top3 = [...data.top3];
+-                    top3[i] = { ...top3[i], action: e.target.value };
+-                    setField("top3", top3);
+-                  }}
+-                  placeholder={t("action_ph")}
+-                  className="px-3 py-2 rounded-xl border"
+-                />
+-
+-                <input
+-                  value={it.resp}
+-                  onChange={(e) => {
+-                    const top3 = [...data.top3];
+-                    top3[i] = { ...top3[i], resp: e.target.value };
+-                    setField("top3", top3);
+-                  }}
+-                  placeholder={t("resp_ph")}
+-                  className="px-3 py-2 rounded-xl border"
+-                />
+-
+-                <hr className="my-2 border-gray-200" />
+-              </div>
+-            ))}
+-          </div>
+-        </Section>
+-      )}
++          {errors.questions && <div className="text-red-600 text-xs mb-3">{t("fmra_validation_missing")}</div>}
+ 
+-      {step === 5 && (
+-        <Section title={t("decision_title")}>
+-          <div className="flex flex-col gap-3">
+-            <div className="flex items-center gap-3">
++          <Section title={t("fmra_section_decision")} tone="dark">
++            <p className="text-sm text-gray-200 mb-3">{t("fmra_decision_intro")}</p>
++            <div className="grid grid-cols-2 gap-3">
+               <button
+-                onClick={() => setField("decision", "GO")}
+-                className={"px-4 py-2 rounded-xl border " + (data.decision === "GO" ? "bg-green-50 border-green-300" : "")}
++                disabled={sending}
++                onClick={() => submit("GO")}
++                className="px-4 py-3 rounded-xl border bg-green-600 text-white font-semibold disabled:opacity-50"
+               >
+-                {t("go")}
++                {t("fmra_ok_go")}
+               </button>
+               <button
+-                onClick={() => setField("decision", "NO-GO")}
+-                className={"px-4 py-2 rounded-xl border " + (data.decision === "NO-GO" ? "bg-red-50 border-red-300" : "")}
++                disabled={sending}
++                onClick={() => submit("STOP")}
++                className="px-4 py-3 rounded-xl border bg-black text-white font-semibold disabled:opacity-50"
+               >
+-                {t("no_go")}
++                {t("fmra_btn_stop")}
+               </button>
+             </div>
+-
+-            {data.decision === "NO-GO" && (
+-              <div className="grid grid-cols-1 gap-2">
+-                <input
+-                  value={data.noGo.name}
+-                  onChange={(e) => setField("noGo", { ...data.noGo, name: e.target.value })}
+-                  placeholder={t("nogo_name_ph")}
+-                  className="px-3 py-2 rounded-xl border"
+-                />
+-                <input
+-                  value={data.noGo.tel}
+-                  onChange={(e) => setField("noGo", { ...data.noGo, tel: e.target.value })}
+-                  placeholder={t("nogo_tel_ph")}
+-                  className="px-3 py-2 rounded-xl border"
+-                />
+-              </div>
+-            )}
+-
+-            <label className="text-sm">
+-              {t("manager")}
+-              <input
+-                value={data.responsable}
+-                onChange={(e) => setField("responsable", e.target.value)}
+-                placeholder={t("manager_ph")}
+-                className="mt-1 w-full px-3 py-2 rounded-xl border"
+-              />
+-            </label>
+-
+-            <label className="text-sm">
+-              {t("notes")}
+-              <textarea
+-                value={data.notes}
+-                onChange={(e) => setField("notes", e.target.value)}
+-                rows={2}
+-                placeholder={t("notes_ph")}
+-                className="mt-1 w-full px-3 py-2 rounded-xl border"
+-              />
+-            </label>
+-          </div>
+-        </Section>
++          </Section>
++        </>
+       )}
+-
+-      <div className={"flex mt-4 " + (step > 0 ? "justify-between" : "justify-end")}>
+-        {step > 0 && (
+-          <button
+-            onClick={() => setStep((s) => s - 1)}
+-            className="px-3 py-2 rounded-xl border border-gray-300 bg-gray-200 text-gray-800 hover:bg-gray-300"
+-          >
+-            {t("prev")}
+-          </button>
+-        )}
+-
+-        {step < totalSteps - 1 ? (
+-          <button
+-            onClick={next}
+-            className="px-3 py-2 rounded-xl border border-blue-600 bg-blue-600 text-white hover:bg-blue-700"
+-          >
+-            {t("next")}
+-          </button>
+-        ) : (
+-          <button onClick={envoyer} className="px-4 py-3 rounded-xl border bg-black text-white">
+-            {t("send")}
+-          </button>
+-        )}
+-      </div>
+     </main>
+   );
+ }
+-
+ // ========================= PREMIERS SOINS =========================
+ function FirstAidScreen() {
+   const { t } = useI18n();
+@@ -2275,7 +2217,7 @@ function App() {
+       </header>
+ 
+       {route === "home" && <HomeScreen />}
+-      {route === "lmra" && <LmraScreen />}
++      {route === "lmra" && <FmraScreen />}
+       {route === "firstaid" && <FirstAidScreen />}
+       {route === "stop" && <StopScreen />}
+       <ScrollToTopButton />
+diff --git a/sw.js b/sw.js
+index e9cb7f8..56d015b 100644
+--- a/sw.js
++++ b/sw.js
+@@ -1,5 +1,5 @@
+-// sw.js — QHSE PWA (robuste) — v10
+-const VERSION = 'v10';
++// sw.js — QHSE PWA (robuste) — v12
++const VERSION = 'v12';
+ 
+ const CACHE_STATIC  = `qhse-static-${VERSION}`;
+ const CACHE_DYNAMIC = `qhse-dyn-${VERSION}`;
