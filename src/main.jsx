@@ -33,7 +33,7 @@ if (!globalThis.QHSE_I18N) {
  Android (Chrome) : ⋮ → Ajouter à l’écran d’accueil.
 Ensuite, l’app peut fonctionner hors-ligne.`,
 
-      tile_lmra_title: "LMRA",
+      tile_lmra_title: "FMRA",
       tile_lmra_sub: "Analyse de risque",
       tile_fa_title: "Premiers soins",
       tile_fa_sub: "Utilisation trousse",
@@ -223,7 +223,7 @@ Ensuite, l’app peut fonctionner hors-ligne.`,
  Android (Chrome): ⋮ → Add to Home screen.
 Then, the app can work offline.`,
 
-      tile_lmra_title: "LMRA",
+      tile_lmra_title: "FMRA",
       tile_lmra_sub: "Risk assessment",
       tile_fa_title: "First aid",
       tile_fa_sub: "First-aid kit use",
@@ -411,7 +411,7 @@ Then, the app can work offline.`,
  Android (Chrome): ⋮ → Toevoegen aan startscherm.
 Daarna kan de app offline werken.`,
 
-      tile_lmra_title: "LMRA",
+      tile_lmra_title: "FMRA",
       tile_lmra_sub: "Risicoanalyse",
       tile_fa_title: "Eerste hulp",
       tile_fa_sub: "Gebruik EHBO-koffer",
