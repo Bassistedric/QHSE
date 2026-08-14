@@ -537,6 +537,7 @@
       if(!selectedResp) return;
 
       const respTarget = normUpper(selectedResp);
+      const responsableFromList = !responsableManualInput.value.trim() && !responsableSelect.disabled;
 
       const members = uniqSorted(
         chantierRows
@@ -545,12 +546,31 @@
           .filter(Boolean)
       );
 
-      members.forEach(n=>{
+      // Le responsable choisi dans la liste participe obligatoirement au TBM.
+      // On l'affiche en premier et on évite un doublon s'il figure aussi comme ouvrier.
+      const displayedMembers = responsableFromList
+        ? [selectedResp, ...members.filter(n => normUpper(n) !== respTarget)]
+        : members;
+
+      displayedMembers.forEach(n=>{
+        const isSelectedResponsable = responsableFromList && normUpper(n) === respTarget;
         const lbl=document.createElement('label');
         lbl.className='inline-flex items-center gap-2';
         const cb=document.createElement('input');
         cb.type='checkbox'; cb.value=n; cb.className='rounded';
+        if(isSelectedResponsable){
+          cb.checked=true;
+          cb.disabled=true;
+          cb.dataset.responsable='true';
+          cb.setAttribute('aria-label', `${n}, responsable présent et validé`);
+        }
         lbl.appendChild(cb); lbl.append(n);
+        if(isSelectedResponsable){
+          const validated=document.createElement('span');
+          validated.className='text-xs font-medium text-green-700';
+          validated.textContent='Responsable validé';
+          lbl.appendChild(validated);
+        }
         teamContainer.appendChild(lbl);
       });
     }
