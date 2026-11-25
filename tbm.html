@@ -870,6 +870,65 @@
     playBtn.addEventListener('click',()=>{ if(lastVideoUrl) window.open(lastVideoUrl, '_blank'); });
     copyLinkBtn.addEventListener('click',async()=>{ if(!lastVideoUrl) return; try{await navigator.clipboard.writeText(lastVideoUrl);}catch{} });
 
+    const absenceLabels = {ABSENT:'Absent', SICK:'Malade', OUT:'Out', OTHER_SITE:'Pas sur ce chantier'};
+    function showAbsenceDialog(payload, names){
+      const dialog = document.createElement('dialog');
+      dialog.setAttribute('aria-label','Participants non cochés');
+      dialog.className = 'rounded-xl p-0 w-11/12 max-w-md shadow-xl';
+      dialog.style.cssText = 'margin:auto;max-height:85vh;overflow:auto;background:white;';
+      const form = document.createElement('form');
+      form.className = 'p-4 space-y-4';
+      form.innerHTML = '<h2 class="text-lg font-semibold">Participants non cochés</h2><p class="text-sm">Indiquez la raison pour chacune de ces personnes.</p>';
+      const choices = {};
+      const validate = document.createElement('button');
+      validate.type = 'submit';
+      validate.className = 'flex-1 bg-green-700 text-white rounded-lg px-3 py-2 disabled:opacity-40';
+      validate.textContent = 'Valider et envoyer';
+      validate.disabled = true;
+      names.forEach((name,i)=>{
+        const field = document.createElement('fieldset');
+        field.className = 'border rounded-lg p-3';
+        const legend = document.createElement('legend');
+        legend.textContent = name;
+        legend.className = 'font-medium px-1';
+        const grid = document.createElement('div');
+        grid.className = 'grid grid-cols-2 gap-2';
+        Object.entries(absenceLabels).forEach(([code,label])=>{
+          const b = document.createElement('button');
+          b.type='button'; b.textContent=label;
+          b.className='border rounded-lg p-2 text-sm min-h-[44px]';
+          b.setAttribute('aria-pressed','false');
+          b.addEventListener('click',()=>{
+            choices[i]=code;
+            [...grid.children].forEach(el=>{
+              el.setAttribute('aria-pressed',String(el===b));
+              el.classList.toggle('bg-slate-900',el===b);
+              el.classList.toggle('text-white',el===b);
+            });
+            validate.disabled=Object.keys(choices).length!==names.length;
+          });
+          grid.appendChild(b);
+        });
+        field.append(legend,grid); form.appendChild(field);
+      });
+      const actions=document.createElement('div');
+      actions.className='flex gap-2 sticky bottom-0 bg-white py-2';
+      const cancel=document.createElement('button');
+      cancel.type='button'; cancel.textContent='Retour';
+      cancel.className='border rounded-lg px-3 py-2';
+      cancel.addEventListener('click',()=>dialog.close());
+      actions.append(cancel,validate); form.appendChild(actions);
+      form.addEventListener('submit',async ev=>{
+        ev.preventDefault();
+        if(Object.keys(choices).length!==names.length)return;
+        payload.data.absences=names.map((name,i)=>({name,reason:choices[i]}));
+        dialog.close();
+        await submitPayload(payload);
+      });
+      dialog.addEventListener('close',()=>{dialog.remove();sendBtn.focus();},{once:true});
+      dialog.appendChild(form); document.body.appendChild(dialog); dialog.showModal();
+    }
+
     let pendingConfirmationAction = null;
     let confirmationReturnFocusEl = null;
 
@@ -996,12 +1055,15 @@
 
       const payload={
         type:'tbm',
-        meta:{userAgent:navigator.userAgent},
-        data:{datetime:dateVal,metier,chantier,responsable,equipe:members,youtubeUrl:lastVideoUrl}
+        meta:{userAgent:navigator.userAgent,sentAt:new Date().toISOString()},
+        data:{datetime:dateVal,metier,chantier,responsable,equipe:members,youtubeUrl:lastVideoUrl,tbmId:globalThis.crypto?.randomUUID?.() || ('tbm-'+Date.now()+'-'+Math.random().toString(36).slice(2)),absences:[]}
       };
       sendStatus.textContent='';
       clearAllFieldErrors();
       hasAttemptedSubmit = false;
+      const present = new Set(members.map(normUpper));
+      const absent = uniqSorted([...teamContainer.querySelectorAll('input[type="checkbox"]:not(:checked)')].map(b=>b.value).filter(n=>!present.has(normUpper(n))));
+      if(absent.length){showAbsenceDialog(payload,absent);return;}
       showConfirmation({
         message:'Voulez-vous envoyer ?',
         confirmLabel:'Confirmer',
