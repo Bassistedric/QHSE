@@ -870,6 +870,77 @@
     playBtn.addEventListener('click',()=>{ if(lastVideoUrl) window.open(lastVideoUrl, '_blank'); });
     copyLinkBtn.addEventListener('click',async()=>{ if(!lastVideoUrl) return; try{await navigator.clipboard.writeText(lastVideoUrl);}catch{} });
 
+    const absenceI18n = {
+      fr:{title:'Participants non cochés',intro:'Indiquez la raison pour chacune de ces personnes.',back:'Retour',send:'Valider et envoyer',reasons:{ABSENT:'Absent',SICK:'Malade',OUT:'Out',OTHER_SITE:'Pas sur ce chantier'}},
+      en:{title:'Unchecked participants',intro:'Please select a reason for each person.',back:'Back',send:'Confirm and send',reasons:{ABSENT:'Absent',SICK:'Sick',OUT:'Out',OTHER_SITE:'Not on this site'}},
+      nl:{title:'Niet-aangevinkte deelnemers',intro:'Geef voor elke persoon de reden op.',back:'Terug',send:'Bevestigen en verzenden',reasons:{ABSENT:'Afwezig',SICK:'Ziek',OUT:'Out',OTHER_SITE:'Niet op deze werf'}}
+    };
+    function getAbsenceLabels(){
+      let lang = document.documentElement.lang || 'fr';
+      try {lang=JSON.parse(localStorage.getItem('qhse_lang_v1')||'null')||lang;}catch(e){}
+      return absenceI18n[lang]||absenceI18n.fr;
+    }
+    function showAbsenceDialog(payload, names){
+      const labels=getAbsenceLabels();
+      const dialog = document.createElement('dialog');
+      dialog.setAttribute('aria-label',labels.title);
+      dialog.className = 'rounded-xl p-0 w-11/12 max-w-md shadow-xl';
+      dialog.style.cssText = 'margin:auto;max-height:85vh;overflow:auto;background:white;';
+      const form = document.createElement('form');
+      form.className = 'p-4 space-y-4';
+      const heading=document.createElement('h2'); heading.className='text-lg font-semibold'; heading.textContent=labels.title;
+      const intro=document.createElement('p'); intro.className='text-sm'; intro.textContent=labels.intro;
+      form.append(heading,intro);
+      const choices = {};
+      const validate = document.createElement('button');
+      validate.type = 'submit';
+      validate.className = 'flex-1 bg-green-700 text-white rounded-lg px-3 py-2 disabled:opacity-40';
+      validate.textContent = labels.send;
+      validate.disabled = true;
+      names.forEach((name,i)=>{
+        const field = document.createElement('fieldset');
+        field.className = 'border rounded-lg p-3';
+        const legend = document.createElement('legend');
+        legend.textContent = name;
+        legend.className = 'font-medium px-1';
+        const grid = document.createElement('div');
+        grid.className = 'grid grid-cols-2 gap-2';
+        Object.entries(labels.reasons).forEach(([code,label])=>{
+          const b = document.createElement('button');
+          b.type='button'; b.textContent=label;
+          b.className='border rounded-lg p-2 text-sm min-h-[44px]';
+          b.setAttribute('aria-pressed','false');
+          b.addEventListener('click',()=>{
+            choices[i]=code;
+            [...grid.children].forEach(el=>{
+              el.setAttribute('aria-pressed',String(el===b));
+              el.classList.toggle('bg-slate-900',el===b);
+              el.classList.toggle('text-white',el===b);
+            });
+            validate.disabled=Object.keys(choices).length!==names.length;
+          });
+          grid.appendChild(b);
+        });
+        field.append(legend,grid); form.appendChild(field);
+      });
+      const actions=document.createElement('div');
+      actions.className='flex gap-2 sticky bottom-0 bg-white py-2';
+      const cancel=document.createElement('button');
+      cancel.type='button'; cancel.textContent=labels.back;
+      cancel.className='border rounded-lg px-3 py-2';
+      cancel.addEventListener('click',()=>dialog.close());
+      actions.append(cancel,validate); form.appendChild(actions);
+      form.addEventListener('submit',async ev=>{
+        ev.preventDefault();
+        if(Object.keys(choices).length!==names.length)return;
+        payload.data.absences=names.map((name,i)=>({name,reason:choices[i]}));
+        dialog.close();
+        await submitPayload(payload);
+      });
+      dialog.addEventListener('close',()=>{dialog.remove();sendBtn.focus();},{once:true});
+      dialog.appendChild(form); document.body.appendChild(dialog); dialog.showModal();
+    }
+
     let pendingConfirmationAction = null;
     let confirmationReturnFocusEl = null;
 
@@ -994,14 +1065,22 @@
         return;
       }
 
+      const pm = chantierManualInput.value.trim() || responsableManualInput.value.trim()
+        ? ''
+        : uniqSorted(getFilteredRowsBase()
+            .filter(r=>normUpper(r.chantier)===normUpper(chantier) && normUpper(responsableLabelFromRow(r))===normUpper(responsable))
+            .map(r=>r.pm)).join(' | ');
       const payload={
         type:'tbm',
-        meta:{userAgent:navigator.userAgent},
-        data:{datetime:dateVal,metier,chantier,responsable,equipe:members,youtubeUrl:lastVideoUrl}
+        meta:{userAgent:navigator.userAgent,sentAt:new Date().toISOString()},
+        data:{datetime:dateVal,metier,chantier,responsable,pm,equipe:members,youtubeUrl:lastVideoUrl,tbmId:globalThis.crypto?.randomUUID?.() || ('tbm-'+Date.now()+'-'+Math.random().toString(36).slice(2)),absences:[]}
       };
       sendStatus.textContent='';
       clearAllFieldErrors();
       hasAttemptedSubmit = false;
+      const present = new Set(members.map(normUpper));
+      const absent = uniqSorted([...teamContainer.querySelectorAll('input[type="checkbox"]:not(:checked)')].map(b=>b.value).filter(n=>!present.has(normUpper(n))));
+      if(absent.length){showAbsenceDialog(payload,absent);return;}
       showConfirmation({
         message:'Voulez-vous envoyer ?',
         confirmLabel:'Confirmer',
